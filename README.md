@@ -203,7 +203,57 @@
     - <img src="Image/Main_Blend.png" height="300" title="Main_Blend">
     - AnimInstance 클래스(MainPlayerAnim.cpp) 제작후 BP만들고 위 그림과 같은 Blend 제작
     - bUseControllerRotationYaw 만을 true로 전환하여 카메라 회전시 플레이어도 회전하도록 지정 (위와 같은 애니메이션 제작을 원하기에)
+      - MainPalyer의 정보를 얻어와야 하기 때문에 헤더에 선언
+      - Anim에서 'Update Animation 이벤트'에 내가 만든 UpdateAnimationProperties()함수를 연결하여 애니메이션에 필요한 데이터를 갱신한다. 
+      - 필요한 데이터는 점프여부, 속도, 방향.
+      <details><summary>c++ 코드</summary> 
 
+        ```c++
+        #include "MainPlayer.h"
+
+        void UMainPlayerAnim::NativeInitializeAnimation() {
+          if (!MainPlayer) MainPlayer = Cast<AMainPlayer>(TryGetPawnOwner());
+        } 
+
+        void UMainPlayerAnim::UpdateAnimationProperties() {
+          if (!MainPlayer) MainPlayer = Cast<AMainPlayer>(TryGetPawnOwner());
+
+          if (MainPlayer) {
+            FVector Speed = MainPlayer->GetVelocity();
+            FRotator Rotator = MainPlayer->GetActorRotation();
+            FVector LateralSpeed = FVector(Speed.X, Speed.Y, 0.f);
+            MovementSpeed = LateralSpeed.Size();
+            DirectionSpeed = CalculateDirection(Speed, Rotator);
+
+            bIsInAir = MainPlayer->GetMovementComponent()->IsFalling();
+          }
+
+        }
+        ```
+      </details>
+
+      <details><summary>h 코드</summary> 
+
+        ```h
+        public:
+          virtual void NativeInitializeAnimation() override;	//생성시 동작
+
+          UFUNCTION(BlueprintCallable, Category = AnimationProperties)
+          void UpdateAnimationProperties();					//틱마다 동작
+
+          UPROPERTY(EditAnywhere, BlueprintReadOnly, Category="Movement")
+          class AMainPlayer* MainPlayer;
+
+          UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Movement")
+          bool bIsInAir;
+
+          UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Movement")
+          float MovementSpeed;
+
+          UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Movement")
+          float DirectionSpeed;
+        ```
+      </details>
 
 > **<h3>Realization</h3>**
 - GameMode->Character->Controller->AnimInstance->Blend
