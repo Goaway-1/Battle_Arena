@@ -141,119 +141,187 @@
         ```
         </details>
 
-  - #### __달리기 (Sprinting)__ 
-    - <img src="Image/Sprinting.gif" height="300" title="Sprinting">
-    - MainPlayer에 enum 클래스로 상태를 제작하여 뛰는 것과 걷는 것 구별 (속도에 차이를 두기 위함)
-    - Shift키에 바인딩했으며 Switch_Sprinting 이라는 함수 하나만을 만들어 상태와 속도 전환
-    - 실직적으로는 SetMovementStatus() 함수에서 들어오는 값에 따라 MaxWalkSpeed에 속도를 지정 (추후 추가예정)
-      <details><summary>c++ 코드</summary> 
+- ## <span style = "color:yellow;">달리기 (Sprinting)</span>
+  - <img src="Image/Sprinting.gif" height="300" title="Sprinting">
+  - MainPlayer에 enum 클래스로 상태를 제작하여 뛰는 것과 걷는 것 구별 (속도에 차이를 두기 위함)
+  - Shift키에 바인딩했으며 Switch_Sprinting 이라는 함수 하나만을 만들어 상태와 속도 전환
+  - 실직적으로는 SetMovementStatus() 함수에서 들어오는 값에 따라 MaxWalkSpeed에 속도를 지정 (추후 추가예정)
+    <details><summary>c++ 코드</summary> 
 
-        ```c++
-        void AMainPlayer::BeginPlay()
-        {
-          Super::BeginPlay();
-          SetMovementStatus(EMovementStatus::EMS_Normal);
-        }
+      ```c++
+      void AMainPlayer::BeginPlay()
+      {
+        Super::BeginPlay();
+        SetMovementStatus(EMovementStatus::EMS_Normal);
+      }
 
-        void AMainPlayer::SetupPlayerInputComponent(UInputComponent* PlayerInputComponent)
-        {
-          PlayerInputComponent->BindAction("Shift", EInputEvent::IE_Pressed, this, &AMainPlayer::Switch_Sprinting);
-          PlayerInputComponent->BindAction("Shift", EInputEvent::IE_Released, this, &AMainPlayer::Switch_Sprinting);
-        }
-        ...
-        void  AMainPlayer::SetMovementStatus(EMovementStatus Status) {
-          MovementStatus = Status;
-          if (MovementStatus == EMovementStatus::EMS_Sprinting) GetCharacterMovement()->MaxWalkSpeed = SprintingSpeed;
-          else GetCharacterMovement()->MaxWalkSpeed = MoveSpeed;
-        }
-        void AMainPlayer::Switch_Sprinting() {
-          if(MovementStatus != EMovementStatus::EMS_Sprinting) SetMovementStatus(EMovementStatus::EMS_Sprinting);
-          else SetMovementStatus(EMovementStatus::EMS_Normal);
-        }
-        ```
-      </details>
+      void AMainPlayer::SetupPlayerInputComponent(UInputComponent* PlayerInputComponent)
+      {
+        PlayerInputComponent->BindAction("Shift", EInputEvent::IE_Pressed, this, &AMainPlayer::Switch_Sprinting);
+        PlayerInputComponent->BindAction("Shift", EInputEvent::IE_Released, this, &AMainPlayer::Switch_Sprinting);
+      }
+      ...
+     void  AMainPlayer::SetMovementStatus(EMovementStatus Status) {
+        MovementStatus = Status;
+        if (MovementStatus == EMovementStatus::EMS_Sprinting) GetCharacterMovement()->MaxWalkSpeed = SprintingSpeed;
+        else GetCharacterMovement()->MaxWalkSpeed = MoveSpeed;
+      }
+      void AMainPlayer::Switch_Sprinting() {
+        if(MovementStatus != EMovementStatus::EMS_Sprinting) SetMovementStatus(EMovementStatus::EMS_Sprinting);
+       else SetMovementStatus(EMovementStatus::EMS_Normal);
+      }
+      ```
+    </details>
 
-      <details><summary>h 코드</summary> 
+    <details><summary>h 코드</summary> 
 
-        ```h
-        UENUM(BlueprintType)
-        enum class EMovementStatus : uint8 {
-          EMS_Normal		UMETA(DisplayName = "Normal"),
-          EMS_Sprinting	UMETA(DisplayName = "Sprinting"),
-          
-          EMS_Default		UMETA(DisplayName = "Default")
-        };
+    ```h
+    UENUM(BlueprintType)
+      enum class EMovementStatus : uint8 {
+      EMS_Normal		UMETA(DisplayName = "Normal"),
+      EMS_Sprinting	UMETA(DisplayName = "Sprinting"),
+        
+      EMS_Default		UMETA(DisplayName = "Default")
+    };
 
-        ...
-          void Switch_Sprinting();
-        private:
-          UPROPERTY(EditDefaultsOnly, Category = "Movement", Meta = (AllowPrivateAccess = true))
-          float SprintingSpeed;
+    ...
+      void Switch_Sprinting();
+    private:
+      UPROPERTY(EditDefaultsOnly, Category = "Movement", Meta = (AllowPrivateAccess = true))
+      float SprintingSpeed;
 
-          //현재 캐릭터의 상태를 표현 (스턴,러닝,정지,공격 등등)
-          UPROPERTY(VisibleAnywhere, BlueprintReadWrite, Category = "Movement", Meta = (AllowPrivateAccess = true))
-          EMovementStatus MovementStatus;	
+      //현재 캐릭터의 상태를 표현 (스턴,러닝,정지,공격 등등)
+      UPROPERTY(VisibleAnywhere, BlueprintReadWrite, Category = "Movement", Meta = (AllowPrivateAccess = true))
+      EMovementStatus MovementStatus;	
 
-          void SetMovementStatus(EMovementStatus Status);
-        ```
-      </details>
+      void SetMovementStatus(EMovementStatus Status);
+    ```
+    </details>
 
-  - #### __Character Animation 제작__ 
-    - <img src="Image/Way_Directional_Movement.gif" height="300" title="Way_Directional_Movement">
-    - <img src="Image/Main_Blend.png" height="300" title="Main_Blend">
-    - AnimInstance 클래스(MainPlayerAnim.cpp) 제작후 BP만들고 위 그림과 같은 Blend 제작
-    - bUseControllerRotationYaw 만을 true로 전환하여 카메라 회전시 플레이어도 회전하도록 지정 (위와 같은 애니메이션 제작을 원하기에)
+- ## <span style = "color:yellow;">Character Animation 제작 (Sprinting)</span>
+  - <img src="Image/Way_Directional_Movement.gif" height="300" title="Way_Directional_Movement">
+  - <img src="Image/Main_Blend.png" height="300" title="Main_Blend">
+  - AnimInstance 클래스(MainPlayerAnim.cpp) 제작후 BP만들고 위 그림과 같은 Blend 제작
+  - bUseControllerRotationYaw 만을 true로 전환하여 카메라 회전시 플레이어도 회전하도록 지정 (위와 같은 애니메이션 제작을 원하기에)
       - MainPalyer의 정보를 얻어와야 하기 때문에 헤더에 선언
       - Anim에서 'Update Animation 이벤트'에 내가 만든 UpdateAnimationProperties()함수를 연결하여 애니메이션에 필요한 데이터를 갱신한다. 
       - 필요한 데이터는 점프여부, 속도, 방향.
+    
       <details><summary>c++ 코드</summary> 
 
-        ```c++
-        #include "MainPlayer.h"
+      ```c++
+      #include "MainPlayer.h"
 
-        void UMainPlayerAnim::NativeInitializeAnimation() {
-          if (!MainPlayer) MainPlayer = Cast<AMainPlayer>(TryGetPawnOwner());
-        } 
+      void UMainPlayerAnim::NativeInitializeAnimation() {
+        if (!MainPlayer) MainPlayer = Cast<AMainPlayer>(TryGetPawnOwner());
+      } 
 
-        void UMainPlayerAnim::UpdateAnimationProperties() {
-          if (!MainPlayer) MainPlayer = Cast<AMainPlayer>(TryGetPawnOwner());
+      void UMainPlayerAnim::UpdateAnimationProperties() {
+        if (!MainPlayer) MainPlayer = Cast<AMainPlayer>(TryGetPawnOwner());
 
-          if (MainPlayer) {
-            FVector Speed = MainPlayer->GetVelocity();
-            FRotator Rotator = MainPlayer->GetActorRotation();
-            FVector LateralSpeed = FVector(Speed.X, Speed.Y, 0.f);
-            MovementSpeed = LateralSpeed.Size();
-            DirectionSpeed = CalculateDirection(Speed, Rotator);
+        if (MainPlayer) {
+          FVector Speed = MainPlayer->GetVelocity();
+          FRotator Rotator = MainPlayer->GetActorRotation();
+          FVector LateralSpeed = FVector(Speed.X, Speed.Y, 0.f);
+          MovementSpeed = LateralSpeed.Size();
+          DirectionSpeed = CalculateDirection(Speed, Rotator);
 
-            bIsInAir = MainPlayer->GetMovementComponent()->IsFalling();
-          }
-
+          bIsInAir = MainPlayer->GetMovementComponent()->IsFalling();
         }
-        ```
+
+      }
+      ```
       </details>
 
       <details><summary>h 코드</summary> 
 
-        ```h
-        public:
-          virtual void NativeInitializeAnimation() override;	//생성시 동작
+      ```h
+      public:
+        virtual void NativeInitializeAnimation() override;	//생성시 동작
 
-          UFUNCTION(BlueprintCallable, Category = AnimationProperties)
-          void UpdateAnimationProperties();					//틱마다 동작
+        UFUNCTION(BlueprintCallable, Category = AnimationProperties)
+        void UpdateAnimationProperties();					//틱마다 동작
 
-          UPROPERTY(EditAnywhere, BlueprintReadOnly, Category="Movement")
-          class AMainPlayer* MainPlayer;
+        UPROPERTY(EditAnywhere, BlueprintReadOnly, Category="Movement")
+        class AMainPlayer* MainPlayer;
 
-          UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Movement")
-          bool bIsInAir;
+        UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Movement")
+        bool bIsInAir;
 
-          UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Movement")
-          float MovementSpeed;
+        UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Movement")
+        float MovementSpeed;
 
-          UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Movement")
-          float DirectionSpeed;
-        ```
+        UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Movement")
+        float DirectionSpeed;
+      ```
       </details>
 
 > **<h3>Realization</h3>**
 - GameMode->Character->Controller->AnimInstance->Blend
+
+## **07.27**
+> **<h3>Today Dev Story</h3>**
+- ## <span style = "color:yellow;">Character 변경과 시점의 변화</span>
+  - <img src="Image/StatusCamear.gif" height="300" title="StatusCamear">
+  - 블랜드는 이전과 동일하고 타켓팅을 활용해서 기존 제공하는 마네퀸 애니메이션을 가져옴
+  - __움직임이 없는 Idle 상태일때는 카메라로 캐릭터의 얼굴을 볼 수 있도록 전환__
+    - 기존 MovementStatus에 Walk상태를 추가, Tick에서 CheckIdle을 호출
+    - CheckIdle에서는 캐릭터의 속도를 기준으로 Idle 또는 Walk로 상태 전환 
+      <details><summary>c++ 코드</summary> 
+
+      ```c++
+      void AMainPlayer::Tick(float DeltaTime)
+      {
+        Super::Tick(DeltaTime);
+
+        CheckIdle();
+      }
+      ...
+      void AMainPlayer::CheckIdle() {
+        float CurrentVelocity = GetVelocity().Size();
+
+        if (CurrentVelocity == 0) {
+          SetMovementStatus(EMovementStatus::EMS_Normal);
+          bUseControllerRotationYaw = false;
+        }
+        else if (MovementStatus != EMovementStatus::EMS_Sprinting) {
+          SetMovementStatus(EMovementStatus::EMS_Walk);
+          bUseControllerRotationYaw = true;
+        }
+      }
+      ```
+      </details>
+
+      <details><summary>h 코드</summary> 
+
+      ```h
+      UENUM(BlueprintType)
+      enum class EMovementStatus : uint8 {
+        EMS_Normal		UMETA(DisplayName = "Normal"),
+        EMS_Walk		UMETA(DisplayName = "Walk"),
+        ...
+      };
+      void CheckIdle();
+      ```
+      </details>
+
+- ## <span style = "color:yellow;">Jump Animation 변경</span>
+  - <img src="Image/Jump.gif" height="300" title="Jump">
+  - <img src="Image/JumpAnim.png" height="300" title="JumpAnim">
+  - 위의 그림과 같이 점프 모션이 구성되어 있으며 JumpStart->Jumping 이나 JumpEnd->BasicMotion에서는 애니메이션 진행 시간의 비율과 남은 시간을 비율을 사용해서 처리
+
+
+> **<h3>Realization</h3>**
+      
+      <details><summary>h 코드</summary> 
+
+      ```h
+      UENUM(BlueprintType)
+      enum class EMovementStatus : uint8 {
+        EMS_Normal		UMETA(DisplayName = "Normal"),
+        EMS_Walk		UMETA(DisplayName = "Walk"),
+        ...
+      };
+      void CheckIdle();
+      ```
+      </details>
