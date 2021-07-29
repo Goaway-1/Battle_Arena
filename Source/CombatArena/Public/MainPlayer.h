@@ -77,4 +77,14 @@ private:
 
 #pragma endregion
 
+#pragma region ATTACK
+public:
+	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "Anims")
+	class UAnimMontage* AttackMontage;
+
+	void LMBDown();
+	void LMBUp();
+
+#pragma endregion
+
 };

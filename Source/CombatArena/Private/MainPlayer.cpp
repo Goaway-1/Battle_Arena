@@ -73,8 +73,14 @@ void AMainPlayer::SetupPlayerInputComponent(UInputComponent* PlayerInputComponen
 	PlayerInputComponent->BindAction("Jump", EInputEvent::IE_Pressed, this, &AMainPlayer::Jump);
 	PlayerInputComponent->BindAction("Jump", EInputEvent::IE_Released, this, &ACharacter::StopJumping);
 
+	//sprinting
 	PlayerInputComponent->BindAction("Shift", EInputEvent::IE_Pressed, this, &AMainPlayer::Switch_Sprinting);
 	PlayerInputComponent->BindAction("Shift", EInputEvent::IE_Released, this, &AMainPlayer::Switch_Sprinting);
+
+	//attack
+	PlayerInputComponent->BindAction("LMB", EInputEvent::IE_Pressed, this, &AMainPlayer::LMBDown);
+	PlayerInputComponent->BindAction("LMB", EInputEvent::IE_Released, this, &AMainPlayer::LMBUp);
+
 }
 
 #pragma region CAMERA
@@ -123,4 +129,21 @@ void AMainPlayer::CheckIdle() {
 		bUseControllerRotationYaw = true;
 	}
 }
+#pragma endregion
+
+#pragma region ATTACK
+
+void AMainPlayer::LMBDown() {
+	//공격 조건 달기
+
+	UAnimInstance* AnimInstance = GetMesh()->GetAnimInstance();
+	if (AnimInstance) {
+		AnimInstance->Montage_Play(AttackMontage, 1.0f);
+		AnimInstance->Montage_JumpToSection(FName("Attack1"), AttackMontage);
+	}
+}
+void AMainPlayer::LMBUp() {
+
+}
+
 #pragma endregion

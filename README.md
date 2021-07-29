@@ -259,7 +259,7 @@
 > **<h3>Realization</h3>**
 - GameMode->Character->Controller->AnimInstance->Blend
 
-## **07.27**
+## **07.28**
 > **<h3>Today Dev Story</h3>**
 - ## <span style = "color:yellow;">Character 변경과 시점의 변화</span>
   - <img src="Image/StatusCamear.gif" height="300" title="StatusCamear">
@@ -312,16 +312,108 @@
 
 
 > **<h3>Realization</h3>**
-      
-      <details><summary>h 코드</summary> 
 
-      ```h
-      UENUM(BlueprintType)
-      enum class EMovementStatus : uint8 {
-        EMS_Normal		UMETA(DisplayName = "Normal"),
-        EMS_Walk		UMETA(DisplayName = "Walk"),
-        ...
-      };
-      void CheckIdle();
+## **07.29**
+> **<h3>Today Dev Story</h3>**
+- ## <span style = "color:yellow;">무기 장착</span>
+  - <img src="Image/EquipWeapon.gif" height="300" title="EquipWeapon">
+  - 무기를 장착하기 위해서 캐릭터 스켈레톤에 소켓을 추가 (LeftWeapon, RightWeapon)
+  - Item클래스 제작후 기본요소인 SphereComponent, Mesh, ParticleSystemComponent 추가 (장착시 임펙트 발생)
+    - __OnComponentBegin(End)Overlap.AddDynamic을__ 사용하여 SphereComponent 오버랩시 OnoverlapBegin(end) 함수 적용. (virtual로 제작하여 상속받는 곳에서 Override)
+    - Item클래스를 상속받는 Weapon 클래스 추가 하고 무기를 장착하는 Equip함수 생성
+    - Weapon 클래스에 Engine/SkeletalMeshSocket.h 추가 및 __GetSocketByName()과 AttachActor를__ 사용하여 지정한 소켓에 어태치
+      <details><summary>c++ 코드</summary> 
+
+      ```c++
+      //Item.cpp
+      #include "Particles/ParticleSystemComponent.h"
+      
+      AItem::AItem()
+      {
+        PrimaryActorTick.bCanEverTick = true;
+
+        CollisionVolume = CreateDefaultSubobject<USphereComponent>(TEXT("CollisionVolume"));
+        RootComponent = CollisionVolume;
+
+        CollisionVolume->OnComponentBeginOverlap.AddDynamic(this, &AItem::OnOverlapBegin);
+        CollisionVolume->OnComponentEndOverlap.AddDynamic(this, &AItem::OnOverlapEnd);
+
+        Mesh = CreateDefaultSubobject<UStaticMeshComponent>(TEXT("Mesh"));
+        Mesh->SetupAttachment(GetRootComponent());
+
+        IdleParticleComponent = CreateDefaultSubobject<UParticleSystemComponent>(TEXT("IdleParticleComponent"));
+        IdleParticleComponent->SetupAttachment(GetRootComponent());
+      }
+
+      //Weapon
+      #include "Engine/SkeletalMeshSocket.h"
+
+      AWeapon::AWeapon() {
+        SkeletalMesh = CreateDefaultSubobject<USkeletalMeshComponent>(TEXT("SkeletalMesh"));
+        SkeletalMesh->SetupAttachment(GetRootComponent());
+
+      }
+
+      void AWeapon::OnOverlapBegin(UPrimitiveComponent* OverlappedComponent, AActor* OtherActor, UPrimitiveComponent* OtherComp, int32 OtherBodyIndex, bool bFromSweep, const FHitResult& SweepResult) {
+        Super::OnOverlapBegin(OverlappedComponent, OtherActor, OtherComp, OtherBodyIndex, bFromSweep, SweepResult);
+        if (OtherActor) {
+          AMainPlayer* Player = Cast<AMainPlayer>(OtherActor);
+          if (Player) Equip(Player);
+        }
+      }
+
+      void AWeapon::OnOverlapEnd(UPrimitiveComponent* OverlappedComponent, AActor* OtherActor, UPrimitiveComponent* OtherComp, int32 OtherBodyIndex) {
+        Super::OnOverlapEnd(OverlappedComponent, OtherActor, OtherComp, OtherBodyIndex);
+
+      }
+
+      void AWeapon::Equip(class AMainPlayer* Player) {
+        if (Player) {
+          const USkeletalMeshSocket* RightHandSocket = Player->GetMesh()->GetSocketByName("RightWeapon");
+          if (RightHandSocket) RightHandSocket->AttachActor(this, Player->GetMesh());
+        }
+      }
       ```
       </details>
+      <details><summary>h 코드</summary> 
+
+      ```c++
+      //Item.h
+      public:	
+        virtual void Tick(float DeltaTime) override;
+
+        UPROPERTY(VisibleAnywhere, BlueprintReadWrite, Category = "Item | Collision")
+        class USphereComponent* CollisionVolume;
+
+        UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Item | Mesh")
+        class UStaticMeshComponent* Mesh;
+
+        UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Item | Particle")
+        class UParticleSystemComponent* IdleParticleComponent;
+
+        UFUNCTION()
+        virtual void OnOverlapBegin(UPrimitiveComponent* OverlappedComponent, AActor* OtherActor, UPrimitiveComponent* OtherComp, int32 OtherBodyIndex, bool bFromSweep, const FHitResult& SweepResult);
+
+        UFUNCTION()
+        virtual void OnOverlapEnd(UPrimitiveComponent* OverlappedComponent, AActor* OtherActor, UPrimitiveComponent* OtherComp, int32 OtherBodyIndex);
+
+      //Waepon.h
+      public:
+        AWeapon();
+
+        UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "SkeltalMesh")
+        class USkeletalMeshComponent* SkeletalMesh;
+
+        void Equip(class AMainPlayer* Player);
+
+        virtual void OnOverlapBegin(UPrimitiveComponent* OverlappedComponent, AActor* OtherActor, UPrimitiveComponent* OtherComp, int32 OtherBodyIndex, bool bFromSweep, const FHitResult& SweepResult) override;
+        
+        virtual void OnOverlapEnd(UPrimitiveComponent* OverlappedComponent, AActor* OtherActor, UPrimitiveComponent* OtherComp, int32 OtherBodyIndex) override;
+      ```
+      </details>
+
+- ## <span style = "color:yellow;">공격 구현</span>
+  - 공격 몽타주 제작
+  - 공격 키 설정
+
+> **<h3>Realization</h3>**   
