@@ -2,9 +2,17 @@
 - 포트폴리오 용도의 언리얼 프로젝트 
 
 > **<h3>Input Keys</h3>**
-|key|info|
-|:--:|:--:|
-|||
+
+|Mapping|key|info|
+|:--:|:--:|:--:|
+|Action|Space Bar|Jump|
+|Action|Shift|Sprinting| 
+|Action|LMB|Attack & Interaction| 
+|Axis|Mouse_X|Camera LookUp| 
+|Axis|Mouse_Y|Camera Turn|  
+|Axis|S & W|Forward Move| 
+|Axis|A & D|Right Move| 
+
 
 ## **07.27**
 > **<h3>Today Dev Story</h3>**
@@ -413,7 +421,43 @@
       </details>
 
 - ## <span style = "color:yellow;">공격 구현</span>
+  - <img src="Image/Attack_Montage.gif" height="300" title="Attack_Montage">
+  - <img src="Image/AttackMontage.png" height="300" title="AttackMontage">
   - 공격 몽타주 제작
-  - 공격 키 설정
+    - 캐시를 사용하기 때문에 AnimInstance에서 캐시 또한 연결 필수
+    - 콤보 구현은 아직이며 왼쪽 마우스를 클릭하면 LBMDown함수가 실행되며 Motage_Play,JumpToSection()을 통해 몽타주가 실행된다.
+      <details><summary>c++ 코드</summary> 
 
+      ```c++
+      void AMainPlayer::SetupPlayerInputComponent(UInputComponent* PlayerInputComponent)
+      {
+        ....
+        //attack
+        PlayerInputComponent->BindAction("LMB", EInputEvent::IE_Pressed, this, &AMainPlayer::LMBDown);
+        PlayerInputComponent->BindAction("LMB", EInputEvent::IE_Released, this, &AMainPlayer::LMBUp);
+      }
+
+      void AMainPlayer::LMBDown() {
+        UAnimInstance* AnimInstance = GetMesh()->GetAnimInstance();
+        if (AnimInstance) {
+          AnimInstance->Montage_Play(AttackMontage, 1.0f);
+          AnimInstance->Montage_JumpToSection(FName("Attack1"), AttackMontage);
+        }
+      }
+      void AMainPlayer::LMBUp() {
+
+      }
+      ```
+      </details>
+      <details><summary>h 코드</summary> 
+
+      ```c++
+      public:
+        UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "Anims")
+        class UAnimMontage* AttackMontage;
+
+        void LMBDown();
+        void LMBUp();
+      ```
+      </details>
 > **<h3>Realization</h3>**   
