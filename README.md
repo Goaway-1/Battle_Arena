@@ -8,6 +8,7 @@
 |Action|Space Bar|Jump|
 |Action|Shift|Sprinting| 
 |Action|LMB|Attack & Interaction| 
+|Action|Left Ctrl|Dodge| 
 |Axis|Mouse_X|Camera LookUp| 
 |Axis|Mouse_Y|Camera Turn|  
 |Axis|S & W|Forward Move| 
@@ -424,7 +425,7 @@
   - <img src="Image/Attack_Montage.gif" height="300" title="Attack_Montage">
   - <img src="Image/AttackMontage.png" height="300" title="AttackMontage">
   - 공격 몽타주 제작
-    - 캐시를 사용하기 때문에 AnimInstance에서 캐시 또한 연결 필수
+    - 캐시를 사용하기 때문에 AnimInstance에서 캐시 또한 연결 필수 (Montage에서 Attack 슬롯 제작)
     - 콤보 구현은 아직이며 왼쪽 마우스를 클릭하면 LBMDown함수가 실행되며 Motage_Play,JumpToSection()을 통해 몽타주가 실행된다.
       <details><summary>c++ 코드</summary> 
 
@@ -461,3 +462,203 @@
       ```
       </details>
 > **<h3>Realization</h3>**   
+
+## **07.30**
+> **<h3>Today Dev Story</h3>**
+- ## <span style = "color:yellow;">콤보 구현</span> (추후 델리게이트 추가 및 무기별 다른 콤보값을 부여)
+  - <img src="Image/Attack_Combo.gif" height="300" title="Attack_Combo"> <img src="Image/ComboAttack.png" height="300" title="ComboAttack">
+  - 몽타주에 공격의 종료(AttackEnd), 연속 공격의 체크(AttackCheck)하는 노티파이를 설정한다.
+    - 해당 노티파이를 AnimInstance의 이벤트 그래프에서 미리 만들어둔 c++ 함수와 연결한다.
+    - 마우스 왼쪽 버튼을 누르면 Attack함수와 연결 되는데 이때 공격중인 상태에서 클릭을 하게 되면 AttackInputCheck함수로 가서 몽타주 순서를 증가하고 다음 몽타주를 실행한다.
+    - Attack에서는 몽타주가 플레이되고 있느냐에 따라 다음 몽타주 실행 여부가 갈린다.
+    - GetAttackMontageSection(int32 Section)에서는 입력번호에 따라 FName이 반환된다.
+    - 초기 설정시 콤보의 개수를 정하는 __ComboMaxCount를 설정해줘야 하고, 반드시 공격 노티파이의 이름은 Attack으로 시작하며 시작번호는 0이다.__
+      <details><summary>c++ 코드</summary> 
+
+      ```c++
+      void AMainPlayer::LMBDown() {
+        bLMBDown = true;
+
+        if (!bAttacking) Attack();
+        else bIsAttackCheck = true;
+      }
+
+      void AMainPlayer::Attack() {
+        UAnimInstance* AnimInstance = GetMesh()->GetAnimInstance();
+        bAttacking = true;
+
+        if (AnimInstance && AttackMontage) {
+          if (!AnimInstance->Montage_IsPlaying(AttackMontage)) {	//공격중이 아닐때 (처음 공격)
+            ComboCnt = 0;
+            AnimInstance->Montage_Play(AttackMontage);
+          }
+          else {													//공격중일때
+            AnimInstance->Montage_Play(AttackMontage);
+            AnimInstance->Montage_JumpToSection(GetAttackMontageSection(ComboCnt),AttackMontage);
+          }
+        }
+      }
+
+      void AMainPlayer::EndAttack() {
+        bAttacking = false;
+      }
+
+      void AMainPlayer::AttackInputCheck() {
+        if (bIsAttackCheck) {
+          ComboCnt++;
+          if (ComboCnt >= ComboMaxCnt) ComboCnt = 0;
+          bIsAttackCheck = false;
+          Attack();
+        }
+      }
+
+      FName AMainPlayer::GetAttackMontageSection(int32 Section) {
+        return FName(*FString::Printf(TEXT("Attack%d"), Section));
+      }
+      ```
+      </details>
+      <details><summary>h 코드</summary> 
+
+      ```c++
+      public:
+        UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "Anims")
+        class UAnimMontage* AttackMontage;
+
+        bool bLMBDown;			//공격 키가 눌렸는지 여부
+        bool bAttacking;		//공격중인지 여부
+        bool bIsAttackCheck;	//또 공격할 건지에 대한 여부
+        int ComboCnt;			//현재 공격 횟수
+        
+        UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "Anims")
+        int ComboMaxCnt;		//최대 공격 횟수
+
+        void Attack();
+
+        UFUNCTION(BlueprintCallable)
+        void EndAttack();
+
+        UFUNCTION(BlueprintCallable)
+        void AttackInputCheck();
+
+        void LMBDown();
+        FORCEINLINE void LMBUp() { bLMBDown = false; }
+
+        FName GetAttackMontageSection(int32 Section);
+      ```
+      </details>
+
+- ## <span style = "color:yellow;">구르기(대쉬) 구현</span> 
+  - <img src="Image/Dodge.gif" height="300" title="Dodge"> <img src="Image/Dodge_Montage.png" height="300" title="Dodge_Montage">
+  - 새로운 몽타주 Main_Dodge_Montage를 제작하고 4가지 방향으로 구분하여 제작. (AnimInstance의 빈도가 높아져 h에서 구현하고 BeginPlay에서 Attach하였다.)
+  - 왼쪽 Ctrl키에 Dodge키를 바인딩 하고 이 상태일때는 데미지를 받지 않도록 한다. (추후)
+    - MoveForward()와 MoveRight()의 value값을 DirX/Y에 저장해 두고 구르기 애니메이션을 실행할때 사용
+    - 이 값을 AnimDodge()에서 값에 따라 몽타주에 있는 섹션으로 점프하여 애니메이션을 실행한다.
+  - Dodge()에서는 이동방향이 존재하고 bCanDodge가 참일때 가능하며, BrakingFrictionFactor의 값을 0.f로 바꾸어 마찰계수를 0으로 둔다.
+    - LaunchCharacter()와 GetLastMovementInputVector()를 사용하여 마지막으로 입력된 방향으로 한 Tick동안 시작속도를 DodgeSpeed로 전환한다. (구르기처럼 보인다.)
+    - GetWorldTimerManager().SetTimer를 사용하여 DodgeStopTime만큼 기다렸다가 StopMovementImmediately()를 통해 이동을 멈추고 다시 시작속도를 기본값(2.f)로 전환한다.
+    - 다시 SetTimer()를 사용하여 DodgeCoolDownTime이 지나면 다시 Dodge가 가능하도록 bCanDodge를 true로 바꿔준다.
+      <details><summary>c++ 코드</summary> 
+
+      ```c++
+      //Dodge
+      void AMainPlayer::SetupPlayerInputComponent(UInputComponent* PlayerInputComponent)
+      {   
+        ...
+        PlayerInputComponent->BindAction("Dodge", EInputEvent::IE_Pressed, this, &AMainPlayer::Dodge);
+      }
+      ...
+      void AMainPlayer::MoveForward(float Value) {
+        AddMovementInput(Camera->GetForwardVector(), Value);
+        DirX = Value;
+      }
+      void AMainPlayer::MoveRight(float Value) {
+        AddMovementInput(Camera->GetRightVector(), Value);
+        DirY = Value;
+      }
+      ...
+      void AMainPlayer::Dodge() {
+        if (bCanDodge && DirX !=0 || DirY != 0) {
+          GetCharacterMovement()->BrakingFrictionFactor = 0.f;	//뭐에 닿아도 안느려짐
+          AnimDodge();
+          LaunchCharacter(FVector(GetLastMovementInputVector().X , GetLastMovementInputVector().Y, 0.f) * DodgeSpeed, true, true);	//입력 방향대로
+          GetWorldTimerManager().SetTimer(DodgeHandle, this, &AMainPlayer::DodgeEnd, DodgeStopTime,false);
+          bCanDodge = false;
+        }
+      }
+      void AMainPlayer::DodgeEnd() {
+        GetCharacterMovement()->StopMovementImmediately();
+        GetWorldTimerManager().SetTimer(DodgeHandle, this, &AMainPlayer::ResetDodge, DodgeCoolDownTime, false);
+        GetCharacterMovement()->BrakingFrictionFactor = 2.f;
+      }
+      void AMainPlayer::ResetDodge() {
+        bCanDodge = true;
+      }
+      void AMainPlayer::AnimDodge() {
+        int Value = 0;
+
+        if (DirX > 0) Value = 1;
+        else if (DirX < 0)  Value = 4;
+        else if (DirY < 0)  Value = 2;
+        else if (DirY > 0)  Value = 3;
+
+        if(!AnimInstance) AnimInstance = GetMesh()->GetAnimInstance();
+        if (AnimInstance && DodgeMontage) {
+          AnimInstance->Montage_Play(DodgeMontage);
+          AnimInstance->Montage_JumpToSection(GetAttackMontageSection("Dodge", Value), DodgeMontage);
+        }
+      }
+      ```
+      </details>
+
+      <details><summary>h 코드</summary> 
+
+      ```c++
+     	/** Dodge */
+      public:
+        UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "Movement | Dodge")
+        float DodgeSpeed;
+
+        UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "Movement | Dodge")
+        float DodgeCoolDownTime;
+
+        UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "Movement | Dodge")
+        float DodgeStopTime;
+
+        UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "Movement | Dodge")
+        bool bCanDodge;
+
+        //방향
+        UPROPERTY(VisibleAnywhere, Category = "Movement | Dodge")
+        float DirX;
+
+        UPROPERTY(VisibleAnywhere ,Category = "Movement | Dodge")
+        float DirY;
+
+        UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "Anims")
+        UAnimMontage* DodgeMontage;
+
+        UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "Movement | Dodge")
+        FTimerHandle DodgeHandle;
+
+        UFUNCTION()
+        void Dodge();
+
+        UFUNCTION()
+        void DodgeEnd();
+
+        UFUNCTION()
+        void ResetDodge();
+
+        UFUNCTION()
+        void AnimDodge();
+      ```
+      </details>
+
+> **<h3>Realization</h3>** 
+
+      <details><summary>h 코드</summary> 
+
+      ```c++
+     	
+      ```
+      </details>

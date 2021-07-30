@@ -39,14 +39,30 @@ AMainPlayer::AMainPlayer()
 	MoveSpeed = 500.f;
 	SprintingSpeed = 750.f;
 
+	//Dodge
+	DodgeSpeed = 7000.f;
+	bCanDodge = true;
+	DodgeCoolDownTime = 1.f;
+	DodgeStopTime = 0.1f;
+	DirX = 0.f;
+	DirY = 0.f;
+
 #pragma endregion
 
+#pragma region ATTACK
+	bLMBDown = false;
+	bAttacking = false;
+	bIsAttackCheck = false;
+	ComboCnt = 0;
+	ComboMaxCnt = 0;
+#pragma endregion
 }
 
 void AMainPlayer::BeginPlay()
 {
 	Super::BeginPlay();
 
+	AnimInstance = GetMesh()->GetAnimInstance();
 	SetMovementStatus(EMovementStatus::EMS_Normal);
 }
 
@@ -55,6 +71,7 @@ void AMainPlayer::Tick(float DeltaTime)
 	Super::Tick(DeltaTime);
 
 	CheckIdle();
+
 }
 
 void AMainPlayer::SetupPlayerInputComponent(UInputComponent* PlayerInputComponent)
@@ -72,6 +89,9 @@ void AMainPlayer::SetupPlayerInputComponent(UInputComponent* PlayerInputComponen
 	//Jump
 	PlayerInputComponent->BindAction("Jump", EInputEvent::IE_Pressed, this, &AMainPlayer::Jump);
 	PlayerInputComponent->BindAction("Jump", EInputEvent::IE_Released, this, &ACharacter::StopJumping);
+
+	//Dodge
+	PlayerInputComponent->BindAction("Dodge", EInputEvent::IE_Pressed, this, &AMainPlayer::Dodge);
 
 	//sprinting
 	PlayerInputComponent->BindAction("Shift", EInputEvent::IE_Pressed, this, &AMainPlayer::Switch_Sprinting);
@@ -96,9 +116,11 @@ void AMainPlayer::Turn(float value) {
 #pragma region MOVEMENT
 void AMainPlayer::MoveForward(float Value) {
 	AddMovementInput(Camera->GetForwardVector(), Value);
+	DirX = Value;
 }
 void AMainPlayer::MoveRight(float Value) {
 	AddMovementInput(Camera->GetRightVector(), Value);
+	DirY = Value;
 }
 void AMainPlayer::Jump() {
 	Super::Jump();
@@ -129,21 +151,82 @@ void AMainPlayer::CheckIdle() {
 		bUseControllerRotationYaw = true;
 	}
 }
+
+void AMainPlayer::Dodge() {
+	if (bCanDodge && DirX !=0 || DirY != 0) {
+		GetCharacterMovement()->BrakingFrictionFactor = 0.f;	//뭐에 닿아도 안느려짐
+		AnimDodge();
+		LaunchCharacter(FVector(GetLastMovementInputVector().X , GetLastMovementInputVector().Y, 0.f) * DodgeSpeed, true, true);	//입력 방향대로
+		GetWorldTimerManager().SetTimer(DodgeHandle, this, &AMainPlayer::DodgeEnd, DodgeStopTime,false);
+		bCanDodge = false;
+	}
+}
+void AMainPlayer::DodgeEnd() {
+	GetCharacterMovement()->StopMovementImmediately();
+	GetWorldTimerManager().SetTimer(DodgeHandle, this, &AMainPlayer::ResetDodge, DodgeCoolDownTime, false);
+	GetCharacterMovement()->BrakingFrictionFactor = 2.f;
+}
+void AMainPlayer::ResetDodge() {
+	bCanDodge = true;
+}
+void AMainPlayer::AnimDodge() {
+	int Value = 0;
+
+	if (DirX > 0) Value = 1;
+	else if (DirX < 0)  Value = 4;
+	else if (DirY < 0)  Value = 2;
+	else if (DirY > 0)  Value = 3;
+
+	if(!AnimInstance) AnimInstance = GetMesh()->GetAnimInstance();
+	if (AnimInstance && DodgeMontage) {
+		AnimInstance->Montage_Play(DodgeMontage);
+		AnimInstance->Montage_JumpToSection(GetAttackMontageSection("Dodge", Value), DodgeMontage);
+	}
+}
 #pragma endregion
 
 #pragma region ATTACK
 
 void AMainPlayer::LMBDown() {
-	//공격 조건 달기
+	bLMBDown = true;
 
-	UAnimInstance* AnimInstance = GetMesh()->GetAnimInstance();
-	if (AnimInstance) {
-		AnimInstance->Montage_Play(AttackMontage, 1.0f);
-		AnimInstance->Montage_JumpToSection(FName("Attack1"), AttackMontage);
+	if (!bAttacking) Attack();
+	else bIsAttackCheck = true;
+}
+
+void AMainPlayer::Attack() {
+
+	bAttacking = true;
+	if (!AnimInstance) AnimInstance = GetMesh()->GetAnimInstance();
+	if (AnimInstance && AttackMontage) {
+		if (!AnimInstance->Montage_IsPlaying(AttackMontage)) {	//공격중이 아닐때 (처음 공격)
+			ComboCnt = 0;
+			AnimInstance->Montage_Play(AttackMontage);
+		}
+		else {													//공격중일때
+			AnimInstance->Montage_Play(AttackMontage);
+			AnimInstance->Montage_JumpToSection(GetAttackMontageSection("Attack", ComboCnt), AttackMontage);
+		}
 	}
 }
-void AMainPlayer::LMBUp() {
 
+void AMainPlayer::EndAttack() {
+	bAttacking = false;
+}
+
+void AMainPlayer::AttackInputCheck() {
+	if (bIsAttackCheck) {
+		ComboCnt++;
+		if (ComboCnt >= ComboMaxCnt) ComboCnt = 0;
+		bIsAttackCheck = false;
+		Attack();
+	}
+}
+
+FName AMainPlayer::GetAttackMontageSection(FString Type, int32 Section) {
+	if (Type == "Attack") return FName(*FString::Printf(TEXT("Attack%d"), Section));
+	else if (Type == "Dodge") return FName(*FString::Printf(TEXT("Dodge%d"), Section));
+	else return "Error";
 }
 
 #pragma endregion
