@@ -549,6 +549,8 @@
 
 - ## <span style = "color:yellow;">구르기(대쉬) 구현</span> 
   - <img src="Image/Dodge.gif" height="300" title="Dodge"> <img src="Image/Dodge_Montage.png" height="300" title="Dodge_Montage">
+  - 기존 AttackMontage에서 제작했던 섹션이름을 불러오는 GetAttackMontageSection()함수를 Dodge에서 혼합하여 사용하였다.
+    - 함수의 피연산자로는 FString과 int32을 받았고 FString에는 "Attack", "Dodge"와 같이 사용할 타입을 적어주면 된다.
   - 새로운 몽타주 Main_Dodge_Montage를 제작하고 4가지 방향으로 구분하여 제작. (AnimInstance의 빈도가 높아져 h에서 구현하고 BeginPlay에서 Attach하였다.)
   - 왼쪽 Ctrl키에 Dodge키를 바인딩 하고 이 상태일때는 데미지를 받지 않도록 한다. (추후)
     - MoveForward()와 MoveRight()의 value값을 DirX/Y에 저장해 두고 구르기 애니메이션을 실행할때 사용
@@ -606,6 +608,12 @@
           AnimInstance->Montage_Play(DodgeMontage);
           AnimInstance->Montage_JumpToSection(GetAttackMontageSection("Dodge", Value), DodgeMontage);
         }
+      }
+      ....
+      FName AMainPlayer::GetAttackMontageSection(FString Type, int32 Section) {
+        if (Type == "Attack") return FName(*FString::Printf(TEXT("Attack%d"), Section));
+        else if (Type == "Dodge") return FName(*FString::Printf(TEXT("Dodge%d"), Section));
+        else return "Error";
       }
       ```
       </details>
