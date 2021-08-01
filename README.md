@@ -14,7 +14,9 @@
 |Axis|S & W|Forward Move| 
 |Axis|A & D|Right Move| 
 
-
+> **추후 할일**
+  1. Infinity Blade : fire Lands 를 사용하여 꾸미기
+  2. 로마 관련 에셋
 ## **07.27**
 > **<h3>Today Dev Story</h3>**
 - ## <span style = "color:yellow;">기초적인 설정</span>
@@ -669,3 +671,137 @@
   - 결국 GetLastMovementInputVector를 사용하여 마지막으로 입력된 방향으로 구르기를 할 수 있게 제작하였다.
   - 과연 몽타주에 넣어서 관리하는 것이 옳은건지 의아하다.
   
+
+## **08.01**
+> **<h3>Today Dev Story</h3>**
+- ## <span style = "color:yellow;">공격 중 이동을 금지</span>
+  - 공격중일때는 움직이는 모든 상태를 정지하기 위해서 MoveForward(),MoveRight(),Jump(),Switch_Sprinting(),Dodge()에 아래 라인을 선언.
+    ```c++
+    if (bAttacking) return; //추가
+    ```
+
+- ## <span style = "color:yellow;">AI의 BehaviorTree</span>
+  - <img src="Image/AI_BehaviorTree.gif" height="300" title="AI_BehaviorTree"> <img src="Image/BehaviorTree_1.png" height="300" title="BehaviorTree_1">
+  - 적의 AI를 먼저 구현하기 위해서 Character클래스를 상속받는 Enemy, AIController클래스를 상속받는 EnemyController, BTTaskMode를 상속받는 BTTask_FindPatrolPos를 제작 (반드시 BTTask가 있어야 찾을 수 있다.)
+    - BlackBoard에는 HomePosKey(현재 위치), PatrolPosKey(이동할 위치)가 Vector 타입으로 지정.
+  - 지면에 Nav Mesh Bounds Volume을 생성하여 Enemy가 갈 수 있는 범위를 지정 (P를 사용하여 세부적으로 관찰 O)
+    - Enemy 클래스에 EnemyController를 어태치해주고, EnemyController에 적의 두뇌가 될 BehaviorTree와 트리에 제공할 정보를 관리하는 BlackBoard를 제작.
+    - FName으로 HomePosKey와 PatrolPosKey를 저장하여, 추후 SetValueAs~()함수 사용시 이름으로 변수를 찾아 데이터를 저장. BlackBoard와 BehaviorTree도 Controller에 저장
+    - BeginPlay에서 UseBlackboard를 사용하여 ~ 하고, Blackboard->SetValueAsVector(HomePosKey,로케이션)함수를 사용하여 위에서 선언해둔 키를 사용하여 저장.
+  - BTTaskMode는 BehaviorTree에서 실행하게 될 노드이며, __중요한 점은 "Build.cs"에 NavigationSystem, AIModule, GamePlayTasks를 추가해야만 함.__ 
+    - NavigationSystem.h, BehaviorTree/BlackboardComponent.h 추가하여 사용.
+    - EBTNodeResult::Type ExecuteTask(UBehaviorTreeComponent& OwnerComp, uint8* NodeMemory) 오버라이드하여 사용한다.
+    - 반환값은 항상 성공의 여부이며, "EBTNodeResult::Succeeded, EBTNodeResult::Failed" 등이 있다.
+    - 생성자 함수에서 NodeName을 통해 트리에서 사용자에게 보여줄 이름을 지정한다.
+    - ExecuteTask()에서는 Enemy의 Pawn을 불러와 NavigationSystemV1을 생성하고, 이 네비게이션시스템의 GetRandomPointNavigableRadius()함수를 사용하여 지정한 범위 내의 Loaction을 사용하여 키값에 저장한다.
+
+      <details><summary>c++ 코드</summary> 
+        
+      ```c++
+      //BTTask_FindPatrolPos.cpp
+      #include "BTTask_FindPatrolPos.h"
+      #include "EnemyController.h"
+      #include "NavigationSystem.h"
+      #include "BehaviorTree/BlackboardComponent.h"
+
+      UBTTask_FindPatrolPos::UBTTask_FindPatrolPos()
+      {
+        NodeName = TEXT("FindPatrolPos");   //트리에서 사용할 이름
+      }
+
+      EBTNodeResult::Type UBTTask_FindPatrolPos::ExecuteTask(UBehaviorTreeComponent& OwnerComp, uint8* NodeMemory)
+      {
+        EBTNodeResult::Type Result = Super::ExecuteTask(OwnerComp, NodeMemory);
+
+        auto ControllingPawn = OwnerComp.GetAIOwner()->GetPawn();   //NavigationSystem을 사용하기 위해서 Enemy의 Pawn을 불러온다.
+        if (nullptr == ControllingPawn)
+          return EBTNodeResult::Failed; //항상 성공 여부를 반환해야 한다.
+
+        UNavigationSystemV1* NavSystem = UNavigationSystemV1::GetNavigationSystem(ControllingPawn->GetWorld()); //NavigationSystem을 불러옴
+        if (nullptr == NavSystem)
+          return EBTNodeResult::Failed;
+
+        //EnemyController의 BeginPlay에서 저장한 HomePosKey의 값을 가져와 추후 계산식에서 사용
+        FVector Origin = OwnerComp.GetBlackboardComponent()->GetValueAsVector(AEnemyController::HomePosKey);    
+      
+        FNavLocation NextPatrol;
+
+        //500 범위 내에서 갈 수 있는 곳의 좌표를 NetPatrol에 저장하고 SetValueAsVector로 키값에 데이터를 저장한다.
+        if (NavSystem->GetRandomPointInNavigableRadius(FVector::ZeroVector, 500.0f, NextPatrol))
+        {
+            OwnerComp.GetBlackboardComponent()->SetValueAsVector(AEnemyController::PatrolPosKey, NextPatrol.Location);
+            return EBTNodeResult::Succeeded;
+        }
+        return EBTNodeResult::Failed;
+      }
+      ```
+
+      ```c++
+      //EnemyController.cpp
+      
+      const FName AEnemyController::HomePosKey(TEXT("HomePosKey"));
+      const FName AEnemyController::PatrolPosKey(TEXT("PatrolPosKey"));
+      ...
+      void AEnemyController::BeginPlay() {
+        Super::BeginPlay();
+
+        if (UseBlackboard(BData, Blackboard))
+        {
+          Blackboard->SetValueAsVector(HomePosKey, GetPawn()->GetActorLocation());	//Location을 HomePosKey에..
+          UE_LOG(LogTemp, Warning, TEXT("%s"), *GetPawn()->GetActorLocation().ToString());
+          if (!RunBehaviorTree(BTree)) return;    //수정
+        }
+      }
+      ```
+
+      </details>
+
+      <details><summary>h 코드</summary> 
+
+      ```c++
+      //BTTask_FindPatrolPos
+      UBTTask_FindPatrolPos(); 
+
+      virtual  EBTNodeResult::Type ExecuteTask(UBehaviorTreeComponent& OwnerComp, uint8* NodeMemory) override;
+      ```
+
+      ```c++
+      //EnemyController
+      public:
+        //BlackBoard의 키값을 이름으로 저장 -> 다른 코드에서 참조하기 편리하다.
+        static const FName HomePosKey;
+        static const FName PatrolPosKey;	
+
+        UPROPERTY(EditAnyWhere, BlueprintReadOnly, Category = "AI")
+        class UBehaviorTree* BTree;
+
+        UPROPERTY(EditAnyWhere, BlueprintReadOnly, Category = "AI")
+        class UBlackboardData* BData;	
+      ```
+
+      </details>
+  
+
+> **<h3>Realization</h3>** 
+- ## <span style = "color:yellow;">Behavior Tree</span>
+  - Task -> BlackBoard -> BehaviroTree -> Controller -> Pawn의 순서
+  1. Behaviro Tree
+    - 계층형 구조이며 노드로 구성되며 왼쪽 노드가 오른쪽 노드보다 우선순위가 높다.
+    - 종료시 EBTNodeResult를 사용하여 성공여부를 반환해야한다.
+
+  2. Black Board
+    - 필수는 아니지만 하나의 AI에도 데이터를 적용할 수 있고, 다양한 AI에게도 적용이 가능하다. 
+    - 키를 추가하여 변수를 설정하며, C++에서는 키의 이름으로 호출하여 데이터를 저장한다.
+      ```c++
+      Blackboard->SetValueAsVector(키의 이름, 값);	
+      ```
+    
+
+
+    
+      <details><summary>c++ 코드</summary> 
+
+      ```c++
+      
+      ```
+      </details>

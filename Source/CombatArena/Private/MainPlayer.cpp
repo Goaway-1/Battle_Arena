@@ -115,14 +115,20 @@ void AMainPlayer::Turn(float value) {
 
 #pragma region MOVEMENT
 void AMainPlayer::MoveForward(float Value) {
+	if (bAttacking) return;
+
 	AddMovementInput(Camera->GetForwardVector(), Value);
 	DirX = Value;
 }
 void AMainPlayer::MoveRight(float Value) {
+	if (bAttacking) return;
+
 	AddMovementInput(Camera->GetRightVector(), Value);
 	DirY = Value;
 }
 void AMainPlayer::Jump() {
+	if (bAttacking) return;
+	
 	Super::Jump();
 }
 void  AMainPlayer::SetMovementStatus(EMovementStatus Status) {
@@ -133,6 +139,7 @@ void  AMainPlayer::SetMovementStatus(EMovementStatus Status) {
 	else GetCharacterMovement()->MaxWalkSpeed = MoveSpeed;
 }
 void AMainPlayer::Switch_Sprinting() {
+	if (bAttacking) return;
 	if (MovementStatus != EMovementStatus::EMS_Sprinting) SetMovementStatus(EMovementStatus::EMS_Sprinting);
 	else {
 		if(GetVelocity().Size() == 0) SetMovementStatus(EMovementStatus::EMS_Normal);
@@ -153,8 +160,9 @@ void AMainPlayer::CheckIdle() {
 }
 
 void AMainPlayer::Dodge() {
+	if (bAttacking) return;
 	if (bCanDodge && DirX !=0 || DirY != 0) {
-		GetCharacterMovement()->BrakingFrictionFactor = 0.f;	//뭐에 닿아도 안느려짐
+		GetCharacterMovement()->BrakingFrictionFactor = 0.f;	//마찰계수
 		AnimDodge();
 		LaunchCharacter(FVector(GetLastMovementInputVector().X , GetLastMovementInputVector().Y, 0.f) * DodgeSpeed, true, true);	//입력 방향대로
 		GetWorldTimerManager().SetTimer(DodgeHandle, this, &AMainPlayer::DodgeEnd, DodgeStopTime,false);
@@ -162,7 +170,7 @@ void AMainPlayer::Dodge() {
 	}
 }
 void AMainPlayer::DodgeEnd() {
-	GetCharacterMovement()->StopMovementImmediately();
+	GetCharacterMovement()->StopMovementImmediately();	//움직임을 정지시킨다.
 	GetWorldTimerManager().SetTimer(DodgeHandle, this, &AMainPlayer::ResetDodge, DodgeCoolDownTime, false);
 	GetCharacterMovement()->BrakingFrictionFactor = 2.f;
 }
