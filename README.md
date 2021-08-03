@@ -795,13 +795,314 @@
       ```c++
       Blackboard->SetValueAsVector(키의 이름, 값);	
       ```
-    
 
+## **08.02**
+> **<h3>Today Dev Story</h3>**
+- ## <span style = "color:yellow;">AI의 BehaviorTree_2 (센서)</span>
+  - <img src="Image/AI_BehaviorTree_2.gif" height="300" title="AI_BehaviorTree_2"> <img src="Image/BehaviorTree_2.png" height="300" title="BehaviorTree_2">  
+  - AI의 시야에 있다면 MoveTo를 사용하기 위해서 AI Percoption System을 사용. ex) 소리, 히트, 시야 등... 
+  - Object타입으로 TargetActor 키를 생성후 해당 키는 Player를 어태치
+  - 왼쪽 시퀀스에 Blackboard를 추가하여 활성화 조건은 TargetActor값의 유무로 판단. (관찰자 중단을 Both로 지정하여 값이 생성되면 바로 전환)
+    - 미리 만들어진 기능들을 활성화 하여 사용하며 __Controller.cpp에 UAIPerceptionComponent 컴포넌트와 #include "Perception/AIPerceptionComponent.h"추가__
+    - AIPerception의 senses Config에 센서를 활성화 가능 (여러개가 가능하며 필자는 Sight만 사용)
+    - 각도등 조정 가능하며 Detection by affiliation을 모두 활성화 하며 모두 감지하도록 전환
+		- __Character에 UAIPerceptionStimuliSourceComponent와 #include "Perception/AIPerceptionStimuliSourceComponent.h" 추가__ (Auto Register as Source 활성화 후 Register as Source for Sense에 사용할 센스 추가)
+    - ### AIPerception Delegate 수정완료
+    - EnemyController는 아직 델리게이트의 개념에 대해서 확실히 배우지 못했기에 Blueprint개념에서 마무리 
+  - DefaultGame.ini 아래 문장 추가하여 필요한 Pawn만이 탐지되도록 한정 (찾으려는 액터를 수동으로 찾기 위함. 해당 액터에 AiPerceptionStimulisource 추가해야함.)
+		
+    ```txt
+    [/Script/AIModule.AISence_Sight]
+		bAutoRegisterAllPawnsAsSources=false
+    ```
+  - Controller에 만들어 둔 Perception에 AddEvent/Add OnTagetPerceptionUpdated 델리게이트를 추가하여 이전과 같이 SetValueAsObject를 사용하여 키값에 값 대입.
+  - 게임플레이 디버거에서 자세한 내용 확인가능하며 추후 인바이러먼트 쿼리 시스템을 사용하여 AI를 더욱 스마트하게 관리할 것.
+      
+    <details><summary>c++ 코드</summary> 
 
+    ```c++
+    //MainPlayer.cpp
+    #include "Perception/AIPerceptionStimuliSourceComponent.h"
+    AMainPlayer::AMainPlayer()
+    {
+      AIPerceptionSource = CreateDefaultSubobject<UAIPerceptionStimuliSourceComponent>(TEXT("AIPerceptionSource"));
+      ...
+    }
+    ```
+    </details>     
     
+    <details><summary>h 코드</summary> 
+    
+    ```c++
+    public:
+      UPROPERTY(EditAnywhere,BlueprintReadOnly, Category = "AIPERCEPTION")
+	    class UAIPerceptionStimuliSourceComponent* AIPerceptionSource; 
+    ```
+    </details>
+    
+- ## <span style = "color:yellow;">AI의 애니메이션</span>
+  - AnimInstance클래스를 상속받는 EnemyAnimInstance를 생성하여 애니메이션에 반환할 Speed 선언하여 NativeUpdateAnimation()함수에서 업데이트
+  - 이동을 구현할 BlendSpace인 Enemy_Movement_Blend를 생성하고 MainPlayer와 동일하게 Direction과 Speed 2차원으로 구성 (지금은 Speed만 사용)
+      
+    <details><summary>c++ 코드</summary> 
+
+    ```c++
+    #include "EnemyAnim.h"
+    #include "Enemy.h"
+
+    void UEnemyAnim::NativeInitializeAnimation() {
+      if(!Enemy) Enemy = Cast<AEnemy>(TryGetPawnOwner());
+    }
+
+    void UEnemyAnim::NativeUpdateAnimation(float DeltaSeconds) {
+      if (!Enemy) Enemy = Cast<AEnemy>(TryGetPawnOwner());
+
+      if (Enemy) {
+        FVector CurrentSpeed = Enemy->GetVelocity();
+        Speed = FVector(CurrentSpeed.X, CurrentSpeed.Y, 0).Size();	//현재 속도
+      }
+    }
+    ```
+    </details>      
+    <details><summary>h 코드</summary> 
+
+    ```c++
+    public:
+      virtual void NativeInitializeAnimation() override;
+      virtual void NativeUpdateAnimation(float DeltaSeconds) override;
+
+      UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Movement")
+      class AEnemy* Enemy;
+
+      UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Movement")
+      float Speed;
+    ```
+    </details>   
+  
+- ## <span style = "color:yellow;">AI의 공격_1</span>
+  - <img src="Image/AI_IsInAttack.gif" height="300" title="AI_IsInAttack"> 
+  - BTDecorator를 상속받는 BTDecorator_IsInAttackRange생성. CalculateRawConditionValue 함수를 상속받아 조건 달성여부 파악 
+    - BTDecorator는 BTTask와는 다르게 조건식을 나타내며, 반환값은 기존 bool을 사용하여서 반환한다.
+    - 이전에 플레이어를 찾기 위해 사용했던 TargetActor에 따라 반환되는 값이 결정되며 이에 따라 공격을 진행할 것인지 이동을 진행할 것인지 나뉘게 된다.
+    - TagetActor의 오브젝트를 가져와 GetDistanceTo() 함수를 사용하여 거리가 200.f이하로 떨어진다면 True를 반환해 공격으로 전환한다. (_2에서 구현)
+    - 이는 각 Sequence에 조건에 어태치 해준다.
+
       <details><summary>c++ 코드</summary> 
 
       ```c++
-      
+      #include "BTDecorator_IsInAttackRange.h"
+      #include "EnemyController.h"
+      #include "MainPlayer.h"
+      #include "BehaviorTree/BlackboardComponent.h"
+
+      UBTDecorator_IsInAttackRange::UBTDecorator_IsInAttackRange()
+      {
+        NodeName = TEXT("CanAttack");	
+      }
+
+      bool UBTDecorator_IsInAttackRange::CalculateRawConditionValue(UBehaviorTreeComponent& OwnerComp, uint8* NodeMemory) const
+      {
+        bool bResult = Super::CalculateRawConditionValue(OwnerComp, NodeMemory);
+
+        auto ControllingPawn = OwnerComp.GetAIOwner()->GetPawn();
+        if (nullptr == ControllingPawn)	return false;
+
+        auto Target = Cast<AMainPlayer>(OwnerComp.GetBlackboardComponent()->GetValueAsObject(AEnemyController::TargetActor));
+        if (nullptr == Target) return false;
+
+        bResult = (Target->GetDistanceTo(ControllingPawn) <= 200.0f);
+        return bResult;
+      }
+      ```
+      </details>      
+      <details><summary>h 코드</summary> 
+
+      ```c++
+      protected:
+        virtual bool CalculateRawConditionValue(UBehaviorTreeComponent& OwnerComp, uint8* NodeMemory) const override ;
+      ```
+      </details>     
+
+- ## <span style = "color:yellow;">잡다한 것</span>
+- MainPlayerAnim의 기존 업데이트를 함수를 만들고 Blueprint에서 Update함수와 연결했는데, 그냥 Blueprint를 사용하지 않고 virtual void NativeUpdateAnimation(float DetlaSecons); 로 교체
+- 자동 회전을 위해 Enemy의 c++에 borientRorattioatnsd 설정하고 늦은 이동을 위해 300.f로 속도 지정
+  <details><summary>c++ 코드</summary> 
+
+  ```c++
+  AEnemy::AEnemy()
+  {
+    PrimaryActorTick.bCanEverTick = true;
+    GetCharacterMovement()->MaxWalkSpeed = 300.f;
+    GetCharacterMovement()->bOrientRotationToMovement = true;
+    GetCharacterMovement()->RotationRate = FRotator(0.f, 540.f, 0.f);
+  }
+  ```
+  </details>    
+
+> **<h3>Realization</h3>** 
+- BTDecorator를 상속받는 BTDecorator_IsInAttackRange생성. CalculateRawConditionValue 함수를 상속받아 조건 달성여부 파악 
+  - BTDecorator는 BTTask와는 다르게 조건식을 나타내며, 반환값은 기존 bool을 사용하여서 반환한다.
+
+## **08.03**
+> **<h3>Today Dev Story</h3>**
+- ## <span style = "color:yellow;">OnTargetPerceptionUpdated 델리게이트 처리</span>
+  - [이전구성](#AIPerception-Delegate-수정완료)
+  - 이전에 EnemyController에서 구현했던 OnTargetPerceptionUpdated의 델리게이트를 c++에서 구현. (AIPerception 또한)
+ 
+    <details><summary>c++ 코드</summary> 
+
+    ```c++
+    void AEnemyController::BeginPlay() {
+    	Super::BeginPlay();
+
+      //기존 존재하는 OnTargetPerceptionUpdated 델리게이트를 Controller가 아닌 C++에서 구현
+      AIPerception->OnTargetPerceptionUpdated.AddDynamic(this, &AEnemyController::Sense);
+      ...
+    }
+    ...
+    void AEnemyController::Sense(AActor* Actor, FAIStimulus Stimulus) {
+      if (Stimulus.WasSuccessfullySensed()) Blackboard->SetValueAsObject(TargetActor, Actor);
+      else Blackboard->ClearValue(TargetActor);
+    }
+    ```
+    </details>      
+    <details><summary>h 코드</summary> 
+
+    ```c++
+    #include "Perception/AIPerceptionTypes.h"
+    UPROPERTY(EditAnyWhere, BlueprintReadWrite, Category= "AI")
+	  class UAIPerceptionComponent* AIPerception;
+
+	  UFUNCTION()
+	  void Sense(AActor* Actor, FAIStimulus Stimulus);
+    ```
+    </details>
+
+- ## <span style = "color:yellow;">AI의 공격_2</span>
+  - <img src="Image/EnemyAttack.gif" height="300" title="EnemyAttack"> 
+  - Task를 하나 만들어서 사용하며 이름은 BTTask_Attack으로 제작. 공격을 판단하기 위해 IsAttacking 변수와 TickTask를 활성화 하기 위해 bNotifyTick = true로 전환.
+    - 공격 모션을 취하기 위해서 Attack_Montage생성 및 Enemy에 추가 및 AnimInstance에 캐싱작업 진행
+    - BTTask_Attack의 ExceuteTask되면 Enemy의 Attack()함수를 호출. 이때 반환값은 Failed, InProgress로만 한정하여 Succeeded는 TickTask에서 진행. (몽타주가 끝나야 되서)
+      - Enemy에서 DECLARE_MULTICAST_DELEGATE(FOnAttackEndDelegate) 델리게이트를 OnAttackEnd로 선언	
+      - OnAttackMontageEnded(), Attack()함수 선언. OnAttackMontageEnded()가 종료되면 Task_Attack의 OnAttackEnd와 연결.
+      - 몽타주의 종료를 뜻하는 델리게이트(기본제공) OnMontageEnded를 OnAttackMontageEnded와 연결.
+
+      <details><summary>c++ 코드</summary> 
+
+      ```c++
+      //BTTask_Attack.cpp
+      UBTTask_Attack::UBTTask_Attack() {
+        NodeName = "Attack";
+
+        bNotifyTick = true;	//tick 사용
+        IsAttacking = false;
+      }
+
+      EBTNodeResult::Type UBTTask_Attack::ExecuteTask(UBehaviorTreeComponent& OwnerComp, uint8* NodeMemory) {
+
+        Super::ExecuteTask(OwnerComp, NodeMemory);
+
+        auto Enemy = Cast<AEnemy>(OwnerComp.GetAIOwner()->GetPawn());
+        if (!Enemy)	return EBTNodeResult::Failed;
+
+        Enemy->Attack();
+        IsAttacking = true;
+        Enemy->OnAttackEnd.AddLambda([this]()-> void
+        {
+          IsAttacking = false;
+        });
+
+        return EBTNodeResult::InProgress;
+      }
+
+      void UBTTask_Attack::TickTask(UBehaviorTreeComponent& OwnerComp, uint8* NodeMemory, float DeltaSeconds){
+        Super::TickTask(OwnerComp, NodeMemory, DeltaSeconds);
+
+        //여기서 테스크 종료
+        if (!IsAttacking) {
+          FinishLatentTask(OwnerComp, EBTNodeResult::Succeeded);
+        }
+      }
+      ```
+
+      ```c++
+      //Enemy.cpp
+      void AEnemy::PostInitializeComponents()
+      {
+        Super::PostInitializeComponents();
+        if(!Anim) Anim = Cast<UEnemyAnim>(GetMesh()->GetAnimInstance());
+
+        //행동이 끝나면 다른 함수에게 알려준다. ->OnMontageEnded는 델리게이트 
+        Anim->OnMontageEnded.AddDynamic(this, &AEnemy::OnAttackMontageEnded);
+      }
+      ...
+      void AEnemy::Attack() {
+        if(!Anim) Anim = Cast<UEnemyAnim>(GetMesh()->GetAnimInstance());
+
+        if (AttackMontage && Anim) {
+          Anim->Montage_Play(AttackMontage);
+          Anim->Montage_JumpToSection("Attack1", AttackMontage);
+        }
+      }
+
+      void AEnemy::OnAttackMontageEnded(UAnimMontage* Montage, bool bInterrupted)
+      {
+        if (IsAttacking) return;
+        IsAttacking = false;
+        OnAttackEnd.Broadcast();
+      }
+      ```
+      </details>  
+          
+      <details><summary>h 코드</summary> 
+
+      ```c++
+      //BTTask_Attack.h
+      public:
+        UBTTask_Attack();
+
+        virtual EBTNodeResult::Type ExecuteTask(UBehaviorTreeComponent& OwnerComp, uint8* NodeMemory) override;
+
+      protected:
+        virtual void TickTask(UBehaviorTreeComponent& OwnerComp, uint8* NodeMemory,float DeltaSeconds) override;
+
+        bool IsAttacking = false;
+      ```
+
+      ```c++
+      //Enemy.h
+        UPROPERTY()
+        class UEnemyAnim* Anim;
+
+      #pragma region ATTACK
+        bool IsAttacking = false;
+
+        FOnAttackEndDelegate OnAttackEnd;
+
+        UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "Anims")
+        class UAnimMontage* AttackMontage;
+
+        UFUNCTION()
+        void OnAttackMontageEnded(UAnimMontage* Montage, bool bInterrupted);
+
+        UFUNCTION()
+        void Attack();
       ```
       </details>
+
+
+> **<h3>Realization</h3>** 
+
+    <details><summary>c++ 코드</summary> 
+
+    ```c++
+    
+    ```
+    </details>  
+        
+    <details><summary>h 코드</summary> 
+
+    ```c++
+    
+    ```
+    </details>

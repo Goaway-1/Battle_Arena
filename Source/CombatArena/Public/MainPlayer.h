@@ -28,6 +28,11 @@ public:
 	virtual void Tick(float DeltaTime) override;
 
 	virtual void SetupPlayerInputComponent(class UInputComponent* PlayerInputComponent) override;
+#pragma region AIPERCEPTION
+	UPROPERTY(EditAnywhere,BlueprintReadOnly, Category = "AIPERCEPTION")
+	class UAIPerceptionStimuliSourceComponent* AIPerceptionSource;
+#pragma endregion
+
 
 #pragma region CAMERA
 

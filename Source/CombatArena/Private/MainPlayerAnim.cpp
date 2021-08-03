@@ -5,7 +5,10 @@ void UMainPlayerAnim::NativeInitializeAnimation() {
 	if (!MainPlayer) MainPlayer = Cast<AMainPlayer>(TryGetPawnOwner());
 } 
 
-void UMainPlayerAnim::UpdateAnimationProperties() {
+
+void UMainPlayerAnim::NativeUpdateAnimation(float DeltaSeconds){
+	Super::NativeUpdateAnimation(DeltaSeconds);
+
 	if (!MainPlayer) MainPlayer = Cast<AMainPlayer>(TryGetPawnOwner());
 
 	if (MainPlayer) {

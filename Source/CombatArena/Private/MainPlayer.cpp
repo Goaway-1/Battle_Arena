@@ -1,9 +1,14 @@
 #include "MainPlayer.h"
 #include "Kismet/KismetMathLibrary.h"
+#include "Perception/AIPerceptionStimuliSourceComponent.h"
 
 AMainPlayer::AMainPlayer()
 {
  	PrimaryActorTick.bCanEverTick = true;
+#pragma region AIPERCETION
+	AIPerceptionSource = CreateDefaultSubobject<UAIPerceptionStimuliSourceComponent>(TEXT("AIPerceptionSource"));
+#pragma endregion
+
 
 #pragma region CAMERA
 	SpringArm = CreateDefaultSubobject<USpringArmComponent>(TEXT("SringArm"));

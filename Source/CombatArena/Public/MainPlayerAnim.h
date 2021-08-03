@@ -12,8 +12,7 @@ class COMBATARENA_API UMainPlayerAnim : public UAnimInstance
 public:
 	virtual void NativeInitializeAnimation() override;	//생성시 동작
 
-	UFUNCTION(BlueprintCallable, Category = AnimationProperties)
-	void UpdateAnimationProperties();					//틱마다 동작
+	virtual void NativeUpdateAnimation(float DeltaSeconds) override;
 
 	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category="Movement")
 	class AMainPlayer* MainPlayer;
