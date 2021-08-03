@@ -1090,19 +1090,95 @@
       ```
       </details>
 
-
-> **<h3>Realization</h3>** 
-
+- ## <span style = "color:yellow;">무기에 따른 애니메이션</span>
+  - <img src="Image/Weapon_Attack.gif" height="300" title="Weapon_Attack"> <img src="Image/Main_Blend2.png" height="300" title="Main_Blend2"> 
+  - 무기장착여부에 따른 애니메이션(공격, 이동)을 구현하기 위해서 상태 UENUM(EWeaponStatus)을 추가. 
+  - 공격 몽타주와 이동 블랜드 스페이스 추가하고, AnimInstance에서 상태에 따른 블랜드 스페이스 실행.
+    - 기본은 Normal, 장착시 Weapon으로 구성되며 추후 다양해 질때 수정.
+    - MainPlayer에 기존 몽타주인 AttackMontage외에 WeaponMontage 추가
+    - Attack에서 무기 여부의 상태에 따라서 몽타주 전환 (추후 콤보횟수 관련 컨트롤. 현재 3개로 제한)
+  - 무기 장착시 Weapon에서 SetWeaponStatus함수 호출하여 상태를 전환.
+    
     <details><summary>c++ 코드</summary> 
+    
+    ```c++
+    //MainPlaye.cpp
+    void AMainPlayer::Attack() {
+      UAnimMontage* PlayMontage = nullptr;
+
+      if (GetWeaponStatus() == EWeaponStatus::EWS_Normal) PlayMontage = AttackMontage;
+      else if (GetWeaponStatus() == EWeaponStatus::EWS_Weapon) PlayMontage = WeaponAttackMontage;
+
+      bAttacking = true;
+      if (!AnimInstance) AnimInstance = GetMesh()->GetAnimInstance();
+      if (AnimInstance && PlayMontage) {
+        if (!AnimInstance->Montage_IsPlaying(PlayMontage)) {	//공격중이 아닐때 (처음 공격)
+          ComboCnt = 0;
+          AnimInstance->Montage_Play(PlayMontage);
+        }
+        else {													//공격중일때
+          AnimInstance->Montage_Play(PlayMontage);
+          AnimInstance->Montage_JumpToSection(GetAttackMontageSection("Attack", ComboCnt), PlayMontage);
+        }
+      }
+    }
+    ```
 
     ```c++
-    
+    //Weapon.cpp
+    void AWeapon::Equip(class AMainPlayer* Player) {
+      if (Player) {
+        const USkeletalMeshSocket* RightHandSocket = Player->GetMesh()->GetSocketByName("RightWeapon");
+        if (RightHandSocket) {
+          RightHandSocket->AttachActor(this, Player->GetMesh());
+          Player->SetWeaponStatus(EWeaponStatus::EWS_Weapon);
+        }
+      }
+    }
     ```
     </details>  
         
     <details><summary>h 코드</summary> 
 
     ```c++
-    
+    //MainPlayer.h
+    UENUM(BlueprintType)
+    enum class EWeaponStatus : uint8 {
+      EWS_Normal		UMETA(DisplayName = "Normal"),
+      EWS_Weapon		UMETA(DisplayName = "Weapon"),
+
+      EWS_Default		UMETA(DisplayName = "Default")
+    };
+    ...
+    UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "Anims")
+    class UAnimMontage* WeaponAttackMontage;
+    ...
+    UPROPERTY(VisibleAnywhere, BlueprintReadWrite, Category = "CurrenWeaponStatus")
+    EWeaponStatus WeaponStatus;
+
+    FORCEINLINE void SetWeaponStatus(EWeaponStatus Status) { WeaponStatus = Status; }
+
+    UFUNCTION()
+    FORCEINLINE EWeaponStatus GetWeaponStatus() { return WeaponStatus; }
     ```
     </details>
+
+> **<h3>Realization</h3>** 
+- 델리게이트 사용 방법 및 개념
+  - 기존 포인터는 런타임에 지정이 가능하고 가리키는 메모미 주소를 바꿀 수 있어 유용하지만 표준타입 외의 함수를 지정할 때 안전하지 않다.
+  - 그렇기에 델리데이트를 사용하면 안전하다. 어떤 함수가 할당되어 있는지 알지 못하고 호출시 알기 때문에 유연.
+  ```c++
+  DECLARE_DELEGATE (FStandDelegate)   //선언
+  FStandDelegate MyDelegate;          //멤버 추가
+
+  //함수 할당
+  MyDelegate.BindUObject(this, 함수); 
+  MyDelegate.AddDynamic(this, 함수);
+
+  //실행
+  MyDelegate.ExecuteIfBound();  
+  MyDelegate.Broadcast();
+
+  //해제
+  MyDelegate.Unbind();
+  ```

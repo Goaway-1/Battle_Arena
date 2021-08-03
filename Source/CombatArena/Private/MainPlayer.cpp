@@ -55,6 +55,8 @@ AMainPlayer::AMainPlayer()
 #pragma endregion
 
 #pragma region ATTACK
+	SetWeaponStatus(EWeaponStatus::EWS_Normal);
+
 	bLMBDown = false;
 	bAttacking = false;
 	bIsAttackCheck = false;
@@ -208,17 +210,21 @@ void AMainPlayer::LMBDown() {
 }
 
 void AMainPlayer::Attack() {
+	UAnimMontage* PlayMontage = nullptr;
+
+	if (GetWeaponStatus() == EWeaponStatus::EWS_Normal) PlayMontage = AttackMontage;
+	else if (GetWeaponStatus() == EWeaponStatus::EWS_Weapon) PlayMontage = WeaponAttackMontage;
 
 	bAttacking = true;
 	if (!AnimInstance) AnimInstance = GetMesh()->GetAnimInstance();
-	if (AnimInstance && AttackMontage) {
-		if (!AnimInstance->Montage_IsPlaying(AttackMontage)) {	//공격중이 아닐때 (처음 공격)
+	if (AnimInstance && PlayMontage) {
+		if (!AnimInstance->Montage_IsPlaying(PlayMontage)) {	//공격중이 아닐때 (처음 공격)
 			ComboCnt = 0;
-			AnimInstance->Montage_Play(AttackMontage);
+			AnimInstance->Montage_Play(PlayMontage);
 		}
 		else {													//공격중일때
-			AnimInstance->Montage_Play(AttackMontage);
-			AnimInstance->Montage_JumpToSection(GetAttackMontageSection("Attack", ComboCnt), AttackMontage);
+			AnimInstance->Montage_Play(PlayMontage);
+			AnimInstance->Montage_JumpToSection(GetAttackMontageSection("Attack", ComboCnt), PlayMontage);
 		}
 	}
 }

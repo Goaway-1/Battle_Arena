@@ -9,8 +9,16 @@ enum class EMovementStatus : uint8 {
 	EMS_Normal		UMETA(DisplayName = "Normal"),
 	EMS_Walk		UMETA(DisplayName = "Walk"),
 	EMS_Sprinting	UMETA(DisplayName = "Sprinting"),
-	
+
 	EMS_Default		UMETA(DisplayName = "Default")
+}; 
+
+UENUM(BlueprintType)
+enum class EWeaponStatus : uint8 {
+	EWS_Normal		UMETA(DisplayName = "Normal"),
+	EWS_Weapon		UMETA(DisplayName = "Weapon"),
+
+	EWS_Default		UMETA(DisplayName = "Default")
 };
 
 UCLASS()
@@ -129,6 +137,9 @@ public:
 	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "Anims")
 	class UAnimMontage* AttackMontage;
 
+	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "Anims")
+	class UAnimMontage* WeaponAttackMontage;
+
 	bool bLMBDown;			//공격 키가 눌렸는지 여부
 	bool bAttacking;		//공격중인지 여부
 	bool bIsAttackCheck;	//또 공격할 건지에 대한 여부
@@ -136,6 +147,14 @@ public:
 	
 	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "Anims")
 	int ComboMaxCnt;		//최대 공격 횟수
+
+	UPROPERTY(VisibleAnywhere, BlueprintReadWrite, Category = "CurrenWeaponStatus")
+	EWeaponStatus WeaponStatus;
+
+	FORCEINLINE void SetWeaponStatus(EWeaponStatus Status) { WeaponStatus = Status; }
+
+	UFUNCTION()
+	FORCEINLINE EWeaponStatus GetWeaponStatus() { return WeaponStatus; }
 
 	void Attack();
 

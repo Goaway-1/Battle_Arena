@@ -24,6 +24,9 @@ void AWeapon::OnOverlapEnd(UPrimitiveComponent* OverlappedComponent, AActor* Oth
 void AWeapon::Equip(class AMainPlayer* Player) {
 	if (Player) {
 		const USkeletalMeshSocket* RightHandSocket = Player->GetMesh()->GetSocketByName("RightWeapon");
-		if (RightHandSocket) RightHandSocket->AttachActor(this, Player->GetMesh());
+		if (RightHandSocket) {
+			RightHandSocket->AttachActor(this, Player->GetMesh());
+			Player->SetWeaponStatus(EWeaponStatus::EWS_Weapon);
+		}
 	}
 }
