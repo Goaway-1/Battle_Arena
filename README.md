@@ -7,8 +7,10 @@
 |:--:|:--:|:--:|
 |Action|Space Bar|Jump|
 |Action|Shift|Sprinting| 
-|Action|LMB|Attack & Interaction| 
+|Action|LMB|Attack| 
 |Action|Left Ctrl|Dodge| 
+|Action|E|Equip Item| 
+|Action|Q|Drop Item| 
 |Axis|Mouse_X|Camera LookUp| 
 |Axis|Mouse_Y|Camera Turn|  
 |Axis|S & W|Forward Move| 
@@ -1167,18 +1169,178 @@
 - 델리게이트 사용 방법 및 개념
   - 기존 포인터는 런타임에 지정이 가능하고 가리키는 메모미 주소를 바꿀 수 있어 유용하지만 표준타입 외의 함수를 지정할 때 안전하지 않다.
   - 그렇기에 델리데이트를 사용하면 안전하다. 어떤 함수가 할당되어 있는지 알지 못하고 호출시 알기 때문에 유연.
-  ```c++
-  DECLARE_DELEGATE (FStandDelegate)   //선언
-  FStandDelegate MyDelegate;          //멤버 추가
+    ```c++
+    DECLARE_DELEGATE (FStandDelegate)   //선언
+    FStandDelegate MyDelegate;          //멤버 추가
 
-  //함수 할당
-  MyDelegate.BindUObject(this, 함수); 
-  MyDelegate.AddDynamic(this, 함수);
+    //함수 할당
+    MyDelegate.BindUObject(this, 함수); 
+    MyDelegate.AddDynamic(this, 함수);
 
-  //실행
-  MyDelegate.ExecuteIfBound();  
-  MyDelegate.Broadcast();
+    //실행
+    MyDelegate.ExecuteIfBound();  
+    MyDelegate.Broadcast();
 
-  //해제
-  MyDelegate.Unbind();
-  ```
+    //해제
+    MyDelegate.Unbind();
+    ```
+
+## **08.04**
+> **<h3>Today Dev Story</h3>**
+- ## <span style = "color:yellow;">무기의 장착과 해제</span>
+  - <img src="Image/Weapon_Equip_Drop.gif" height="300" title="Weapon_Equip_Drop"> 
+  - 이전에는 가까워지면 바로 장착을 했지만, 이번에는 Equip 키를 E로 지정하고 Drop 키를 Q로 지정하여 무기를 줍고 버리는 과정을 진행.
+    - Weapon과 Overlap 된다면 ActiveOverlappingItem을 Weapon으로 설정. 이때만 줍기가 가능.
+    - Weapon클래스의 Eqiup()은 기존과 동일하며 MainPlayer의 CurrentWeapon에 Weapon을 어태치하고, 본인 스스로의 Overlap을 종료. (다른 물체와 상호작용을 위함)
+    - AMainPlayer의 ItemEquip()는 기존과 동일하지만 현재 무기가 있다면 ItemDrop()을 통해 삭제하고 장착
+    - AMainPlayer의 ItemDrop()은 CurrentWeapon을 DetachFromActor()를 사용하여 사용자로 부터 제거하고, Destory()를 통해 아에 삭제 후 모든 값 기본값으로
+      <details><summary>c++ 코드</summary> 
+
+      ```c++
+      //MainPlayer.cpp
+      void AMainPlayer::ItemEquip() {
+        if (ActiveOverlappingItem != nullptr) {
+          AWeapon* CurWeapon = Cast<AWeapon>(ActiveOverlappingItem);
+
+          if (nullptr != CurrentWeapon) ItemDrop();
+          
+          CurWeapon->Equip(this);
+          SetActiveOverlappingItem(nullptr);
+        }
+      }
+      void AMainPlayer::ItemDrop() {
+        if (GetWeaponStatus() == EWeaponStatus::EWS_Weapon) {
+          CurrentWeapon->DetachFromActor(FDetachmentTransformRules::KeepWorldTransform);
+          CurrentWeapon->Destroy();
+          CurrentWeapon = nullptr;
+          SetWeaponStatus(EWeaponStatus::EWS_Normal);
+        }
+      }
+      ```
+
+      ```c++
+      //Weapon.cpp
+      void AWeapon::OnOverlapBegin(UPrimitiveComponent* OverlappedComponent, AActor* OtherActor, UPrimitiveComponent* OtherComp, int32 OtherBodyIndex, bool bFromSweep, const FHitResult& SweepResult) {
+        Super::OnOverlapBegin(OverlappedComponent, OtherActor, OtherComp, OtherBodyIndex, bFromSweep, SweepResult);
+        if (OtherActor) {
+          AMainPlayer* Player = Cast<AMainPlayer>(OtherActor);
+          if(Player) Player->SetActiveOverlappingItem(this);
+        }
+      }
+
+      void AWeapon::Equip(class AMainPlayer* Player) {
+        if (Player) {
+          const USkeletalMeshSocket* RightHandSocket = Player->GetMesh()->GetSocketByName("RightWeapon");
+          if (RightHandSocket) {
+            RightHandSocket->AttachActor(this, Player->GetMesh());
+            Player->SetWeaponStatus(EWeaponStatus::EWS_Weapon);
+            Player->SetCurrentWeapon(this);
+            
+            CollisionVolume->OnComponentBeginOverlap.Clear();	//설정된 콜리전 해제
+          }
+        }
+      }
+      ```
+      </details>
+
+      <details><summary>h 코드</summary> 
+
+      ```c++
+      //MainPlayer.h
+
+      //현재 겹친 아이템
+      UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category ="Acitve")
+      class AItem* ActiveOverlappingItem;
+
+      FORCEINLINE void SetActiveOverlappingItem(AItem* item) { ActiveOverlappingItem = item; }
+
+      //현재 장착중인 무기
+      UPROPERTY(VisibleAnywhere, Category = "Weapon")
+      class AWeapon* CurrentWeapon;
+
+      FORCEINLINE void SetCurrentWeapon(AWeapon* Weapon) { CurrentWeapon = Weapon; }
+      FORCEINLINE AWeapon* GetCurrentWeapon() { return CurrentWeapon; }
+
+      UFUNCTION()
+      void ItemEquip();
+
+      UFUNCTION()
+      void ItemDrop();
+      ```
+      </details>
+      
+- ## <span style = "color:yellow;">Enemy 공격의 방향</span>
+  - <img src="Image/Enemy_Attack_Rotation.gif" height="300" title="Enemy_Attack_Rotation"> 
+  - Enemy가 Player를 공격할 때 회전하지 않는 오류 수정.
+    - BTTask_LookAtActor라는 새로운 Task 타입을 생성하여 Enemy를 회전. Tree에서는 Simple Parallel을 통해 동시에 진행.
+    - 방향 벡터를 알기 위해서 "Player의 Location - Enemy의 Location" 진행해 주고. FRotationMatrix::MakeFromX()함수를 사용하여 목표의 위치가 얼마나 회전되어야 하는지 탐색.
+    - FMath::RInterpTo()를 사용하여 초마다 Enemy의 Rotation을 수정.
+
+      <details><summary>c++ 코드</summary> 
+
+      ```c++
+      #include "BTTask_LookAtActor.h"
+      #include "Enemy.h"
+      #include "AIController.h"
+      #include "EnemyController.h"
+      #include "MainPlayer.h"
+      #include "BehaviorTree/BlackboardComponent.h"
+
+      UBTTask_LookAtActor::UBTTask_LookAtActor() {
+        NodeName = TEXT("LookAtAtor");
+      }
+
+      EBTNodeResult::Type UBTTask_LookAtActor::ExecuteTask(UBehaviorTreeComponent& OwnerComp, uint8* NodeMemory) {
+        Super::ExecuteTask(OwnerComp, NodeMemory);
+
+        AEnemy* Enemy = Cast<AEnemy>(OwnerComp.GetAIOwner()->GetPawn());
+        if (!Enemy) return EBTNodeResult::Failed;
+
+        AMainPlayer* Target = Cast<AMainPlayer>(OwnerComp.GetBlackboardComponent()->GetValueAsObject(AEnemyController::TargetActor));
+        if (!Target) return EBTNodeResult::Failed;
+
+        FVector LookVec = Target->GetActorLocation() - Enemy->GetActorLocation();
+        LookVec.Z = 0;
+        FRotator LookRot = FRotationMatrix::MakeFromX(LookVec).Rotator();
+        Enemy->SetActorRotation(FMath::RInterpTo(Enemy->GetActorRotation(), LookRot, GetWorld()->GetDeltaSeconds(), 2.0f));
+        return EBTNodeResult::Succeeded;
+      }
+      ```
+      </details>
+
+- ## <span style = "color:yellow;">잡다한 것</span>
+  - 카메라가 적을 통과하지 못하기에 카메라에 대한 적의 Collsion을 Ignore로 변경.
+    <details><summary>c++ 코드</summary> 
+
+    ```c++
+    //Enemy.cpp
+    void AEnemy::BeginPlay()
+    {
+      Super::BeginPlay();
+
+      GetMesh()->SetCollisionResponseToChannel(ECollisionChannel::ECC_Camera, ECollisionResponse::ECR_Ignore);
+      GetCapsuleComponent()->SetCollisionResponseToChannel(ECollisionChannel::ECC_Camera, ECollisionResponse::ECR_Ignore);
+      ...
+    }
+    ```
+    </details>
+
+> **<h3>Realization</h3>** 
+- FRotationMatrix는 회전 행렬과 관련
+  - FRotationMatrix::MakeFromX() -> X축으로 얼마나의 회전이 필요한지.
+- UKismetMathLibrary::FindLookAtRotation()을 통해서 자동으로 Rotation 반환
+- FMath::RInterpTo()을 사용해서 방향 전환
+
+    <details><summary>c++ 코드</summary> 
+
+    ```c++
+    
+    ```
+    </details>
+
+    <details><summary>h 코드</summary> 
+
+    ```c++
+    
+    ```
+    </details>

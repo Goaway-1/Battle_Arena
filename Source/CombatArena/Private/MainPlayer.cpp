@@ -1,6 +1,7 @@
 #include "MainPlayer.h"
 #include "Kismet/KismetMathLibrary.h"
 #include "Perception/AIPerceptionStimuliSourceComponent.h"
+#include "Weapon.h"
 
 AMainPlayer::AMainPlayer()
 {
@@ -63,6 +64,12 @@ AMainPlayer::AMainPlayer()
 	ComboCnt = 0;
 	ComboMaxCnt = 0;
 #pragma endregion
+
+#pragma region ACTIVE
+	ActiveOverlappingItem = nullptr;
+	CurrentWeapon = nullptr;
+#pragma endregion
+
 }
 
 void AMainPlayer::BeginPlay()
@@ -107,6 +114,10 @@ void AMainPlayer::SetupPlayerInputComponent(UInputComponent* PlayerInputComponen
 	//attack
 	PlayerInputComponent->BindAction("LMB", EInputEvent::IE_Pressed, this, &AMainPlayer::LMBDown);
 	PlayerInputComponent->BindAction("LMB", EInputEvent::IE_Released, this, &AMainPlayer::LMBUp);
+
+	//Active
+	PlayerInputComponent->BindAction("Equip", EInputEvent::IE_Pressed, this, &AMainPlayer::ItemEquip);
+	PlayerInputComponent->BindAction("Drop", EInputEvent::IE_Pressed, this, &AMainPlayer::ItemDrop);
 
 }
 
@@ -248,4 +259,25 @@ FName AMainPlayer::GetAttackMontageSection(FString Type, int32 Section) {
 	else return "Error";
 }
 
+#pragma endregion
+
+#pragma region ACTIVE
+void AMainPlayer::ItemEquip() {
+	if (ActiveOverlappingItem != nullptr) {
+		AWeapon* CurWeapon = Cast<AWeapon>(ActiveOverlappingItem);
+
+		if (nullptr != CurrentWeapon) ItemDrop();
+		
+		CurWeapon->Equip(this);
+		SetActiveOverlappingItem(nullptr);
+	}
+}
+void AMainPlayer::ItemDrop() {
+	if (GetWeaponStatus() == EWeaponStatus::EWS_Weapon) {
+		CurrentWeapon->DetachFromActor(FDetachmentTransformRules::KeepWorldTransform);
+		CurrentWeapon->Destroy();
+		CurrentWeapon = nullptr;
+		SetWeaponStatus(EWeaponStatus::EWS_Normal);
+	}
+}
 #pragma endregion

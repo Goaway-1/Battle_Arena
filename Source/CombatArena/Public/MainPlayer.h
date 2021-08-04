@@ -148,7 +148,7 @@ public:
 	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "Anims")
 	int ComboMaxCnt;		//최대 공격 횟수
 
-	UPROPERTY(VisibleAnywhere, BlueprintReadWrite, Category = "CurrenWeaponStatus")
+	UPROPERTY(VisibleAnywhere, BlueprintReadWrite, Category = "Weapon")
 	EWeaponStatus WeaponStatus;
 
 	FORCEINLINE void SetWeaponStatus(EWeaponStatus Status) { WeaponStatus = Status; }
@@ -170,5 +170,28 @@ public:
 	FName GetAttackMontageSection(FString Type,int32 Section);
 
 #pragma endregion
+
+#pragma region ACTIVE
+
+	//현재 겹친 아이템
+	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category ="Weapon")
+	class AItem* ActiveOverlappingItem;
+
+	FORCEINLINE void SetActiveOverlappingItem(AItem* item) { ActiveOverlappingItem = item; }
+
+	//현재 장착중인 무기
+	UPROPERTY(VisibleAnywhere, Category = "Weapon")
+	class AWeapon* CurrentWeapon;
+
+	FORCEINLINE void SetCurrentWeapon(AWeapon* Weapon) { CurrentWeapon = Weapon; }
+	FORCEINLINE AWeapon* GetCurrentWeapon() { return CurrentWeapon; }
+
+	UFUNCTION()
+	void ItemEquip();
+
+	UFUNCTION()
+	void ItemDrop();
+#pragma endregion
+
 
 };
