@@ -19,6 +19,7 @@
 > **추후 할일**
   1. Infinity Blade : fire Lands 를 사용하여 꾸미기
   2. 로마 관련 에셋
+  3. 카오스 디스트럭션 툴을 사용하여 무너짐 표현
 ## **07.27**
 > **<h3>Today Dev Story</h3>**
 - ## <span style = "color:yellow;">기초적인 설정</span>
@@ -1331,16 +1332,170 @@
 - UKismetMathLibrary::FindLookAtRotation()을 통해서 자동으로 Rotation 반환
 - FMath::RInterpTo()을 사용해서 방향 전환
 
-    <details><summary>c++ 코드</summary> 
+## **08.05**
+> **<h3>Today Dev Story</h3>**
+- ## <span style = "color:yellow;">무기의 콜리전</span>
+  - <img src="Image/Weapon_Collision.gif" height="300" title="Weapon_Collision"> <img src="Image/Weapon_Collision_Notify.png" height="300" title="Weapon_Collision_Notify"> 
+  - Weapon클래스에 BoxComponent를 추가하고 OnComponentBeginOverlap 또한 추가. __SetCollisionEnabled()함수 사용__
+    - BeginPlay에서 Overlap 설정 및 AttackBox의 콜리전을 끈상태로 구현.
+    - De/ActiveOnCollision()함수를 통해서 BoxComponent의 콜리전을 끄고 키는 기능 구현. (MainPlayer가 호출하여 사용.)
+    - Weapon_Attack_Montage에 Collision노티파이 추가.
+    - MainPlayer의 De/ActiveWeaponCollision()에서 Weapon의 ActiveOnCollision()을 호출하며 Weapon_Attack_Montage에 Collision노티파이와 연관하여 사용.
+  - 현재는 맞았다는 로그만 띄우고 데미지는 추후 구현
+  - <img src="Image/Actor_Collision.png" height="300" title="Actor_Collision"> 
+  - 각 Actor 마다 전용 콜리전 채널을 생성하기 위해서 프로젝트세팅 > 콜리전에서 Object채널과 Preset 채널을 추가하여 구현.
+    - Player, Enemy, Player_Weapon 3가지를 구현했으며 트레이스 채널 번호는 DefaultEngine.ini에 존재
+    - Player_Weapon은 오직 Enemy와 Overlap. 나머지는 Block or Ignore으로 적용.
+    - 각 생성자 함수에서 Player와 Enemy는 GetCapsuleComponent()에 대해, Weapon은 AttackBox에 대해 SetCollisionProfileName() 으로 콜리전 설정
+      
+      <details><summary>c++ 코드</summary> 
 
+      ```c++
+      //Weapon.cpp
+      void AWeapon::BeginPlay() {
+        Super::BeginPlay();
+
+        AttackBox->OnComponentBeginOverlap.AddDynamic(this, &AWeapon::OnAttackBoxOverlapBegin);
+        AttackBox->OnComponentEndOverlap.AddDynamic(this, &AWeapon::OnAttackBoxOverlapEnd);
+        AttackBox->SetCollisionEnabled(ECollisionEnabled::NoCollision);	//원래 꺼있는 상탱
+      }
+      ...
+      void AWeapon::OnAttackBoxOverlapBegin(UPrimitiveComponent* OverlappedComponent, AActor* OtherActor, UPrimitiveComponent* OtherComp, int32 OtherBodyIndex, bool bFromSweep, const FHitResult& SweepResult) {	
+        if (OtherActor) {
+          AEnemy* Enemy = Cast<AEnemy>(OtherActor);
+          
+          if(Enemy) UE_LOG(LogTemp, Warning, TEXT("Hit!"));
+        }
+      }
+
+      void AWeapon::OnAttackBoxOverlapEnd(UPrimitiveComponent* OverlappedComponent, AActor* OtherActor, UPrimitiveComponent* OtherComp, int32 OtherBodyIndex) {
+
+      }
+
+      void AWeapon::ActiveOnCollision() {
+        AttackBox->SetCollisionEnabled(ECollisionEnabled::QueryOnly);
+        UE_LOG(LogTemp, Warning, TEXT("CollisionON"));
+      }
+      void AWeapon::DeActiveOnCollision() {
+        AttackBox->SetCollisionEnabled(ECollisionEnabled::NoCollision);
+        UE_LOG(LogTemp, Warning, TEXT("CollisionOff"));
+      }
+      ```
+
+      ```c++
+      //MainPlayer.cpp
+      void AMainPlayer::ActiveWeaponCollision() {
+        GetCurrentWeapon()->ActiveOnCollision();
+      }
+      void AMainPlayer::DeActiveWeaponCollision() {
+        GetCurrentWeapon()->DeActiveOnCollision();
+      }
+      ```
+      </details>
+
+      <details><summary>h 코드</summary> 
+
+      ```c++
+      //weapon.h
+      //공격 피직스담당
+      UPROPERTY(VisibleAnywhere, BlueprintReadOnly,Category = "Attack")
+      class UBoxComponent* AttackBox;
+
+      UFUNCTION()
+      void OnAttackBoxOverlapBegin(UPrimitiveComponent* OverlappedComponent, AActor* OtherActor, UPrimitiveComponent* OtherComp, int32 OtherBodyIndex, bool bFromSweep, const FHitResult& SweepResult);
+
+      UFUNCTION()
+      void OnAttackBoxOverlapEnd(UPrimitiveComponent* OverlappedComponent, AActor* OtherActor, UPrimitiveComponent* OtherComp, int32 OtherBodyIndex);
+
+
+      UFUNCTION()	//WeaponBox의 콜리전을 키고 끄는 기능 (Main에게 호출 되어 사용)
+      void ActiveOnCollision();
+
+      UFUNCTION()	//WeaponBox의 콜리전을 키고 끄는 기능 (Main에게 호출 되어 사용)
+      void DeActiveOnCollision();
+      ```
+
+      ```c++
+      //MainPlayer.h
+      UFUNCTION(BlueprintCallable)	//Weapon의 콜리전을 키고 끄는 기능
+      void ActiveWeaponCollision();
+
+      UFUNCTION(BlueprintCallable)	//Weapon의 콜리전을 키고 끄는 기능
+      void DeActiveWeaponCollision();
+      ```
+      </details>
+
+- ## <span style = "color:yellow;">플레이어가 적에게 주는 데미지</span>
+  - <img src="Image/ApplyDamge_Enemy.gif" height="300" title="ApplyDamge_Enemy"> 
+  - API로 제공되는 UGameplayStatics::ApplyDamge() 메서드와 Actor에 제공되는 TakeDamage() 메서드를 이용하여 구성.
+    - 데미지를 받는 Enemy 클래스에 TakeDamage()를 오버라이드하여 구성하고, Weapon 클래스에서 데미지를 주기 때문에 OnAttackBoxOverlapBegin()에서 ApplyDamage()함수 실행.
+    - 이때 데미지를 주는 클래스, 데미지 값, 현재 컨트롤러, 데미지 타입등이 피연산자로 필요. (데미지 타입은 BP에서 )
+    - 아직 다 구현하지 않아서 데미지를 입는다면 로그로 적의 현재 체력 표시.
+      <details><summary>c++ 코드</summary> 
+
+      ```c++
+      //Weapon.cpp
+      void AWeapon::OnAttackBoxOverlapBegin(UPrimitiveComponent* OverlappedComponent, AActor* OtherActor, UPrimitiveComponent* OtherComp, int32 OtherBodyIndex, bool bFromSweep, const FHitResult& SweepResult) {	
+        if (OtherActor) {
+          AEnemy* Enemy = Cast<AEnemy>(OtherActor);
+
+          //적의 TakeDamage와 연결되어 Damage만큼 체력 감소
+          if (Enemy) UGameplayStatics::ApplyDamage(Enemy, Damage, WeaponInstigator, this, DamageTypeClass);
+        }
+      }
+      ```
+
+      ```c++
+      //Enemy.cpp
+      float AEnemy::TakeDamage(float DamageAmount, struct FDamageEvent const& DamageEvent, class AController* EventInstigator, AActor* DamageCauser) {
+        CurrentHealth -= DamageAmount;
+        if(CurrentHealth < 0.f) {
+          CurrentHealth = 0;
+          Die();
+        }
+        UE_LOG(LogTemp, Warning, TEXT("Health : %f"), CurrentHealth);
+
+        return DamageAmount;
+      }
+      ```
+      </details>
+
+      <details><summary>h 코드</summary> 
+
+      ```c++
+      //Weapon.h
+      UPROPERTY(EditAnyWhere, BlueprintReadWrite, Category = "Combat")
+      float Damage;
+
+      UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Combat")
+      TSubclassOf<UDamageType> DamageTypeClass;   //데미지 타입을 지정. (3가지 존재)
+
+      UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Combat")
+      AController* WeaponInstigator;		//메인의 컨트롤러를 가져와 피연산값에서 사용.
+
+      FORCEINLINE void SetInstigator(AController* Inst) { WeaponInstigator = Inst; }
+      ```
+      ```c++
+      //Enemy.h
+      UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Health")
+      float MaxHealth;
+
+      UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Health")
+      float CurrentHealth;
+
+      virtual float TakeDamage(float DamageAmount,struct FDamageEvent const& DamageEvent,class AController* EventInstigator,AActor* DamageCauser) override;
+      ```
+      </details>
+
+- ## <span style = "color:yellow;">잡다한 것</span>
+  1. Weapon의 Equip에서 기존 사용되었던 줍기에 사용 되는 콜리전을 끈다.
+  - 이전에는 Overlaping을 파괴하는 방식. 
     ```c++
-    
+    void AWeapon::Equip(class AMainPlayer* Player) {
+      CollisionVolume->SetCollisionEnabled(ECollisionEnabled::NoCollision); //줍기에 사용 되는 콜리전을 끈다.
+    }
     ```
-    </details>
 
-    <details><summary>h 코드</summary> 
-
-    ```c++
-    
-    ```
-    </details>
+> **<h3>Realization</h3>** 
+- TakeDamage와 ApplyDamage 메서드를 사용하여 데미지를 입히는 것이 가능하며 직접 구현해도 어렵지 않다.
+  - ApplyDamage메서드 사용시 데미지 타입이라는 피연산자 값이 존재하는데 이 타입을 지정함에 따라 지속적인 체력 감소등을 구현가능.

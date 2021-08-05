@@ -66,6 +66,8 @@ AMainPlayer::AMainPlayer()
 #pragma endregion
 
 #pragma region ACTIVE
+	GetCapsuleComponent()->SetCollisionProfileName(TEXT("Player"));	//콜리전 설정
+
 	ActiveOverlappingItem = nullptr;
 	CurrentWeapon = nullptr;
 #pragma endregion
@@ -259,6 +261,12 @@ FName AMainPlayer::GetAttackMontageSection(FString Type, int32 Section) {
 	else return "Error";
 }
 
+void AMainPlayer::ActiveWeaponCollision() {
+	GetCurrentWeapon()->ActiveOnCollision();
+}
+void AMainPlayer::DeActiveWeaponCollision() {
+	GetCurrentWeapon()->DeActiveOnCollision();
+}
 #pragma endregion
 
 #pragma region ACTIVE

@@ -9,6 +9,12 @@ AEnemy::AEnemy()
 	GetCharacterMovement()->MaxWalkSpeed = 300.f;
 	GetCharacterMovement()->bOrientRotationToMovement = true;
 	GetCharacterMovement()->RotationRate = FRotator(0.f, 480.f, 0.f);
+
+	GetCapsuleComponent()->SetCollisionProfileName(TEXT("Enemy"));	//콜리전 설정
+
+	//Health
+	MaxHealth = 100.f;
+	CurrentHealth = MaxHealth;
 }
 
 void AEnemy::BeginPlay()
@@ -57,3 +63,20 @@ void AEnemy::OnAttackMontageEnded(UAnimMontage* Montage, bool bInterrupted)
 	OnAttackEnd.Broadcast();
 }
 
+float AEnemy::TakeDamage(float DamageAmount, struct FDamageEvent const& DamageEvent, class AController* EventInstigator, AActor* DamageCauser) {
+	
+	CurrentHealth -= DamageAmount;
+	if(CurrentHealth < 0.f) {
+		CurrentHealth = 0;
+		Die();
+	}
+	UE_LOG(LogTemp, Warning, TEXT("Health : %f"), CurrentHealth);
+
+	return DamageAmount;
+}
+
+void AEnemy::Die() {
+	
+
+	GetCapsuleComponent()->SetCollisionEnabled(ECollisionEnabled::NoCollision);
+}

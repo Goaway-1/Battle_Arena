@@ -42,5 +42,17 @@ public:
 	void Attack();
 #pragma endregion
 
+#pragma region HP
+	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Health")
+	float MaxHealth;
+
+	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Health")
+	float CurrentHealth;
+
+	UFUNCTION()
+	void Die();
+
+	virtual float TakeDamage(float DamageAmount,struct FDamageEvent const& DamageEvent,class AController* EventInstigator,AActor* DamageCauser) override;
+#pragma endregion
 
 };

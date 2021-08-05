@@ -169,6 +169,11 @@ public:
 
 	FName GetAttackMontageSection(FString Type,int32 Section);
 
+	UFUNCTION(BlueprintCallable)	//Weapon의 콜리전을 키고 끄는 기능
+	void ActiveWeaponCollision();
+
+	UFUNCTION(BlueprintCallable)	//Weapon의 콜리전을 키고 끄는 기능
+	void DeActiveWeaponCollision();
 #pragma endregion
 
 #pragma region ACTIVE
@@ -180,7 +185,7 @@ public:
 	FORCEINLINE void SetActiveOverlappingItem(AItem* item) { ActiveOverlappingItem = item; }
 
 	//현재 장착중인 무기
-	UPROPERTY(VisibleAnywhere, Category = "Weapon")
+	UPROPERTY(VisibleAnywhere, BlueprintReadOnly,Category = "Weapon")
 	class AWeapon* CurrentWeapon;
 
 	FORCEINLINE void SetCurrentWeapon(AWeapon* Weapon) { CurrentWeapon = Weapon; }
