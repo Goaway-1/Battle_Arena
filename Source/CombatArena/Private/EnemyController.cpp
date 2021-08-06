@@ -1,5 +1,6 @@
 #include "EnemyController.h"
 #include "BehaviorTree/BlackboardComponent.h"
+#include "BehaviorTree/BehaviorTreeComponent.h"
 #include "Perception/AIPerceptionComponent.h"
 
 const FName AEnemyController::HomePosKey(TEXT("HomePosKey"));
@@ -27,4 +28,9 @@ void AEnemyController::BeginPlay() {
 void AEnemyController::Sense(AActor* Actor, FAIStimulus Stimulus) {
     if (Stimulus.WasSuccessfullySensed()) Blackboard->SetValueAsObject(TargetActor, Actor);
 	else Blackboard->ClearValue(TargetActor);
+}
+
+void AEnemyController::StopBeTree() {
+    UBehaviorTreeComponent* BTComp = Cast<UBehaviorTreeComponent>(BrainComponent);
+    BTComp->StopTree();
 }

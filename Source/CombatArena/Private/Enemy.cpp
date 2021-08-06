@@ -64,19 +64,32 @@ void AEnemy::OnAttackMontageEnded(UAnimMontage* Montage, bool bInterrupted)
 }
 
 float AEnemy::TakeDamage(float DamageAmount, struct FDamageEvent const& DamageEvent, class AController* EventInstigator, AActor* DamageCauser) {
-	
+	if (CurrentHealth <= 0) return 0.f;
+
+
 	CurrentHealth -= DamageAmount;
-	if(CurrentHealth < 0.f) {
+	if(CurrentHealth <= 0) {
 		CurrentHealth = 0;
-		Die();
+		DeathEnd();
 	}
 	UE_LOG(LogTemp, Warning, TEXT("Health : %f"), CurrentHealth);
 
 	return DamageAmount;
 }
 
-void AEnemy::Die() {
-	
+void AEnemy::DeathEnd() {
+	if (!Anim) Anim = Cast<UEnemyAnim>(GetMesh()->GetAnimInstance());
+	if (AttackMontage && Anim) {
+		Anim->Montage_Play(AttackMontage);
+		Anim->Montage_JumpToSection("Death", AttackMontage);
+	}
 
+	Cast<AEnemyController>(GetController())->StopBeTree();	//비헤이비어 트리 정지 (내가 만듬)
 	GetCapsuleComponent()->SetCollisionEnabled(ECollisionEnabled::NoCollision);
+}
+
+void AEnemy::DestroyEnemy() {
+	GetMesh()->bPauseAnims = true;
+	GetMesh()->bNoSkeletonUpdate = true;
+	Destroy();
 }

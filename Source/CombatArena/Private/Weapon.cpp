@@ -58,11 +58,14 @@ void AWeapon::Equip(class AMainPlayer* Player) {
 void AWeapon::OnAttackBoxOverlapBegin(UPrimitiveComponent* OverlappedComponent, AActor* OtherActor, UPrimitiveComponent* OtherComp, int32 OtherBodyIndex, bool bFromSweep, const FHitResult& SweepResult) {	
 	if (OtherActor) {
 		AEnemy* Enemy = Cast<AEnemy>(OtherActor);
-		
-		if (Enemy) {
-			UE_LOG(LogTemp, Warning, TEXT("Hit!"));
+		if (!Enemy) return;
 
-			UGameplayStatics::ApplyDamage(Enemy, Damage, WeaponInstigator, this, DamageTypeClass);
+		UGameplayStatics::ApplyDamage(Enemy, Damage, WeaponInstigator, this, DamageTypeClass);
+
+		const USkeletalMeshSocket* HitSocket = SkeletalMesh->GetSocketByName("ParticleSpawn");
+		if (HitSocket && Enemy->GetHitParticle()) {
+			FVector ParticleSpawnLocation = HitSocket->GetSocketLocation(SkeletalMesh);
+			UGameplayStatics::SpawnEmitterAtLocation(GetWorld(), Enemy->GetHitParticle(), ParticleSpawnLocation, FRotator(0.f));
 		}
 	}
 }

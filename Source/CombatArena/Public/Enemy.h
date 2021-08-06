@@ -43,16 +43,24 @@ public:
 #pragma endregion
 
 #pragma region HP
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Particle")	//피격 효과
+	class UParticleSystem* HitParticle;
+
+	FORCEINLINE UParticleSystem* GetHitParticle() { return HitParticle; }
+
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Health")
 	float MaxHealth;
 
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Health")
 	float CurrentHealth;
 
-	UFUNCTION()
-	void Die();
-
 	virtual float TakeDamage(float DamageAmount,struct FDamageEvent const& DamageEvent,class AController* EventInstigator,AActor* DamageCauser) override;
+
+	UFUNCTION()
+	void DeathEnd();
+
+	UFUNCTION(BlueprintCallable)
+	void DestroyEnemy();
 #pragma endregion
 
 };

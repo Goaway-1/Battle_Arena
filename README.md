@@ -1499,3 +1499,132 @@
 > **<h3>Realization</h3>** 
 - TakeDamage와 ApplyDamage 메서드를 사용하여 데미지를 입히는 것이 가능하며 직접 구현해도 어렵지 않다.
   - ApplyDamage메서드 사용시 데미지 타입이라는 피연산자 값이 존재하는데 이 타입을 지정함에 따라 지속적인 체력 감소등을 구현가능.
+
+## **08.06**
+> **<h3>Today Dev Story</h3>**
+- ## <span style = "color:yellow;">적의 사망 처리</span>
+  - <img src="Image/Enemy_Death_Anim.gif" height="300" title="Enemy_Death_Anim">
+  - 적의 체력이 0이하로 내려가면 애니메이션처리(DeathEnd)과 파괴 처리(DestoryEnemy).
+  - DeathEnd() 메서드는 체력이 0이하로 내려갔을때 호출되며 AttackMontage에 있는 Death노드가 실행되고 컨트롤러의 비헤이비어트리를 정지하고 콜리전을 끔
+    - BehaviorTree를 정지하기 위해서 EnemyController 클래스에 StopBeTree() 메서드를 생성.
+    - 기존 존재하는 BrainComponent를 BehaviorTreeComponent로 캐스팅 후 StopTree() 메서드 진행하여 트리를 정지.
+    - 이때 BrainComponent는 내가 정의한 BehaviorTreeComponent를 동적으로 적용하는 공간. (내부적으로 뒤져봤을 때는 그렇다.)
+  - DestoryEnemy() 메서드는 애니메이션 종료시점에 노티파이를 지정해 두었는데 이때 실행되며 애니메이션과 움직임의 변화를 끄고 파괴.
+    
+    <details><summary>c++ 코드</summary> 
+
+    ```c++
+    //Enemy.cpp
+    void AEnemy::DeathEnd() {
+      if (!Anim) Anim = Cast<UEnemyAnim>(GetMesh()->GetAnimInstance());
+      if (AttackMontage && Anim) {
+        Anim->Montage_Play(AttackMontage);
+        Anim->Montage_JumpToSection("Death", AttackMontage);
+      }
+
+      Cast<AEnemyController>(GetController())->StopBeTree();	//비헤이비어 트리 정지 (내가 만듬)
+      GetCapsuleComponent()->SetCollisionEnabled(ECollisionEnabled::NoCollision);
+    }
+
+    void AEnemy::DestroyEnemy() {
+      GetMesh()->bPauseAnims = true;          //애니메이션 정지
+      GetMesh()->bNoSkeletonUpdate = true;    //움직임 정지
+      Destroy();
+    }
+    ```
+    ```c++
+    //EnemyController.cpp
+    void AEnemyController::StopBeTree() {
+      UBehaviorTreeComponent* BTComp = Cast<UBehaviorTreeComponent>(BrainComponent);
+      BTComp->StopTree(); 
+    }
+    ``` 
+      
+    </details>
+    <details><summary>h 코드</summary> 
+
+    ```c++
+    //Enemy.h
+    UFUNCTION()
+    void DeathEnd();
+
+    UFUNCTION(BlueprintCallable)
+    void DestroyEnemy();
+    ```
+    ```c++
+    //EnemyController.h
+    UFUNCTION()           //트리를 정지. (Enemy 사망시)
+    void StopBeTree();
+    ```
+    </details>
+    
+- ## <span style = "color:yellow;">피격효과</span>
+  - <img src="Image/Attack_Particle.gif" height="300" title="Attack_Particle">
+  - 무기의 스켈레탈 메쉬에 소켓(ParticleSpawn)을 추가하고 피격시 사용할 ParticleSystem을 Enemy에 추가.
+  - 피격효과는 OnAttackBoxOverlapBegin() 메서드, 즉 피격성공시 SpawnEmitterAtLocation() 메서드를 사용하여 호출.
+    <details><summary>c++ 코드</summary> 
+
+    ```c++
+    //Weapon.c++
+    void AWeapon::OnAttackBoxOverlapBegin(UPrimitiveComponent* OverlappedComponent, AActor* OtherActor, UPrimitiveComponent* OtherComp, int32 OtherBodyIndex, bool bFromSweep, const FHitResult& SweepResult) {	
+      if (OtherActor) {
+        AEnemy* Enemy = Cast<AEnemy>(OtherActor);
+        if (!Enemy) return;
+
+        UGameplayStatics::ApplyDamage(Enemy, Damage, WeaponInstigator, this, DamageTypeClass);
+
+        const USkeletalMeshSocket* HitSocket = SkeletalMesh->GetSocketByName("ParticleSpawn");
+        if (HitSocket && Enemy->GetHitParticle()) {
+          FVector ParticleSpawnLocation = HitSocket->GetSocketLocation(SkeletalMesh);
+          UGameplayStatics::SpawnEmitterAtLocation(GetWorld(), Enemy->GetHitParticle(), ParticleSpawnLocation, FRotator(0.f));
+        }
+      }
+    }
+    ``` 
+    
+    </details>
+    <details><summary>h 코드</summary> 
+
+    ```c++
+    //Enemy.h
+    UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Particle")
+    class UParticleSystem* HitParticle;
+
+    FORCEINLINE UParticleSystem* GetHitParticle() { return HitParticle; }
+    ```
+    </details>
+
+> **<h3>Realization</h3>** 
+- BehaviorTree를 중지하기 위해서 BrainComponent를 사용해서 StopTree() 메서드를 사용한다.
+
+    <details><summary>c++ 코드</summary> 
+
+    ```c++
+    //Weapon.c++
+    void AWeapon::OnAttackBoxOverlapBegin(UPrimitiveComponent* OverlappedComponent, AActor* OtherActor, UPrimitiveComponent* OtherComp, int32 OtherBodyIndex, bool bFromSweep, const FHitResult& SweepResult) {	
+      if (OtherActor) {
+        AEnemy* Enemy = Cast<AEnemy>(OtherActor);
+        if (!Enemy) return;
+
+        UGameplayStatics::ApplyDamage(Enemy, Damage, WeaponInstigator, this, DamageTypeClass);
+
+        const USkeletalMeshSocket* HitSocket = SkeletalMesh->GetSocketByName("ParticleSpawn");
+        if (HitSocket && Enemy->GetHitParticle()) {
+          FVector ParticleSpawnLocation = HitSocket->GetSocketLocation(SkeletalMesh);
+          UGameplayStatics::SpawnEmitterAtLocation(GetWorld(), Enemy->GetHitParticle(), ParticleSpawnLocation, FRotator(0.f));
+        }
+      }
+    }
+    ``` 
+    
+    </details>
+    <details><summary>h 코드</summary> 
+
+    ```c++
+    //Enemy.h
+    UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Particle")
+    class UParticleSystem* HitParticle;
+
+    FORCEINLINE UParticleSystem* GetHitParticle() { return HitParticle; }
+    ```
+    </details>

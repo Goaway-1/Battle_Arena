@@ -26,13 +26,14 @@ public:
 	//공격 피직스담당
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly,Category = "Attack")
 	class UBoxComponent* AttackBox;
+	
+	//맞았을때의 파티클
 
 	UFUNCTION()
 	void OnAttackBoxOverlapBegin(UPrimitiveComponent* OverlappedComponent, AActor* OtherActor, UPrimitiveComponent* OtherComp, int32 OtherBodyIndex, bool bFromSweep, const FHitResult& SweepResult);
 
 	UFUNCTION()
 	void OnAttackBoxOverlapEnd(UPrimitiveComponent* OverlappedComponent, AActor* OtherActor, UPrimitiveComponent* OtherComp, int32 OtherBodyIndex);
-
 
 	UFUNCTION()	//WeaponBox의 콜리전을 키고 끄는 기능 (Main에게 호출 되어 사용)
 	void ActiveOnCollision();
