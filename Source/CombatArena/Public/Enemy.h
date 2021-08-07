@@ -63,4 +63,12 @@ public:
 	void DestroyEnemy();
 #pragma endregion
 
+//#pragma region WIDGET
+//	//Health Bar
+//	UPROPERTY(VisibleAnywhere, Category = "Widget")
+//		class UWidgetComponent* EnemyWidget;
+//
+//	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Widget")
+//		TSubclassOf<UUserWidget> HealthWidget;
+//#pragma endregion
 };

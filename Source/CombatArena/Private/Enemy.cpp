@@ -1,6 +1,8 @@
 #include "Enemy.h"
 #include "EnemyController.h"
 #include "EnemyAnim.h"
+#include "Components/WidgetComponent.h"
+#include "Blueprint/UserWidget.h"
 
 AEnemy::AEnemy()
 {
@@ -15,6 +17,24 @@ AEnemy::AEnemy()
 	//Health
 	MaxHealth = 100.f;
 	CurrentHealth = MaxHealth;
+
+
+	//Widget
+	//EnemyWidget = CreateDefaultSubobject<UWidgetComponent>(TEXT("EnemyWidget"));
+	//EnemyWidget->SetupAttachment(GetMesh());
+	//EnemyWidget->SetRelativeLocation(FVector(0.f, 0.f, 180.f));
+	//EnemyWidget->SetWidgetSpace(EWidgetSpace::Screen);		//Screen Mode 
+
+	////UUserWidget* UUU = CreateWidget<UUserWidget>(this, HealthWidget, FName("UUU"));
+	////UUU->AddToViewport();
+	////UUU->SetVisibility(ESlateVisibility::Visible);
+	//static ConstructorHelpers::FClassFinder<UUserWidget>
+	//UI_HUD(TEXT("/Game/Enemy/Enemy_Health_Widget.Enemy_Health_Widget"));
+	//
+	//if (UI_HUD.Succeeded()) {
+	//	EnemyWidget->SetWidgetClass(UI_HUD.Class);				//UUSerWidget of class 
+	//	EnemyWidget->SetDrawSize(FVector2D(150.f, 50.f));
+	//}
 }
 
 void AEnemy::BeginPlay()
