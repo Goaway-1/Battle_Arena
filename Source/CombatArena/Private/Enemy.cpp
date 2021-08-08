@@ -18,23 +18,11 @@ AEnemy::AEnemy()
 	MaxHealth = 100.f;
 	CurrentHealth = MaxHealth;
 
-
-	//Widget
-	//EnemyWidget = CreateDefaultSubobject<UWidgetComponent>(TEXT("EnemyWidget"));
-	//EnemyWidget->SetupAttachment(GetMesh());
-	//EnemyWidget->SetRelativeLocation(FVector(0.f, 0.f, 180.f));
-	//EnemyWidget->SetWidgetSpace(EWidgetSpace::Screen);		//Screen Mode 
-
-	////UUserWidget* UUU = CreateWidget<UUserWidget>(this, HealthWidget, FName("UUU"));
-	////UUU->AddToViewport();
-	////UUU->SetVisibility(ESlateVisibility::Visible);
-	//static ConstructorHelpers::FClassFinder<UUserWidget>
-	//UI_HUD(TEXT("/Game/Enemy/Enemy_Health_Widget.Enemy_Health_Widget"));
-	//
-	//if (UI_HUD.Succeeded()) {
-	//	EnemyWidget->SetWidgetClass(UI_HUD.Class);				//UUSerWidget of class 
-	//	EnemyWidget->SetDrawSize(FVector2D(150.f, 50.f));
-	//}
+	//HUD
+	HealthWidget = CreateDefaultSubobject<UWidgetComponent>(TEXT("HealthWidget"));
+	HealthWidget->SetupAttachment(GetMesh());
+	HealthWidget->SetRelativeLocation(FVector(0.f, 0.f, 200.f));
+	HealthWidget->SetWidgetSpace(EWidgetSpace::Screen);
 }
 
 void AEnemy::BeginPlay()
@@ -45,6 +33,13 @@ void AEnemy::BeginPlay()
 	GetCapsuleComponent()->SetCollisionResponseToChannel(ECollisionChannel::ECC_Camera, ECollisionResponse::ECR_Ignore);
 
 	if (!Anim) Anim = Cast<UEnemyAnim>(GetMesh()->GetAnimInstance());
+
+	//HUD
+	if (WEnemyHealth) {
+		HealthWidget->SetWidgetClass(WEnemyHealth);
+		HealthWidget->SetDrawSize(FVector2D(150.f, 20.f));
+		HealthWidget->SetVisibility(false);
+	} 
 }
 
 void AEnemy::Tick(float DeltaTime)
@@ -113,3 +108,16 @@ void AEnemy::DestroyEnemy() {
 	GetMesh()->bNoSkeletonUpdate = true;
 	Destroy();
 }
+
+#pragma region HUD
+
+void AEnemy::ShowEnemyHealth() {
+	HealthWidget->SetVisibility(true);
+}
+
+void AEnemy::HideEnemyHealth() {
+
+	HealthWidget->SetVisibility(false);
+}
+
+#pragma endregion

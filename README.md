@@ -20,6 +20,7 @@
   1. Infinity Blade : fire Lands 를 사용하여 꾸미기
   2. 로마 관련 에셋
   3. 카오스 디스트럭션 툴을 사용하여 무너짐 표현
+  4. 발소리
 ## **07.27**
 > **<h3>Today Dev Story</h3>**
 - ## <span style = "color:yellow;">기초적인 설정</span>
@@ -1597,34 +1598,257 @@
 > **<h3>Realization</h3>** 
 - BehaviorTree를 중지하기 위해서 BrainComponent를 사용해서 StopTree() 메서드를 사용한다.
 
+## **08.08**
+> **<h3>Today Dev Story</h3>**
+- ## <span style = "color:yellow;">적의 HUD와 연결</span>
+  - <img src="Image/SetEnemyHUD.gif" height="300" title="SetEnemyHUD">
+  - CombatArena.Build.cs에서 PrivateDependencyModuleNames.AddRange(new string[] { "Slate", "SlateCore" }) 추가. 이는 UI 플레임워크를 사용하기 위함.
+  - Enemy_Health_Widget이라는 위젯 블루프린트를 생성하여 디자인. 이는 적의 머리위에 표시 (단점 : 거리에 따라 같은 위젯의 크기.)
+  - MainPlayer에 SphereComponent를 추가하고 overlap되면 Controller의 Show/HideEnemyHUD()메서드 실행.
+  - MainPlayerController의 Beginplay에서 UUserWidget을 CreateWidget(), AddToViewport() 메서드를 사용하여 생성 후 화면에 배치
+    - Tick에서 Widget이 존재한다면 적의 위치를 화면상의 위치로 전환하여 postionInViewport()를 수정.
+    - ShowEnemyHUD(), HideEnemyHUD() 메서드를 사용하여 SetVisiblility()를 Visible과 Hidden으로 전환. 이는 MainPlayer의 오버랩되면 호출.
+    
+      <details><summary>c++ 코드</summary> 
+
+      ```c++
+      //MianPlayer.cpp
+      void AMainPlayer::PossessedBy(AController* NewController) {
+        Super::PossessedBy(NewController);
+
+        PlayerController = Cast<AMainController>(GetController());
+      }
+      ...
+      void AMainPlayer::OnEnemyHUD_OverlapBegin(UPrimitiveComponent* OverlappedComponent, AActor* OtherActor, UPrimitiveComponent* OtherComp, int32 OtherBodyIndex, bool bFromSweep, const FHitResult& SweepResult) {
+        if (OtherActor) {
+          CombatTarget = Cast<AEnemy>(OtherActor);
+          if (CombatTarget) {
+            PlayerController->ShowEnemyHUD();
+          }
+        }
+      }
+
+      void AMainPlayer::OnEnemyHUD_OverlapEnd(UPrimitiveComponent* OverlappedComponent, AActor* OtherActor, UPrimitiveComponent* OtherComp, int32 OtherBodyIndex) {
+        if (OtherActor) {
+          CombatTarget = Cast<AEnemy>(OtherActor);
+          if (CombatTarget) {
+            PlayerController->HideEnemyHUD();
+            CombatTarget = nullptr;
+          }
+        }
+      }
+      ``` 
+
+      ```c++
+      //MainController.cpp
+      #include "Components/WidgetComponent.h"
+      #include "Blueprint/UserWidget.h"
+
+      AMainController::AMainController() {
+          SizeInViewport = FVector2D(300.f, 30.f);
+      }
+
+      void AMainController::BeginPlay() {
+        if (WEnemyHealth) {
+          EnemyHealthWidget = CreateWidget<UUserWidget>(this, WEnemyHealth);
+          if (EnemyHealthWidget) {
+            EnemyHealthWidget->AddToViewport();
+            EnemyHealthWidget->SetVisibility(ESlateVisibility::Hidden);
+          }
+        }
+      }
+      if (EnemyHealthWidget) {	//적의 위치 얻고 화면의 위치로 변환
+        ProjectWorldLocationToScreen(EnemyLocation, PositionInViewport);
+        PositionInViewport.Y -= 170.f;
+        PositionInViewport.X -= 100.f;
+
+        EnemyHealthWidget->SetPositionInViewport(PositionInViewport);	//위치
+        EnemyHealthWidget->SetDesiredSizeInViewport(SizeInViewport);	//사이즈
+      }
+
+      void AMainController::ShowEnemyHUD() {
+        EnemyHealthWidget->SetVisibility(ESlateVisibility::Visible);
+      }
+
+      void AMainController::HideEnemyHUD() {
+        EnemyHealthWidget->SetVisibility(ESlateVisibility::Hidden);
+      }
+      ``` 
+      
+      </details>
+      <details><summary>h 코드</summary> 
+
+      ```c++
+      //MainPlayer.h
+      virtual void PossessedBy(AController* NewController) override;
+      class AMainController* PlayerController;		//GetController and Save
+      
+      ...
+
+      UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "HUD")
+      class AEnemy* CombatTarget;
+
+      UPROPERTY(EditAnywhere, BlueprintReadWrite, Category= "HUD")
+      USphereComponent* EnemyHUDOverlap;
+
+      UFUNCTION()
+      void OnEnemyHUD_OverlapBegin(UPrimitiveComponent* OverlappedComponent, AActor* OtherActor, UPrimitiveComponent* OtherComp, int32 OtherBodyIndex, bool bFromSweep, const FHitResult& SweepResult);
+
+      UFUNCTION()
+      void OnEnemyHUD_OverlapEnd(UPrimitiveComponent* OverlappedComponent, AActor* OtherActor, UPrimitiveComponent* OtherComp, int32 OtherBodyIndex);
+      ```
+
+      ```c++
+      //MainController.h
+      UPROPERTY(VisibleAnywhere, Category = "Widget | EnemyWidget")
+      FVector2D PositionInViewport;		//적의 위치를 2D상으로 표시
+
+      UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Widget | EnemyWidget")
+      FVector2D SizeInViewport;			//위젯의 사이즈
+
+      UPROPERTY(VisibleAnywhere, Category = "Widget | EnemyWidget")
+      class UUserWidget* EnemyHealthWidget;
+
+      UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Widget | EnemyWidget")
+      TSubclassOf<class UUserWidget> WEnemyHealth;
+
+      UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Widget | EnemyWidget")
+      FVector EnemyLocation;
+
+      FORCEINLINE void SetEnemyLocation(FVector Pos) { EnemyLocation = Pos; }
+
+      UFUNCTION()
+      void ShowEnemyHUD();
+
+      UFUNCTION()
+      void HideEnemyHUD();
+      ```
+      </details>
+
+- ## <span style = "color:yellow;">Player Status HUD</span>
+  - <img src="Image/Player_Status_HUD.png" height="300" title="Player_Status_HUD">
+  - #### UserWidget 사용
+  - 이전에 구현했던 방식은 크기에 대한 변형이 없는 PlayerStatus에서 표현. 아직 데이터의 연결은 못한 상태
+  - UserWidget만을 받아 단순히 CreateWidget() 메서드로 생성 후 AddToViewport() 메서드로 화면상에 배치.
     <details><summary>c++ 코드</summary> 
 
     ```c++
-    //Weapon.c++
-    void AWeapon::OnAttackBoxOverlapBegin(UPrimitiveComponent* OverlappedComponent, AActor* OtherActor, UPrimitiveComponent* OtherComp, int32 OtherBodyIndex, bool bFromSweep, const FHitResult& SweepResult) {	
-      if (OtherActor) {
-        AEnemy* Enemy = Cast<AEnemy>(OtherActor);
-        if (!Enemy) return;
-
-        UGameplayStatics::ApplyDamage(Enemy, Damage, WeaponInstigator, this, DamageTypeClass);
-
-        const USkeletalMeshSocket* HitSocket = SkeletalMesh->GetSocketByName("ParticleSpawn");
-        if (HitSocket && Enemy->GetHitParticle()) {
-          FVector ParticleSpawnLocation = HitSocket->GetSocketLocation(SkeletalMesh);
-          UGameplayStatics::SpawnEmitterAtLocation(GetWorld(), Enemy->GetHitParticle(), ParticleSpawnLocation, FRotator(0.f));
+    //MainController.cpp
+    void AMainController::BeginPlay() {
+      if (WPlayerMainHealth) {
+        PlayerWidget = CreateWidget<UUserWidget>(this, WPlayerMainHealth);
+        if (PlayerWidget) {
+          PlayerWidget->AddToViewport();
+          PlayerWidget->SetVisibility(ESlateVisibility::Visible);
         }
       }
     }
-    ``` 
+    ```
     
     </details>
     <details><summary>h 코드</summary> 
 
     ```c++
-    //Enemy.h
-    UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Particle")
-    class UParticleSystem* HitParticle;
+    //MainPlayer.h
+    UPROPERTY(VisibleAnywhere, Category = "Widget | EnemyWidget")
+    class UUserWidget* PlayerWidget;
 
-    FORCEINLINE UParticleSystem* GetHitParticle() { return HitParticle; }
+    UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Widget | EnemyWidget")
+    TSubclassOf<class UUserWidget> WPlayerMainHealth;
     ```
     </details>
+
+- ## <span style = "color:yellow;">적의 HUD와 연결_2</span>
+  - <img src="Image/SetEnemyHUD_2.gif" height="300" title="SetEnemyHUD_2">
+  - #### UserComponent 사용
+  - 이전에 구현했던 적의 HUD는 플레이어와 적의 거리가 멀어져도 크기가 일정하기에 수정이 필요.
+  - 호출하는 방식은 전과 동일하게 EnemyHUDOverlap이라는 SphereComponent에 Overlap 되면 Visible을 전환하는 방식으로 처리.
+  - 이전 방식은 UUserWidget을 바로 생성했다면 이 방식은 UWidgetComponent를 객체 인스턴스화 한 후 위치와 시점을 설정.
+    - BeginPlay() 메서드 호출 시 TSubclassOf로 미리 설정한 UUserWidget을 UWidgetComponent에 어태치.
+    - SetDrawSize() 메서드를 사용하여 위젯의 크기 지정 후 SetVisibility를 false로 시각적 요소 종료.
+      <details><summary>c++ 코드</summary> 
+
+      ```c++
+      //Enemy.cpp
+      AEnemy::AEnemy()
+      {
+        ...
+        //HUD
+        HealthWidget = CreateDefaultSubobject<UWidgetComponent>(TEXT("HealthWidget"));
+        HealthWidget->SetupAttachment(GetMesh());
+        HealthWidget->SetRelativeLocation(FVector(0.f, 0.f, 200.f));
+        HealthWidget->SetWidgetSpace(EWidgetSpace::Screen);
+      }
+      void AEnemy::BeginPlay()
+      {
+        ...
+        //HUD
+        if (WEnemyHealth) {
+          HealthWidget->SetWidgetClass(WEnemyHealth);
+          HealthWidget->SetDrawSize(FVector2D(150.f, 20.f));
+          HealthWidget->SetVisibility(false);       // 생성은 하지만 시각은 제거
+        }
+      }
+      ...
+      void AEnemy::ShowEnemyHealth() {
+        HealthWidget->SetVisibility(true);
+      }
+
+      void AEnemy::HideEnemyHealth() {
+
+        HealthWidget->SetVisibility(false);
+      }
+      ```
+      ```c++
+      //MainPlayer.cpp
+      void AMainPlayer::OnEnemyHUD_OverlapBegin(UPrimitiveComponent* OverlappedComponent, AActor* OtherActor, UPrimitiveComponent* OtherComp, int32 OtherBodyIndex, bool bFromSweep, const FHitResult& SweepResult) {
+        if (OtherActor) {
+          CombatTarget = Cast<AEnemy>(OtherActor);
+          if (CombatTarget) {
+            CombatTarget->ShowEnemyHealth();
+          }
+        }
+      }
+
+      void AMainPlayer::OnEnemyHUD_OverlapEnd(UPrimitiveComponent* OverlappedComponent, AActor* OtherActor, UPrimitiveComponent* OtherComp, int32 OtherBodyIndex) {
+        if (OtherActor) {
+          CombatTarget = Cast<AEnemy>(OtherActor);
+          if (CombatTarget) {
+            CombatTarget->HideEnemyHealth();
+            CombatTarget = nullptr;
+          }
+        }
+      }
+      ```
+      
+      </details>
+      <details><summary>h 코드</summary> 
+
+      ```c++
+      //Enemy.h
+      UPROPERTY(VisibleAnywhere, Category = "Widget | EnemyWidget")
+      class UWidgetComponent* HealthWidget;
+
+      UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Widget | EnemyWidget")
+      TSubclassOf<class UUserWidget> WEnemyHealth;
+      
+      //Call at MainPlayer
+      UFUNCTION()
+      void ShowEnemyHealth();
+      
+      UFUNCTION()
+      void HideEnemyHealth();
+      ```
+      </details>
+
+> **<h3>Realization</h3>** 
+- 위젯 구현시
+  1. UserWidget을 바로 인스턴스화 하여 화면에 CreateWidget()후 AddToViewport()로 진행하는 경우 [경우](#UserWidget-사용)
+    - Screen 상의 위치를 알아내야 하기 때문에 번거롭다.
+    - 고정된 UI 구현시 유용하며, 동적으로 변화가 필요한 UI에는 부적합.
+      - 지속적으로 타겟의 위치를 받아와야 하기에 메모리 활용에서 비효율적.
+  2. UserWidgetComponent를 거쳐 UserWidget을 할당하여 사용하는 [경우](#UserComponent-사용)
+    - 위의 방식과는 다르게 객체에 완전히 어태치하여서 사용하기에 실용적.
+    - 동적으로 사용할 때 유용.
+
+- 위젯을 한 곳에서 팩토리패턴으로 관리할 수 있는 방법 생각해보기.

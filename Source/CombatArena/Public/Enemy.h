@@ -63,12 +63,28 @@ public:
 	void DestroyEnemy();
 #pragma endregion
 
-//#pragma region WIDGET
-//	//Health Bar
-//	UPROPERTY(VisibleAnywhere, Category = "Widget")
-//		class UWidgetComponent* EnemyWidget;
-//
-//	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Widget")
-//		TSubclassOf<UUserWidget> HealthWidget;
-//#pragma endregion
+#pragma region HUD
+
+	UPROPERTY(VisibleAnywhere, Category = "Widget | EnemyWidget")
+	class UWidgetComponent* HealthWidget;
+
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Widget | EnemyWidget")
+	TSubclassOf<class UUserWidget> WEnemyHealth;
+
+	//Call at MainPlayer
+	UFUNCTION()
+	void ShowEnemyHealth();
+	
+	UFUNCTION()
+	void HideEnemyHealth();
+
+	/// <summary>
+	/// 아직 못함.
+	/// </summary>
+	UPROPERTY()
+	float HealthRatio = 0.f;
+
+	UFUNCTION(BlueprintCallable)
+	FORCEINLINE float GetHealthRatio() { return HealthRatio = 0.5f; }
+#pragma endregion
 };

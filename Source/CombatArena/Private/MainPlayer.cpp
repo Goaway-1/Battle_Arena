@@ -2,10 +2,13 @@
 #include "Kismet/KismetMathLibrary.h"
 #include "Perception/AIPerceptionStimuliSourceComponent.h"
 #include "Weapon.h"
+#include "Enemy.h"
+#include "MainController.h"
 
 AMainPlayer::AMainPlayer()
 {
  	PrimaryActorTick.bCanEverTick = true;
+
 #pragma region AIPERCETION
 	AIPerceptionSource = CreateDefaultSubobject<UAIPerceptionStimuliSourceComponent>(TEXT("AIPerceptionSource"));
 #pragma endregion
@@ -71,6 +74,16 @@ AMainPlayer::AMainPlayer()
 	ActiveOverlappingItem = nullptr;
 	CurrentWeapon = nullptr;
 #pragma endregion
+#pragma region HUD
+	EnemyHUDOverlap = CreateDefaultSubobject<USphereComponent>(TEXT("EnemyHUDOverlap"));
+	EnemyHUDOverlap->SetupAttachment(GetRootComponent());
+	EnemyHUDOverlap->SetSphereRadius(700.f);
+
+	EnemyHUDOverlap->OnComponentBeginOverlap.AddDynamic(this, &AMainPlayer::OnEnemyHUD_OverlapBegin);
+	EnemyHUDOverlap->OnComponentEndOverlap.AddDynamic(this, &AMainPlayer::OnEnemyHUD_OverlapEnd);
+
+	CombatTarget = nullptr;
+#pragma endregion
 
 }
 
@@ -80,6 +93,13 @@ void AMainPlayer::BeginPlay()
 
 	AnimInstance = GetMesh()->GetAnimInstance();
 	SetMovementStatus(EMovementStatus::EMS_Normal);
+
+}
+
+void AMainPlayer::PossessedBy(AController* NewController) {
+	Super::PossessedBy(NewController);
+
+	PlayerController = Cast<AMainController>(GetController());
 }
 
 void AMainPlayer::Tick(float DeltaTime)
@@ -87,7 +107,6 @@ void AMainPlayer::Tick(float DeltaTime)
 	Super::Tick(DeltaTime);
 
 	CheckIdle();
-
 }
 
 void AMainPlayer::SetupPlayerInputComponent(UInputComponent* PlayerInputComponent)
@@ -286,6 +305,28 @@ void AMainPlayer::ItemDrop() {
 		CurrentWeapon->Destroy();
 		CurrentWeapon = nullptr;
 		SetWeaponStatus(EWeaponStatus::EWS_Normal);
+	}
+}
+#pragma endregion
+
+#pragma region HUD
+
+void AMainPlayer::OnEnemyHUD_OverlapBegin(UPrimitiveComponent* OverlappedComponent, AActor* OtherActor, UPrimitiveComponent* OtherComp, int32 OtherBodyIndex, bool bFromSweep, const FHitResult& SweepResult) {
+	if (OtherActor) {
+		CombatTarget = Cast<AEnemy>(OtherActor);
+		if (CombatTarget) {
+			CombatTarget->ShowEnemyHealth();
+		}
+	}
+}
+
+void AMainPlayer::OnEnemyHUD_OverlapEnd(UPrimitiveComponent* OverlappedComponent, AActor* OtherActor, UPrimitiveComponent* OtherComp, int32 OtherBodyIndex) {
+	if (OtherActor) {
+		CombatTarget = Cast<AEnemy>(OtherActor);
+		if (CombatTarget) {
+			CombatTarget->HideEnemyHealth();
+			CombatTarget = nullptr;
+		}
 	}
 }
 #pragma endregion

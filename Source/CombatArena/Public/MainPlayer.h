@@ -35,7 +35,11 @@ protected:
 public:	
 	virtual void Tick(float DeltaTime) override;
 
+	virtual void PossessedBy(AController* NewController) override;
+	class AMainController* PlayerController;		//GetController and Save
+
 	virtual void SetupPlayerInputComponent(class UInputComponent* PlayerInputComponent) override;
+
 #pragma region AIPERCEPTION
 	UPROPERTY(EditAnywhere,BlueprintReadOnly, Category = "AIPERCEPTION")
 	class UAIPerceptionStimuliSourceComponent* AIPerceptionSource;
@@ -198,5 +202,20 @@ public:
 	void ItemDrop();
 #pragma endregion
 
+
+#pragma region HUD
+
+	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "HUD")
+	class AEnemy* CombatTarget;
+
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category= "HUD")
+	USphereComponent* EnemyHUDOverlap;
+
+	UFUNCTION()
+	void OnEnemyHUD_OverlapBegin(UPrimitiveComponent* OverlappedComponent, AActor* OtherActor, UPrimitiveComponent* OtherComp, int32 OtherBodyIndex, bool bFromSweep, const FHitResult& SweepResult);
+
+	UFUNCTION()
+	void OnEnemyHUD_OverlapEnd(UPrimitiveComponent* OverlappedComponent, AActor* OtherActor, UPrimitiveComponent* OtherComp, int32 OtherBodyIndex);
+#pragma endregion
 
 };
