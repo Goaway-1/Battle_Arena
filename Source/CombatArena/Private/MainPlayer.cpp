@@ -4,6 +4,7 @@
 #include "Weapon.h"
 #include "Enemy.h"
 #include "MainController.h"
+#include "HealthWidget.h"
 
 AMainPlayer::AMainPlayer()
 {
@@ -66,6 +67,10 @@ AMainPlayer::AMainPlayer()
 	bIsAttackCheck = false;
 	ComboCnt = 0;
 	ComboMaxCnt = 0;
+#pragma endregion
+#pragma region HEALTH
+	MaxHealth = 100.f;
+	CurrentHealth = MaxHealth;
 #pragma endregion
 
 #pragma region ACTIVE
@@ -285,6 +290,19 @@ void AMainPlayer::ActiveWeaponCollision() {
 }
 void AMainPlayer::DeActiveWeaponCollision() {
 	GetCurrentWeapon()->DeActiveOnCollision();
+}
+float AMainPlayer::TakeDamage(float DamageAmount, struct FDamageEvent const& DamageEvent, class AController* EventInstigator, AActor* DamageCauser) {
+	Super::TakeDamage(DamageAmount, DamageEvent, EventInstigator, DamageCauser);
+
+	if (CurrentHealth <= 0) return 0.f;
+
+	CurrentHealth -= DamageAmount;
+	if (CurrentHealth <= 0) {
+		CurrentHealth = 0;
+	}
+
+	UE_LOG(LogTemp, Warning,TEXT("CurrentHealth : %f"),CurrentHealth)
+	return DamageAmount;
 }
 #pragma endregion
 

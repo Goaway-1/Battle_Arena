@@ -1428,6 +1428,7 @@
 
 - ## <span style = "color:yellow;">플레이어가 적에게 주는 데미지</span>
   - <img src="Image/ApplyDamge_Enemy.gif" height="300" title="ApplyDamge_Enemy"> 
+  - #### 데미지를 주는 방법
   - API로 제공되는 UGameplayStatics::ApplyDamge() 메서드와 Actor에 제공되는 TakeDamage() 메서드를 이용하여 구성.
     - 데미지를 받는 Enemy 클래스에 TakeDamage()를 오버라이드하여 구성하고, Weapon 클래스에서 데미지를 주기 때문에 OnAttackBoxOverlapBegin()에서 ApplyDamage()함수 실행.
     - 이때 데미지를 주는 클래스, 데미지 값, 현재 컨트롤러, 데미지 타입등이 피연산자로 필요. (데미지 타입은 BP에서 )
@@ -1852,3 +1853,266 @@
     - 동적으로 사용할 때 유용.
 
 - 위젯을 한 곳에서 팩토리패턴으로 관리할 수 있는 방법 생각해보기.
+
+
+## **08.10**
+> **<h3>Today Dev Story</h3>**
+- ## <span style = "color:yellow;">HUD의 값 변경</span>
+  - <img src="Image/Enemy_Health_Ratio_Set.gif" height="300" title="Enemy_Health_Ratio_Set">
+  - UUserWidget클래스를 상속받은 UHealthWidget클래스를 생성 __(추상클래스)__
+    - 추상클래스로 선언했기에 꼭 BP로 만들어줘야만 한다.
+    - ProgressBar, TextBlock을 만들고 meta = BindWidget을 해줘야만 C++ 위젯 클래스를 기반으로 BP를 만들 수 있다.
+    - TWeakObjectPtr, 약결합을 사용하여 위젯의 주인을 가져와 저장. Set 메서드 사용. (소유권이 필요하지 않는 상황에서 사용.)
+  - Enemy클래스에서 Ratio를 지정하는 메서드와 위에서 만든 UHealthWidget 클래스 생성.
+    - BeginPlay에서 HealthWidget을 캐스팅하고 GetUserWidgetObject()메서드를 통해 Widget의 주인을 저장.
+    - Enemy의 TakeDamage에서 SetHealthRatio() 메서드 지정.
+
+      <details><summary>c++ 코드</summary> 
+
+      ```c++
+      //HealthWidget.cpp
+      #include "HealthWidget.h"
+      #include "Enemy.h"
+      #include "Components/ProgressBar.h"
+      #include "Components/TextBlock.h"
+
+      void UHealthWidget::SetOwnerHealth() {
+        if (!OwnerEnemy.IsValid()) return;
+
+        HealthBar->SetPercent(OwnerEnemy->GetHealthRatio());
+
+        FNumberFormattingOptions Opts;
+        Opts.SetMaximumFractionalDigits(0);
+        CurrentHealthLabel->SetText(FText::AsNumber(OwnerEnemy->CurrentHealth,&Opts));
+        CurrentHealthLabel->SetText(FText::AsNumber(OwnerEnemy->MaxHealth,&Opts));
+      }
+
+      void UHealthWidget::SetOwnerEnemy(AEnemy* Enemy) {
+        OwnerEnemy = Enemy;
+      }
+      ```
+      
+      ```c++
+      //Enemy.cpp
+      void AEnemy::BeginPlay()
+      {
+        ...
+        //HealthBar
+        HealthBar = Cast<UHealthWidget>(HealthWidget->GetUserWidgetObject());
+        HealthBar->SetOwnerEnemy(this);
+        HealthBar->SetOwnerHealth();
+      }
+      float AEnemy::TakeDamage(float DamageAmount, struct FDamageEvent const& DamageEvent, class AController* EventInstigator, AActor* DamageCauser) {
+        ...
+        if(CurrentHealth <= 0) {
+          CurrentHealth = 0;
+          DeathEnd();
+        }
+        HealthBar->SetOwnerHealth();
+        return DamageAmount;
+      }
+      void AEnemy::ShowEnemyHealth() {
+        HealthWidget->SetVisibility(true);
+      }
+
+      void AEnemy::HideEnemyHealth() {
+
+        HealthWidget->SetVisibility(false);
+      }
+
+      void AEnemy::SetHealthRatio() {
+        HealthRatio = CurrentHealth / MaxHealth;
+      }
+      ```
+      
+      </details>
+      <details><summary>h 코드</summary> 
+
+      ```c++
+      //HealthWidget.h
+      UCLASS(Abstract)		//추상화 개념
+      class COMBATARENA_API UHealthWidget : public UUserWidget
+      {
+        GENERATED_BODY()
+      public:
+        UFUNCTION()
+        void SetOwnerEnemy(AEnemy* Enemy);
+
+        UFUNCTION()
+        void SetOwnerHealth();
+      protected:
+
+        UPROPERTY()
+        TWeakObjectPtr<AEnemy> OwnerEnemy;
+
+        UPROPERTY(meta = (BindWidget))
+        class UProgressBar* HealthBar;
+
+        UPROPERTY(meta = (BindWidget))
+        class UTextBlock* CurrentHealthLabel;
+
+        UPROPERTY(meta = (BindWidget))
+        class UTextBlock* MaxHealthLabel;
+      };
+      ```
+      ```c++
+      //Enemy.h
+        UPROPERTY()
+        class UHealthWidget* HealthBar;
+
+        UPROPERTY()
+        float HealthRatio = 0.f;
+
+        UFUNCTION(BlueprintCallable)
+        void SetHealthRatio();
+
+        UFUNCTION(BlueprintCallable)
+        FORCEINLINE float GetHealthRatio() { return HealthRatio; }
+      ```
+      </details>
+
+- ## <span style = "color:yellow;">Player Damaged</span>
+  - <img src="Image/Player_Damage.gif" height="300" title="Player_Damage">
+  - [기존방식](#데미지를-주는-방법)과 동일하며 Enemy에서 왼쪽 무기와 오른쪽 무기의 소켓(Left/Right_Weapon)을 생성하고 여기에 박스 콜리전을 부착.
+  - MainPlayer 클래스에서 TakeDamage() 메서드를 재정의하고, MaxHealth와 CurrentHealth 재정의.
+  - Enemy 클래스의 무기박스에서 사용할 콜리전을(EnemyWeapon) 제작하고 SetCollisionProfileName()지정.
+    - OnComponentBeginOverlap를 두가지의 무기박스에 정의.
+    - ActiveOnCollision()메서드를 추가하고 애니메이션 노티파이와 연결하여 사용.
+    <details><summary>c++ 코드</summary> 
+
+    ```c++
+    //Enemy.cpp
+    AEnemy::AEnemy()
+    {
+      ...
+      AttackBox_Left = CreateDefaultSubobject<UBoxComponent>(TEXT("AttackBox_Left"));
+      AttackBox_Left->SetupAttachment(GetMesh(), FName("Left_Weapon"));
+
+      AttackBox_Right = CreateDefaultSubobject<UBoxComponent>(TEXT("AttackBox_Right"));
+      AttackBox_Right->SetupAttachment(GetMesh(), FName("Rigth_Weapon"));
+
+      AttackBox_Left->SetCollisionProfileName(TEXT("EnemyWeapon"));
+	    AttackBox_Right->SetCollisionProfileName(TEXT("EnemyWeapon"));
+      ...
+    }
+    void AEnemy::PossessedBy(AController* NewController) {
+      Super::PossessedBy(NewController);
+
+      //ApplyDamage를 사용하기 위해 컨트롤러를 받아옴.
+      EnemyController = NewController;    
+    }
+    void AEnemy::BeginPlay()
+    {
+      ...
+      AttackBox_Left->OnComponentBeginOverlap.AddDynamic(this, &AEnemy::OnAttackBoxOverlapBegin);
+      AttackBox_Left->OnComponentBeginOverlap.AddDynamic(this, &AEnemy::OnAttackBoxOverlapBegin);
+      AttackBox_Right->OnComponentBeginOverlap.AddDynamic(this, &AEnemy::OnAttackBoxOverlapBegin);
+      AttackBox_Right->OnComponentBeginOverlap.AddDynamic(this, &AEnemy::OnAttackBoxOverlapBegin);
+
+      AttackBox_Left->SetCollisionEnabled(ECollisionEnabled::QueryOnly);
+      AttackBox_Right->SetCollisionEnabled(ECollisionEnabled::QueryOnly);
+    }
+    void AEnemy::OnAttackBoxOverlapBegin(UPrimitiveComponent* OverlappedComponent, AActor* OtherActor, UPrimitiveComponent* OtherComp, int32 OtherBodyIndex, bool bFromSweep, const FHitResult& SweepResult) {
+      if (OtherActor) {
+        AMainPlayer* Player = Cast<AMainPlayer>(OtherActor);
+        if (Player) {
+          UE_LOG(LogTemp, Warning, TEXT("ENEMYATTACK"));
+          UGameplayStatics::ApplyDamage(Player, 10.f, EnemyController,this, EnemyDamageType);
+        }
+      }
+    }
+
+    void AEnemy::OnAttackBoxOverlapEnd(UPrimitiveComponent* OverlappedComponent, AActor* OtherActor, UPrimitiveComponent* OtherComp, int32 OtherBodyIndex) {
+
+    }
+    void AEnemy::ActiveOnCollision() {
+      AttackBox_Left->SetCollisionEnabled(ECollisionEnabled::QueryOnly);
+      AttackBox_Right->SetCollisionEnabled(ECollisionEnabled::QueryOnly);
+    }
+    void AEnemy::DeActiveOnCollision() {
+      AttackBox_Left->SetCollisionEnabled(ECollisionEnabled::NoCollision);
+      AttackBox_Right->SetCollisionEnabled(ECollisionEnabled::NoCollision);
+    }
+    ```
+    ```c++
+    //MainPlayer.cpp
+    AMainPlayer::AMainPlayer()
+    {
+    	MaxHealth = 100.f;
+      CurrentHealth = MaxHealth;
+    }
+    ...
+    float AMainPlayer::TakeDamage(float DamageAmount, struct FDamageEvent const& DamageEvent, class AController* EventInstigator, AActor* DamageCauser) {
+      Super::TakeDamage(DamageAmount, DamageEvent, EventInstigator, DamageCauser);
+
+      if (CurrentHealth <= 0) return 0.f;
+
+      CurrentHealth -= DamageAmount;
+      if (CurrentHealth <= 0) {
+        CurrentHealth = 0;
+      }
+
+      UE_LOG(LogTemp, Warning,TEXT("CurrentHealth : %f"),CurrentHealth)
+      return DamageAmount;
+    }
+    ```
+    
+    </details>
+    <details><summary>h 코드</summary> 
+
+    ```c++
+    //Enemy.h
+      virtual void PossessedBy(AController* NewController) override;
+
+      UPROPERTY()
+      AController* EnemyController;
+
+      UPROPERTY(EditAnywhere, BlueprintReadWrite,Category ="Attack")
+      class UBoxComponent* AttackBox_Left;
+
+      UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Attack")
+      class UBoxComponent* AttackBox_Right;
+      
+      UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Attack")
+      TSubclassOf<UDamageType> EnemyDamageType;
+
+      UFUNCTION()
+      void OnAttackBoxOverlapBegin(UPrimitiveComponent* OverlappedComponent, AActor* OtherActor, UPrimitiveComponent* OtherComp, int32 OtherBodyIndex, bool bFromSweep, const FHitResult& SweepResult);
+
+      UFUNCTION()
+      void OnAttackBoxOverlapEnd(UPrimitiveComponent* OverlappedComponent, AActor* OtherActor, UPrimitiveComponent* OtherComp, int32 OtherBodyIndex);
+
+      UFUNCTION(BlueprintCallable)
+      void ActiveOnCollision();
+      
+      UFUNCTION(BlueprintCallable)
+      void DeActiveOnCollision();
+    ```
+    ```c++
+    //MainPlayer.h
+    	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Health")
+      float MaxHealth;
+
+      UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Health")
+      float CurrentHealth;
+
+      virtual float TakeDamage(float DamageAmount, struct FDamageEvent const& DamageEvent, class AController* EventInstigator, AActor* DamageCauser) override;
+    ```
+    </details>
+
+> **<h3>Realization</h3>** 
+
+    <details><summary>c++ 코드</summary> 
+
+    ```c++
+    //Enemy.cpp
+    
+    ```
+    
+    </details>
+    <details><summary>h 코드</summary> 
+
+    ```c++
+   
+    ```
+    </details>

@@ -20,6 +20,8 @@ protected:
 public:	
 	virtual void Tick(float DeltaTime) override;
 
+	virtual void PossessedBy(AController* NewController) override;
+
 	virtual void PostInitializeComponents() override;
 
 	virtual void SetupPlayerInputComponent(class UInputComponent* PlayerInputComponent) override;
@@ -27,12 +29,15 @@ public:
 	UPROPERTY()
 	class UEnemyAnim* Anim;
 
+	UPROPERTY()
+	AController* EnemyController;
+
 #pragma region ATTACK
 	bool IsAttacking = false;
 
 	FOnAttackEndDelegate OnAttackEnd;
 
-	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "Anims")
+	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "Attack")
 	class UAnimMontage* AttackMontage;
 
 	UFUNCTION()
@@ -40,9 +45,31 @@ public:
 
 	UFUNCTION()
 	void Attack();
+
+	//Component
+	UPROPERTY(EditAnywhere, BlueprintReadWrite,Category ="Attack")
+	class UBoxComponent* AttackBox_Left;
+
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Attack")
+	class UBoxComponent* AttackBox_Right;
+	
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Attack")
+	TSubclassOf<UDamageType> EnemyDamageType;
+
+	UFUNCTION()
+	void OnAttackBoxOverlapBegin(UPrimitiveComponent* OverlappedComponent, AActor* OtherActor, UPrimitiveComponent* OtherComp, int32 OtherBodyIndex, bool bFromSweep, const FHitResult& SweepResult);
+
+	UFUNCTION()
+	void OnAttackBoxOverlapEnd(UPrimitiveComponent* OverlappedComponent, AActor* OtherActor, UPrimitiveComponent* OtherComp, int32 OtherBodyIndex);
+	
+	UFUNCTION(BlueprintCallable)
+	void ActiveOnCollision();
+	
+	UFUNCTION(BlueprintCallable)
+	void DeActiveOnCollision();
 #pragma endregion
 
-#pragma region HP
+#pragma region HEALTH
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Particle")	//피격 효과
 	class UParticleSystem* HitParticle;
 
@@ -78,13 +105,17 @@ public:
 	UFUNCTION()
 	void HideEnemyHealth();
 
-	/// <summary>
-	/// 아직 못함.
-	/// </summary>
+	//HealthBar
+	UPROPERTY()
+	class UHealthWidget* HealthBar;
+
 	UPROPERTY()
 	float HealthRatio = 0.f;
 
 	UFUNCTION(BlueprintCallable)
-	FORCEINLINE float GetHealthRatio() { return HealthRatio = 0.5f; }
+	void SetHealthRatio();
+
+	UFUNCTION(BlueprintCallable)
+	FORCEINLINE float GetHealthRatio() { return HealthRatio; }
 #pragma endregion
 };

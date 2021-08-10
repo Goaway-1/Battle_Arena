@@ -180,6 +180,24 @@ public:
 	void DeActiveWeaponCollision();
 #pragma endregion
 
+#pragma region HEALTH
+	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Health")
+	float MaxHealth;
+
+	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Health")
+	float CurrentHealth;
+
+	//아직 처리 못함.
+	UPROPERTY()
+	float HealthRatio = 0.f;
+
+	UFUNCTION(BlueprintCallable)
+	FORCEINLINE float GetHealthRatio() { return HealthRatio; }
+
+	virtual float TakeDamage(float DamageAmount, struct FDamageEvent const& DamageEvent, class AController* EventInstigator, AActor* DamageCauser) override;
+#pragma endregion
+
+
 #pragma region ACTIVE
 
 	//현재 겹친 아이템
@@ -201,7 +219,6 @@ public:
 	UFUNCTION()
 	void ItemDrop();
 #pragma endregion
-
 
 #pragma region HUD
 
