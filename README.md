@@ -2225,14 +2225,15 @@
       </details>
       
 - ## <span style = "color:yellow;">잡다한 것</span>
-- <img src="Image/Player_Death.gif" height="300" title="Player_Death">
+  - <img src="Image/Player_Death.gif" height="300" title="Player_Death">
   1. Player Damaged Particle
-    - 플레이어 피격시 파티클 추가되며 [Enemy방식](#Player도-동일하게-구현(8.11))과 동일.
+      - 플레이어 피격시 파티클 추가되며 [Enemy방식](#Player도-동일하게-구현(8.11))과 동일.
   2. Player Death Animation
-    - EMovementStatus에 EMS_Death라는 상태값을 추가. [Enemy방식](#Player도-같은-방식으로처리(8.11))과 동일.
-    - 플레이어의 체력이 0이하로 내려갈때 Death()메서드가 실행되며, 이때 상태를 EMS_Death로 전환하고 DeathMontage의 애니메이션을 실행한다.
-    - 노티파이를 설정하여 DeathAnimation이 종료되면 DeathEnd()메서드가 실행되어 Player 파괴.
-    - 상태가 Death라면 움직임을 중지하기 위해서 bool을 반환하는 IsCanMove()메서드를 생성하고 모든 움직임에서 사용.
+      - EMovementStatus에 EMS_Death라는 상태값을 추가. [Enemy방식](#Player도-같은-방식으로처리(8.11))과 동일.
+      - 플레이어의 체력이 0이하로 내려갈때 Death()메서드가 실행되며, 이때 상태를 EMS_Death로 전환하고 DeathMontage의 애니메이션을 실행한다.
+      - 노티파이를 설정하여 DeathAnimation이 종료되면 DeathEnd()메서드가 실행되어 Player 파괴.
+      - 상태가 Death라면 움직임을 중지하기 위해서 bool을 반환하는 IsCanMove()메서드를 생성하고 모든 움직임에서 사용.
+      - 사망시 무기도 같이 사라지도록 추후 처리
 
 > **<h3>Realization</h3>** 
 - Widget에서 사용되는 WidgetTree란 Widget의 상하관계에 대한 구조를 Tree형태로 관리하는 클래스.
