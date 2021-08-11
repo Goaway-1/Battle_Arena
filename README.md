@@ -1506,7 +1506,7 @@
 > **<h3>Today Dev Story</h3>**
 - ## <span style = "color:yellow;">적의 사망 처리</span>
   - <img src="Image/Enemy_Death_Anim.gif" height="300" title="Enemy_Death_Anim">
-  - #### Player도 같은 방식으로처리(8.11)
+  - #### Player도 같은 방식으로처리
   - 적의 체력이 0이하로 내려가면 애니메이션처리(DeathEnd)과 파괴 처리(DestoryEnemy).
   - DeathEnd() 메서드는 체력이 0이하로 내려갔을때 호출되며 AttackMontage에 있는 Death노드가 실행되고 컨트롤러의 비헤이비어트리를 정지하고 콜리전을 끔
     - BehaviorTree를 정지하기 위해서 EnemyController 클래스에 StopBeTree() 메서드를 생성.
@@ -1563,7 +1563,7 @@
     
 - ## <span style = "color:yellow;">피격효과</span>
   - <img src="Image/Attack_Particle.gif" height="300" title="Attack_Particle">
-  - #### Player도 동일하게 구현(8.11)
+  - #### Player도 동일하게 구현
   - 무기의 스켈레탈 메쉬에 소켓(ParticleSpawn)을 추가하고 피격시 사용할 ParticleSystem을 Enemy에 추가.
   - 피격효과는 OnAttackBoxOverlapBegin() 메서드, 즉 피격성공시 SpawnEmitterAtLocation() 메서드를 사용하여 호출.
     <details><summary>c++ 코드</summary> 
@@ -2227,9 +2227,9 @@
 - ## <span style = "color:yellow;">잡다한 것</span>
   - <img src="Image/Player_Death.gif" height="300" title="Player_Death">
   1. Player Damaged Particle
-      - 플레이어 피격시 파티클 추가되며 [Enemy방식](#Player도-동일하게-구현(8.11))과 동일.
+      - 플레이어 피격시 파티클 추가되며 [Enemy방식](#Player도-동일하게-구현)과 동일.
   2. Player Death Animation
-      - EMovementStatus에 EMS_Death라는 상태값을 추가. [Enemy방식](#Player도-같은-방식으로처리(8.11))과 동일.
+      - EMovementStatus에 EMS_Death라는 상태값을 추가. [Enemy방식](#Player도-같은-방식으로처리)과 동일.
       - 플레이어의 체력이 0이하로 내려갈때 Death()메서드가 실행되며, 이때 상태를 EMS_Death로 전환하고 DeathMontage의 애니메이션을 실행한다.
       - 노티파이를 설정하여 DeathAnimation이 종료되면 DeathEnd()메서드가 실행되어 Player 파괴.
       - 상태가 Death라면 움직임을 중지하기 위해서 bool을 반환하는 IsCanMove()메서드를 생성하고 모든 움직임에서 사용.
