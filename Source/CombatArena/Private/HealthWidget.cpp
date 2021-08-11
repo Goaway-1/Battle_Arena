@@ -4,27 +4,27 @@
 #include "Components/ProgressBar.h"
 #include "Components/TextBlock.h"
 
-void UHealthWidget::SetOwnerHealth() {
-	if (!Enemy && !Player) return;
+void UHealthWidget::SetOwnerHealth(float Ratio,float Max,float Current) {
+	if (!Enemy.IsValid() && !PlayerController.IsValid()) return;
 
 	FNumberFormattingOptions Opts;
 	Opts.SetMaximumFractionalDigits(0);
 
-	if (Enemy) {
-		HealthBar->SetPercent(Enemy->GetHealthRatio());
-		CurrentHealthLabel->SetText(FText::AsNumber(Enemy->CurrentHealth, &Opts));
-		CurrentHealthLabel->SetText(FText::AsNumber(Enemy->MaxHealth, &Opts));
+	if (Enemy.IsValid()) {
+		HealthBar->SetPercent(Ratio);
+		CurrentHealthLabel->SetText(FText::AsNumber(Current, &Opts));
+		MaxHealthLabel->SetText(FText::AsNumber(Max, &Opts));
 	}
-	else if (Player) {
-		HealthBar->SetPercent(Player->GetHealthRatio());
-		CurrentHealthLabel->SetText(FText::AsNumber(Player->CurrentHealth, &Opts));
-		CurrentHealthLabel->SetText(FText::AsNumber(Player->MaxHealth, &Opts));
+	else if (PlayerController.IsValid()) {
+		HealthBar->SetPercent(Ratio);
+		CurrentHealthLabel->SetText(FText::AsNumber(Current, &Opts));
+		MaxHealthLabel->SetText(FText::AsNumber(Max, &Opts));
 	}
 }
 
-void UHealthWidget::SetOwner(ACharacter* OtherActor,bool IsPlayer) {
-	Owner = OtherActor;
-	if (IsPlayer == 0) Enemy = Cast<AEnemy>(Owner);
-	else if (IsPlayer == 1) Player = Cast<AMainPlayer>(Owner);
-	else UE_LOG(LogTemp, Warning, TEXT("HealthWidget SetOwner Error!"));
+void UHealthWidget::SetEnemyOwner(AEnemy* OtherActor) {
+	Enemy = OtherActor;
+}
+void UHealthWidget::SetPlayerOwner(AController* OtherActor) {
+	PlayerController = Cast<APlayerController>(OtherActor);
 }

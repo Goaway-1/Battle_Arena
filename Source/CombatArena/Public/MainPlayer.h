@@ -9,6 +9,7 @@ enum class EMovementStatus : uint8 {
 	EMS_Normal		UMETA(DisplayName = "Normal"),
 	EMS_Walk		UMETA(DisplayName = "Walk"),
 	EMS_Sprinting	UMETA(DisplayName = "Sprinting"),
+	EMS_Death		UMETA(DisplayName = "Death"),
 
 	EMS_Default		UMETA(DisplayName = "Default")
 }; 
@@ -89,6 +90,8 @@ private:
 
 	void SetMovementStatus(EMovementStatus Status);
 
+	FORCEINLINE EMovementStatus GetMovementStatus() { return MovementStatus; }
+
 	//현재 속도를 측정하여 Idle과 walk를 구분 (카메라의 회전 변경)
 	void CheckIdle();
 
@@ -131,6 +134,8 @@ public:
 	UFUNCTION()
 	void AnimDodge();
 
+	UFUNCTION()
+	bool IsCanMove();
 #pragma endregion
 
 #pragma region ATTACK
@@ -178,6 +183,16 @@ public:
 
 	UFUNCTION(BlueprintCallable)	//Weapon의 콜리전을 키고 끄는 기능
 	void DeActiveWeaponCollision();
+
+	//Death
+	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "Anims")
+	UAnimMontage* DeathMontage;
+
+	UFUNCTION()
+	void Death();
+
+	UFUNCTION(BlueprintCallable)
+	void DeathEnd();
 #pragma endregion
 
 #pragma region HEALTH
@@ -187,16 +202,17 @@ public:
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Health")
 	float CurrentHealth;
 
-	//아직 처리 못함.
-	UPROPERTY()
+	UPROPERTY()		//체력 비율
 	float HealthRatio = 0.f;
 
-	UFUNCTION(BlueprintCallable)
+	UFUNCTION()
+	void SetHealthRatio();
+
+	UFUNCTION()
 	FORCEINLINE float GetHealthRatio() { return HealthRatio; }
 
 	virtual float TakeDamage(float DamageAmount, struct FDamageEvent const& DamageEvent, class AController* EventInstigator, AActor* DamageCauser) override;
 #pragma endregion
-
 
 #pragma region ACTIVE
 
@@ -218,6 +234,11 @@ public:
 
 	UFUNCTION()
 	void ItemDrop();
+
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Particle")	//피격 효과
+	class UParticleSystem* HitParticle;
+
+	FORCEINLINE UParticleSystem* GetHitParticle() { return HitParticle; }
 #pragma endregion
 
 #pragma region HUD

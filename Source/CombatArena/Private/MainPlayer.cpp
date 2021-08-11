@@ -68,6 +68,7 @@ AMainPlayer::AMainPlayer()
 	ComboCnt = 0;
 	ComboMaxCnt = 0;
 #pragma endregion
+
 #pragma region HEALTH
 	MaxHealth = 100.f;
 	CurrentHealth = MaxHealth;
@@ -79,6 +80,7 @@ AMainPlayer::AMainPlayer()
 	ActiveOverlappingItem = nullptr;
 	CurrentWeapon = nullptr;
 #pragma endregion
+
 #pragma region HUD
 	EnemyHUDOverlap = CreateDefaultSubobject<USphereComponent>(TEXT("EnemyHUDOverlap"));
 	EnemyHUDOverlap->SetupAttachment(GetRootComponent());
@@ -98,7 +100,7 @@ void AMainPlayer::BeginPlay()
 
 	AnimInstance = GetMesh()->GetAnimInstance();
 	SetMovementStatus(EMovementStatus::EMS_Normal);
-
+	SetHealthRatio();
 }
 
 void AMainPlayer::PossessedBy(AController* NewController) {
@@ -159,19 +161,19 @@ void AMainPlayer::Turn(float value) {
 
 #pragma region MOVEMENT
 void AMainPlayer::MoveForward(float Value) {
-	if (bAttacking) return;
+	if (!IsCanMove()) return;
 
 	AddMovementInput(Camera->GetForwardVector(), Value);
 	DirX = Value;
 }
 void AMainPlayer::MoveRight(float Value) {
-	if (bAttacking) return;
+	if (!IsCanMove()) return;
 
 	AddMovementInput(Camera->GetRightVector(), Value);
 	DirY = Value;
 }
 void AMainPlayer::Jump() {
-	if (bAttacking) return;
+	if (!IsCanMove()) return;
 	
 	Super::Jump();
 }
@@ -183,7 +185,7 @@ void  AMainPlayer::SetMovementStatus(EMovementStatus Status) {
 	else GetCharacterMovement()->MaxWalkSpeed = MoveSpeed;
 }
 void AMainPlayer::Switch_Sprinting() {
-	if (bAttacking) return;
+	if (!IsCanMove()) return;
 	if (MovementStatus != EMovementStatus::EMS_Sprinting) SetMovementStatus(EMovementStatus::EMS_Sprinting);
 	else {
 		if(GetVelocity().Size() == 0) SetMovementStatus(EMovementStatus::EMS_Normal);
@@ -192,6 +194,7 @@ void AMainPlayer::Switch_Sprinting() {
 }
 void AMainPlayer::CheckIdle() {
 	float CurrentVelocity = GetVelocity().Size();
+	if (!IsCanMove()) return;
 
 	if (CurrentVelocity == 0) {
 		SetMovementStatus(EMovementStatus::EMS_Normal);
@@ -204,7 +207,7 @@ void AMainPlayer::CheckIdle() {
 }
 
 void AMainPlayer::Dodge() {
-	if (bAttacking) return;
+	if (!IsCanMove()) return;
 	if (bCanDodge && DirX !=0 || DirY != 0) {
 		GetCharacterMovement()->BrakingFrictionFactor = 0.f;	//¸¶Âû°è¼ö
 		AnimDodge();
@@ -234,6 +237,11 @@ void AMainPlayer::AnimDodge() {
 		AnimInstance->Montage_Play(DodgeMontage);
 		AnimInstance->Montage_JumpToSection(GetAttackMontageSection("Dodge", Value), DodgeMontage);
 	}
+}
+
+bool AMainPlayer::IsCanMove() {
+	if (bAttacking || GetMovementStatus() == EMovementStatus::EMS_Death) return false;
+	else return true;
 }
 #pragma endregion
 
@@ -299,10 +307,32 @@ float AMainPlayer::TakeDamage(float DamageAmount, struct FDamageEvent const& Dam
 	CurrentHealth -= DamageAmount;
 	if (CurrentHealth <= 0) {
 		CurrentHealth = 0;
+		Death();
+	}
+	SetHealthRatio();
+
+	return DamageAmount;
+}
+void AMainPlayer::SetHealthRatio() {
+	HealthRatio = CurrentHealth / MaxHealth;
+	PlayerController->SetPlayerHealth();
+}
+
+void AMainPlayer::Death() {
+	SetMovementStatus(EMovementStatus::EMS_Death);
+
+	if (DeathMontage && AnimInstance) {
+		AnimInstance->Montage_Play(DeathMontage);
+		AnimInstance->Montage_JumpToSection("Death_1", DeathMontage);
 	}
 
-	UE_LOG(LogTemp, Warning,TEXT("CurrentHealth : %f"),CurrentHealth)
-	return DamageAmount;
+	GetCapsuleComponent()->SetCollisionEnabled(ECollisionEnabled::NoCollision);
+}
+
+void AMainPlayer::DeathEnd() {
+	GetMesh()->bPauseAnims = true;
+	GetMesh()->bNoSkeletonUpdate = true;
+	Destroy();
 }
 #pragma endregion
 

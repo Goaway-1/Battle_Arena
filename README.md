@@ -1506,6 +1506,7 @@
 > **<h3>Today Dev Story</h3>**
 - ## <span style = "color:yellow;">적의 사망 처리</span>
   - <img src="Image/Enemy_Death_Anim.gif" height="300" title="Enemy_Death_Anim">
+  - #### Player도 같은 방식으로처리(8.11)
   - 적의 체력이 0이하로 내려가면 애니메이션처리(DeathEnd)과 파괴 처리(DestoryEnemy).
   - DeathEnd() 메서드는 체력이 0이하로 내려갔을때 호출되며 AttackMontage에 있는 Death노드가 실행되고 컨트롤러의 비헤이비어트리를 정지하고 콜리전을 끔
     - BehaviorTree를 정지하기 위해서 EnemyController 클래스에 StopBeTree() 메서드를 생성.
@@ -1562,6 +1563,7 @@
     
 - ## <span style = "color:yellow;">피격효과</span>
   - <img src="Image/Attack_Particle.gif" height="300" title="Attack_Particle">
+  - #### Player도 동일하게 구현(8.11)
   - 무기의 스켈레탈 메쉬에 소켓(ParticleSpawn)을 추가하고 피격시 사용할 ParticleSystem을 Enemy에 추가.
   - 피격효과는 OnAttackBoxOverlapBegin() 메서드, 즉 피격성공시 SpawnEmitterAtLocation() 메서드를 사용하여 호출.
     <details><summary>c++ 코드</summary> 
@@ -1860,7 +1862,7 @@
 - ## <span style = "color:yellow;">HUD의 값 변경</span>
   - <img src="Image/Enemy_Health_Ratio_Set.gif" height="300" title="Enemy_Health_Ratio_Set">
   - UUserWidget클래스를 상속받은 UHealthWidget클래스를 생성 __(추상클래스)__
-    - 추상클래스로 선언했기에 꼭 BP로 만들어줘야만 한다.
+    - 추상클래스로 선언했기에 꼭 BP로 만들어줘야만 한다. (Abstract)
     - ProgressBar, TextBlock을 만들고 meta = BindWidget을 해줘야만 C++ 위젯 클래스를 기반으로 BP를 만들 수 있다.
     - TWeakObjectPtr, 약결합을 사용하여 위젯의 주인을 가져와 저장. Set 메서드 사용. (소유권이 필요하지 않는 상황에서 사용.)
   - Enemy클래스에서 Ratio를 지정하는 메서드와 위에서 만든 UHealthWidget 클래스 생성.
@@ -2101,18 +2103,136 @@
     </details>
 
 > **<h3>Realization</h3>** 
+ - null
 
-    <details><summary>c++ 코드</summary> 
+## **08.11**
+> **<h3>Today Dev Story</h3>**
+- ## <span style = "color:yellow;">Player HealthBar Decreased</span>
+  - <img src="Image/Player_HealthBar.gif" height="300" title="Player_HealthBar">
+  - HealthWidget에서 위젯의 주인인 PlayerController와 Enemy객체를 저장 할 수 있게 지정. 저장방식은 다르나 위젯의 적용방식과 메서드는 동일하도록 수정.
+  - MainPlayer클래스에서 SetHealthRatio()메서드와 HealthRatio변수 지정.
+    - TakeDamage()메서드에서 SetHealthRatio()메서드를 통해 PlayerHealth의 값을 HUD상에 표시하며 __이는 MainController와 연결.__
+  - Maincontroller클래스의 BeginPlay()메서드에서 PlayerWidget의 Tree의 FindWidget()메서드를 사용하여 위젯의 내부 위젯(HealthWidget타입)을 찾는다.
+    - 타입을 찾고 SetPlayerOwner()메서드를 통해서 주인을 MainController로 지정. Enemy는 SetEnemyOwner()메서드를 사용.
+      <details><summary>c++ 코드</summary> 
 
-    ```c++
-    //Enemy.cpp
-    
-    ```
-    
-    </details>
-    <details><summary>h 코드</summary> 
+      ```c++
+      //Enemy.cpp
+      float AMainPlayer::TakeDamage(float DamageAmount, struct FDamageEvent const& DamageEvent, class AController* EventInstigator, AActor* DamageCauser) {
+        ...
+        SetHealthRatio();
 
-    ```c++
-   
-    ```
-    </details>
+        return DamageAmount;
+      }
+      void AMainPlayer::SetHealthRatio() {
+        HealthRatio = CurrentHealth / MaxHealth;
+        PlayerController->SetPlayerHealth();
+      }
+      ```
+      ```c++
+      //MainController.cpp
+      void AMainController::BeginPlay() {
+        if (WPlayerMainHealth) {
+          ...
+          if (PlayerWidget) {
+            ...
+            //UHealthWidget을 찾는 부분
+            HealthBarOutLine = PlayerWidget->WidgetTree->FindWidget<UHealthWidget>("PlayerHealth_BP");
+            if (!HealthBarOutLine) return;
+
+            HealthBarOutLine->SetPlayerOwner(this);
+            SetPlayerHealth();
+          }
+        }
+      }
+
+      void AMainController::SetPlayerHealth() {
+        HealthBarOutLine->SetOwnerHealth(MainPlayer->GetHealthRatio(), MainPlayer->MaxHealth, MainPlayer->CurrentHealth);
+      }
+      ```
+      ```c++
+      //HealthWidget.cpp
+      void UHealthWidget::SetOwnerHealth(float Ratio,float Max,float Current) {
+        if (!Enemy.IsValid() && !PlayerController.IsValid()) return;
+
+        FNumberFormattingOptions Opts;
+        Opts.SetMaximumFractionalDigits(0);
+
+        if (Enemy.IsValid()) {
+          HealthBar->SetPercent(Ratio);
+          CurrentHealthLabel->SetText(FText::AsNumber(Current, &Opts));
+          MaxHealthLabel->SetText(FText::AsNumber(Max, &Opts));
+        }
+        else if (PlayerController.IsValid()) {
+          HealthBar->SetPercent(Ratio);
+          CurrentHealthLabel->SetText(FText::AsNumber(Current, &Opts));
+          MaxHealthLabel->SetText(FText::AsNumber(Max, &Opts));
+        }
+      }
+
+      void UHealthWidget::SetEnemyOwner(AEnemy* OtherActor) {
+        Enemy = OtherActor;
+      }
+      void UHealthWidget::SetPlayerOwner(AController* OtherActor) {
+        PlayerController = Cast<APlayerController>(OtherActor);
+      }
+      ```
+      
+      </details>
+      <details><summary>h 코드</summary> 
+
+      ```c++
+      //MainPlayer.h
+      UPROPERTY()
+      float HealthRatio = 0.f;
+
+      UFUNCTION(BlueprintCallable)
+      void SetHealthRatio();
+
+      UFUNCTION(BlueprintCallable)
+      FORCEINLINE float GetHealthRatio() { return HealthRatio; }
+      ```
+      ```c++
+      //MainController.h
+      UPROPERTY(VisibleAnywhere, Category = "Widget | EnemyWidget")
+      class UHealthWidget* HealthBarOutLine;
+
+      UPROPERTY(VisibleAnywhere, Category = "Widget | EnemyWidget")
+      class AMainPlayer* MainPlayer;
+      
+      UFUNCTION()
+      void SetPlayerHealth();       //Player의 체력 UI 지정. MainPlayer에서 호출
+      ```
+      ```c++
+      //HealthWidget.h
+      public:
+        UFUNCTION()
+        void SetEnemyOwner(AEnemy* OtherActor);
+        
+        UFUNCTION()
+        void SetPlayerOwner(AController* OtherActor);
+
+        UFUNCTION()
+        void SetOwnerHealth(float Ratio, float Max, float Current);
+      protected:
+
+        UPROPERTY()
+        TWeakObjectPtr<AEnemy> Enemy;	
+        
+        UPROPERTY()
+        TWeakObjectPtr<APlayerController> PlayerController;
+      ```
+      </details>
+      
+- ## <span style = "color:yellow;">잡다한 것</span>
+- <img src="Image/Player_Death.gif" height="300" title="Player_Death">
+  1. Player Damaged Particle
+    - 플레이어 피격시 파티클 추가되며 [Enemy방식](#Player도-동일하게-구현(8.11))과 동일.
+  2. Player Death Animation
+    - EMovementStatus에 EMS_Death라는 상태값을 추가. [Enemy방식](#Player도-같은-방식으로처리(8.11))과 동일.
+    - 플레이어의 체력이 0이하로 내려갈때 Death()메서드가 실행되며, 이때 상태를 EMS_Death로 전환하고 DeathMontage의 애니메이션을 실행한다.
+    - 노티파이를 설정하여 DeathAnimation이 종료되면 DeathEnd()메서드가 실행되어 Player 파괴.
+    - 상태가 Death라면 움직임을 중지하기 위해서 bool을 반환하는 IsCanMove()메서드를 생성하고 모든 움직임에서 사용.
+
+> **<h3>Realization</h3>** 
+- Widget에서 사용되는 WidgetTree란 Widget의 상하관계에 대한 구조를 Tree형태로 관리하는 클래스.

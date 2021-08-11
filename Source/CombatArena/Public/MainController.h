@@ -15,11 +15,20 @@ public:
 	virtual void BeginPlay() override;
 
 #pragma region WIDGET
+	UPROPERTY(VisibleAnywhere, Category = "Widget | EnemyWidget")
+	class UHealthWidget* HealthBarOutLine;
+
+	UPROPERTY(VisibleAnywhere, Category = "Widget | EnemyWidget")
+	class AMainPlayer* MainPlayer;
+
 	//Health Bar
 	UPROPERTY(VisibleAnywhere, Category = "Widget | EnemyWidget")
 	class UUserWidget* PlayerWidget;
 
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Widget | EnemyWidget")
 	TSubclassOf<class UUserWidget> WPlayerMainHealth;
+
+	UFUNCTION()
+	void SetPlayerHealth();		//Player의 체력 UI 지정. MainPlayer에서 호출
 #pragma endregion
 };

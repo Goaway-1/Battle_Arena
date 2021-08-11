@@ -13,17 +13,20 @@ class COMBATARENA_API UHealthWidget : public UUserWidget
 	GENERATED_BODY()
 public:
 	UFUNCTION()
-	void SetOwner(ACharacter* OtherActor,bool IsPlayer);
+	void SetEnemyOwner(AEnemy* OtherActor);
+	
+	UFUNCTION()
+	void SetPlayerOwner(AController* OtherActor);
 
 	UFUNCTION()
-	void SetOwnerHealth();
+	void SetOwnerHealth(float Ratio, float Max, float Current);
 protected:
 
 	UPROPERTY()
-	TWeakObjectPtr<ACharacter> Owner;
-
-	class AEnemy* Enemy;
-	class AMainPlayer* Player;
+	TWeakObjectPtr<AEnemy> Enemy;	
+	
+	UPROPERTY()
+	TWeakObjectPtr<APlayerController> PlayerController;
 
 	UPROPERTY(meta = (BindWidget))
 	class UProgressBar* HealthBar;

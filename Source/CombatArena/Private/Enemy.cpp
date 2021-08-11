@@ -5,6 +5,7 @@
 #include "Components/WidgetComponent.h"
 #include "Blueprint/UserWidget.h"
 #include "HealthWidget.h"
+#include "Engine/SkeletalMeshSocket.h"
 
 AEnemy::AEnemy()
 {
@@ -39,7 +40,6 @@ AEnemy::AEnemy()
 	HealthWidget->SetRelativeLocation(FVector(0.f, 0.f, 200.f));
 	HealthWidget->SetWidgetSpace(EWidgetSpace::Screen);
 #pragma endregion
-
 }
 
 void AEnemy::PossessedBy(AController* NewController) {
@@ -62,8 +62,8 @@ void AEnemy::BeginPlay()
 	AttackBox_Right->OnComponentBeginOverlap.AddDynamic(this, &AEnemy::OnAttackBoxOverlapBegin);
 	AttackBox_Right->OnComponentEndOverlap.AddDynamic(this, &AEnemy::OnAttackBoxOverlapEnd);
 
-	AttackBox_Left->SetCollisionEnabled(ECollisionEnabled::QueryOnly);
-	AttackBox_Right->SetCollisionEnabled(ECollisionEnabled::QueryOnly);
+	AttackBox_Left->SetCollisionEnabled(ECollisionEnabled::NoCollision);
+	AttackBox_Right->SetCollisionEnabled(ECollisionEnabled::NoCollision);
 #pragma endregion
 
 #pragma region HUD
@@ -76,8 +76,9 @@ void AEnemy::BeginPlay()
 
 	//HealthBar
 	HealthBar = Cast<UHealthWidget>(HealthWidget->GetUserWidgetObject());
-	HealthBar->SetOwner(this, 0);
-	HealthBar->SetOwnerHealth();
+	HealthBar->SetEnemyOwner(this);
+	DeActiveOnCollision();
+	HealthBar->SetOwnerHealth(GetHealthRatio(), MaxHealth, CurrentHealth);
 #pragma endregion
 }
 
@@ -126,7 +127,7 @@ float AEnemy::TakeDamage(float DamageAmount, struct FDamageEvent const& DamageEv
 		CurrentHealth = 0;
 		DeathEnd();
 	}
-	HealthBar->SetOwnerHealth();
+	HealthBar->SetOwnerHealth(GetHealthRatio(),MaxHealth, CurrentHealth);
 
 	return DamageAmount;
 }
@@ -140,6 +141,7 @@ void AEnemy::DeathEnd() {
 
 	Cast<AEnemyController>(GetController())->StopBeTree();	//비헤이비어 트리 정지 (내가 만듬)
 	GetCapsuleComponent()->SetCollisionEnabled(ECollisionEnabled::NoCollision);
+	DeActiveOnCollision();
 }
 
 void AEnemy::DestroyEnemy() {
@@ -152,8 +154,17 @@ void AEnemy::OnAttackBoxOverlapBegin(UPrimitiveComponent* OverlappedComponent, A
 	if (OtherActor) {
 		AMainPlayer* Player = Cast<AMainPlayer>(OtherActor);
 		if (Player) {
-			UE_LOG(LogTemp, Warning, TEXT("ENEMYATTACK"));
 			UGameplayStatics::ApplyDamage(Player, 10.f, EnemyController,this, EnemyDamageType);
+
+			const USkeletalMeshSocket* R_HitSocket = GetMesh()->GetSocketByName("Right_Weapon");
+			const USkeletalMeshSocket* L_HitSocket = GetMesh()->GetSocketByName("Left_Weapon");
+			if (R_HitSocket && L_HitSocket && Player->GetHitParticle()) {
+				FVector R_ParticleSpawnLocation = R_HitSocket->GetSocketLocation(GetMesh());
+				UGameplayStatics::SpawnEmitterAtLocation(GetWorld(), Player->GetHitParticle(), R_ParticleSpawnLocation, FRotator(0.f));
+
+				FVector L_ParticleSpawnLocation = L_HitSocket->GetSocketLocation(GetMesh());
+				UGameplayStatics::SpawnEmitterAtLocation(GetWorld(), Player->GetHitParticle(), L_ParticleSpawnLocation, FRotator(0.f));
+			}
 		}
 	}
 }
