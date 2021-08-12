@@ -67,6 +67,13 @@ public:
 	
 	UFUNCTION(BlueprintCallable)
 	void DeActiveOnCollision();
+
+	//knockback
+	UPROPERTY()
+	float KnockBackPower;
+
+	UFUNCTION()
+	void KnockBack();
 #pragma endregion
 
 #pragma region HEALTH

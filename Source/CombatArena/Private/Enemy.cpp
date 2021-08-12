@@ -64,6 +64,9 @@ void AEnemy::BeginPlay()
 
 	AttackBox_Left->SetCollisionEnabled(ECollisionEnabled::NoCollision);
 	AttackBox_Right->SetCollisionEnabled(ECollisionEnabled::NoCollision);
+
+	//KnockBack
+	KnockBackPower = -1000.f;
 #pragma endregion
 
 #pragma region HUD
@@ -179,6 +182,9 @@ void AEnemy::ActiveOnCollision() {
 void AEnemy::DeActiveOnCollision() {
 	AttackBox_Left->SetCollisionEnabled(ECollisionEnabled::NoCollision);
 	AttackBox_Right->SetCollisionEnabled(ECollisionEnabled::NoCollision);
+}
+void AEnemy::KnockBack() {
+	LaunchCharacter(FVector(GetActorForwardVector().X, GetActorForwardVector().Y, 0.f) * KnockBackPower, true, true);	//입력 방향대로
 }
 
 #pragma endregion

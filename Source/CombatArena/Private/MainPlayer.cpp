@@ -5,6 +5,8 @@
 #include "Enemy.h"
 #include "MainController.h"
 #include "HealthWidget.h"
+#include "DrawDebugHelpers.h"
+#include "Camera/PlayerCameraManager.h"
 
 AMainPlayer::AMainPlayer()
 {
@@ -66,7 +68,13 @@ AMainPlayer::AMainPlayer()
 	bAttacking = false;
 	bIsAttackCheck = false;
 	ComboCnt = 0;
-	ComboMaxCnt = 0;
+	ComboMaxCnt = 0;	
+	
+	//KickRange
+	KickRange = 120.f;
+	KickRadius = 30.f;
+	bKicking = false;
+	bCanKick = true;
 #pragma endregion
 
 #pragma region HEALTH
@@ -142,6 +150,9 @@ void AMainPlayer::SetupPlayerInputComponent(UInputComponent* PlayerInputComponen
 	//attack
 	PlayerInputComponent->BindAction("LMB", EInputEvent::IE_Pressed, this, &AMainPlayer::LMBDown);
 	PlayerInputComponent->BindAction("LMB", EInputEvent::IE_Released, this, &AMainPlayer::LMBUp);
+
+	//Kick
+	PlayerInputComponent->BindAction("Kick", EInputEvent::IE_Pressed, this, &AMainPlayer::Kick);
 
 	//Active
 	PlayerInputComponent->BindAction("Equip", EInputEvent::IE_Pressed, this, &AMainPlayer::ItemEquip);
@@ -240,7 +251,7 @@ void AMainPlayer::AnimDodge() {
 }
 
 bool AMainPlayer::IsCanMove() {
-	if (bAttacking || GetMovementStatus() == EMovementStatus::EMS_Death) return false;
+	if (bKicking || bAttacking || GetMovementStatus() == EMovementStatus::EMS_Death) return false;
 	else return true;
 }
 #pragma endregion
@@ -311,11 +322,64 @@ float AMainPlayer::TakeDamage(float DamageAmount, struct FDamageEvent const& Dam
 	}
 	SetHealthRatio();
 
+	//CameraShake
+	PlayerController->PlayerCameraManager->PlayCameraShake(CamShake, 1.f);
+
 	return DamageAmount;
 }
 void AMainPlayer::SetHealthRatio() {
 	HealthRatio = CurrentHealth / MaxHealth;
 	PlayerController->SetPlayerHealth();
+}
+
+void AMainPlayer::Kick() {
+	if (!bCanKick) return;
+
+	bCanKick = false;
+	bKicking = true;
+	if (!AnimInstance) AnimInstance = GetMesh()->GetAnimInstance();
+	if (AnimInstance && AttackMontage) {
+		AnimInstance->Montage_Play(AttackMontage);
+		AnimInstance->Montage_JumpToSection("Kick", AttackMontage);
+	}
+}
+void AMainPlayer::KickStart() {
+	FHitResult HitResult; //맞은 정보를 저장
+
+	//탐색방법에 대한 설정 값을 모은 구조체
+	//이름, 추적 복잡성 여부,
+	FCollisionQueryParams Params(NAME_None, false, this);	
+	bool bReslut = GetWorld()->SweepSingleByChannel(
+		HitResult,
+		GetActorLocation(),
+		GetActorLocation() + GetActorForwardVector() * KickRange,
+		FQuat::Identity,		//회전없음.
+		ECollisionChannel::ECC_GameTraceChannel5,	//Kick의 채널 번호
+		FCollisionShape::MakeSphere(KickRadius),
+		Params);
+
+	//구의 정보 (생략가능)
+	FVector TraceVec = GetActorForwardVector() * KickRange;
+	FVector Center = GetActorLocation() + TraceVec * 0.5f;
+	float HalfHeight = KickRange * 0.5f + KickRadius;
+	FQuat CapsuleRot = FRotationMatrix::MakeFromZ(TraceVec).ToQuat();
+	FColor DrawColor = bReslut ? FColor::Green : FColor::Red;
+	float DebugLifeTime = 0.5f;
+
+	DrawDebugCapsule(GetWorld(), Center, HalfHeight, KickRadius, CapsuleRot, DrawColor, false, DebugLifeTime);
+
+	//넉백을 시키는 실질적인 부분.
+	if (bReslut) {
+		if (HitResult.Actor.IsValid()) {
+			AEnemy* KnockBackEnemy = Cast<AEnemy>(HitResult.Actor);
+			if(KnockBackEnemy) KnockBackEnemy->KnockBack();
+		}
+	}
+}
+
+void AMainPlayer::KickEnd() {
+	bKicking = false;
+	bCanKick = true;
 }
 
 void AMainPlayer::Death() {

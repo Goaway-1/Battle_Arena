@@ -2237,3 +2237,179 @@
 
 > **<h3>Realization</h3>** 
 - Widget에서 사용되는 WidgetTree란 Widget의 상하관계에 대한 구조를 Tree형태로 관리하는 클래스.
+
+## **08.12**
+> **<h3>Today Dev Story</h3>**
+- ## <span style = "color:yellow;">Enemy Knock Back</span>
+  - <img src="Image/Enemy_KnockBack.gif" height="300" title="Enemy_KnockBack">
+  - 적이 뒤로 밀리는 모션 구현. 기존 컴포넌트를 추가하여 Overlap의 여부를 확인하는 것이 아닌 전면에 구를 생성하여 Overlap 확인. 
+  - 새로운 TraceCannel kick을 생성하고, Enemy와만 Block으로 처리하고 Kick을 K키에 바인딩. 또한 Main_Attack_Montage에 Kick이라는 섹션과 KickStart, kickEnd 노티파이 추가.
+  - MainPlayer클래스에 __헤더"DrawDebugHelpers.h"를__ 추가하여 사용. K키 Impressed시 Kick()메서드가 호출되며 몽타주 실행.
+    - 몽타주 실행중 발이 앞으로 뻗을때 KickStart()메서드에서 __SweepSingleByChannel()메서드를 통해 구를 생성하며 DrawDebugShpere()메서드를 통해 시각적으로 구 생성.__ (이때 Kick 채널을 사용.)
+    - 이 구에 닿은 객체가 있다면 bReslut에 값이 넣어지며, 만약 Enemy일때 Enemy클래스의 KnockBack()메서드 실행.
+    - 닿았을때는 녹색으로 닿지 않았을때는 붉은색으로 표현.
+  - Enemy클래스에 KnockBack()메서드를 정의하며 이는 Dodge에서 사용했던 LaunchCharacter()메서드를 사용하여 시점으로부터 뒤로 밀려남.
+    <details><summary>c++ 코드</summary> 
+
+    ```c++
+    //MainPlayer.cpp
+    AMainPlayer::AMainPlayer()
+    { 
+      ...
+    	KickRange = 120.f;
+      KickRadius = 30.f;
+      bKicking = false;
+      bCanKick = true;
+    }
+    void AMainPlayer::Kick() {
+      if (!bCanKick) return;
+
+      bCanKick = false;
+      bKicking = true;
+      if (!AnimInstance) AnimInstance = GetMesh()->GetAnimInstance();
+      if (AnimInstance && AttackMontage) {
+        AnimInstance->Montage_Play(AttackMontage);
+        AnimInstance->Montage_JumpToSection("Kick", AttackMontage);
+      }
+    }
+    void AMainPlayer::KickStart() {
+      	FHitResult HitResult; //맞은 정보를 저장
+
+        //탐색방법에 대한 설정 값을 모은 구조체
+        //이름, 추적 복잡성 여부,
+        FCollisionQueryParams Params(NAME_None, false, this);	
+        bool bReslut = GetWorld()->SweepSingleByChannel(
+          HitResult,
+          GetActorLocation(),
+          GetActorLocation() + GetActorForwardVector() * KickRange,
+          FQuat::Identity,		//회전없음.
+          ECollisionChannel::ECC_GameTraceChannel5,	//Kick의 채널 번호
+          FCollisionShape::MakeSphere(KickRadius),
+          Params);
+
+        //구의 정보 (생략가능)
+        FVector TraceVec = GetActorForwardVector() * KickRange;
+        FVector Center = GetActorLocation() + TraceVec * 0.5f;
+        float HalfHeight = KickRange * 0.5f + KickRadius;
+        FQuat CapsuleRot = FRotationMatrix::MakeFromZ(TraceVec).ToQuat();
+        FColor DrawColor = bReslut ? FColor::Green : FColor::Red;
+        float DebugLifeTime = 0.5f;
+
+        DrawDebugCapsule(GetWorld(), Center, HalfHeight, KickRadius, CapsuleRot, DrawColor, false, DebugLifeTime);
+
+      //넉백을 시키는 실질적인 부분.
+      if (bReslut) {
+        if (HitResult.Actor.IsValid()) {
+          AEnemy* KnockBackEnemy = Cast<AEnemy>(HitResult.Actor);
+          if(KnockBackEnemy) KnockBackEnemy->KnockBack();
+        }
+      }
+    }
+
+    void AMainPlayer::KickEnd() {
+      bKicking = false;
+      bCanKick = true;
+    }
+    ```
+
+    ```c++
+    //Enemy.cpp
+    void AEnemy::BeginPlay()
+    {
+      ...
+      KnockBackPower = -1000.f;
+    }
+    ...
+    void AEnemy::KnockBack() {
+      LaunchCharacter(FVector(GetActorForwardVector().X, GetActorForwardVector().Y, 0.f) * KnockBackPower, true, true);	//입력 방향대로
+    }
+    ```
+    
+    </details>
+    <details><summary>h 코드</summary> 
+
+    ```c++
+    //MainPlayer.h
+    UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Attack | Kick")
+    float KickRange;
+
+    UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Attack | Kick")
+    float KickRadius;
+
+    UPROPERTY(VisibleAnywhere,BlueprintReadOnly, Category = "Attack | Kick")
+    bool bKicking;    //현재 Kick 중인지
+    
+    UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Attack | Kick")
+    bool bCanKick;    //Kick이 가능한지
+
+    UFUNCTION()
+    void Kick();
+
+    UFUNCTION(BlueprintCallable)
+    void KickStart();
+
+    UFUNCTION(BlueprintCallable)
+    void KickEnd();
+    ```
+
+    ```c++
+    //Enemy.h
+    UPROPERTY()
+    float KnockBackPower;
+
+    UFUNCTION()
+    void KnockBack();
+    ```
+    </details>
+- ## <span style = "color:yellow;">Camera Shake</span>
+  - <img src="Image/Player_Camera_Shake.gif" height="300" title="Player_Camera_Shake">
+  - 피격시 카메라의 흔들림을 구현하기 위해서 UMatineeCameraShake 클래스를 상속 받은 PlayerCameraShake 클래스 생성.
+    - 진동의 시간, 진동이 강해/약해지는 시간, 진폭과 빈도를 설정
+  - 이 클래스를 MainPlayer에서 인스턴스화 한 후 TakeDamage()메서드에서 PlayerController에 있는 카메라 매니저를 통해 PlayerCameraShake()메서르를 사용.
+    <details><summary>c++ 코드</summary> 
+
+    ```c++
+    //PlayerCameraShake.cpp
+    UPlayerCameraShake::UPlayerCameraShake() {
+      OscillationDuration = 0.1f;
+      OscillationBlendInTime = 0.05f;
+      OscillationBlendOutTime = 0.05f;
+
+      RotOscillation.Pitch.Amplitude = FMath::RandRange(0.7f, 1.0f);
+      RotOscillation.Pitch.Frequency = FMath::RandRange(12.0f, 20.0f);
+
+      RotOscillation.Yaw.Amplitude = FMath::RandRange(0.7f, 1.0f);
+      RotOscillation.Yaw.Frequency = FMath::RandRange(12.0f, 20.0f);
+    }
+    ```
+    ```c++
+    //MainPlayer.cpp
+    #include "Camera/PlayerCameraManager.h"
+    float AMainPlayer::TakeDamage(float DamageAmount, struct FDamageEvent const& DamageEvent, class AController* EventInstigator, AActor* DamageCauser) {
+      Super::TakeDamage(DamageAmount, DamageEvent, EventInstigator, DamageCauser);
+      ...
+      PlayerController->PlayerCameraManager->PlayCameraShake(CamShake, 1.f);
+
+      return DamageAmount;
+    }
+    ```
+    
+    </details>
+    <details><summary>h 코드</summary> 
+
+    ```c++
+    //PlayerCameraShake.h
+    public:
+	    UPlayerCameraShake();
+    ```
+    ```c++
+    //MainPlayer.h	
+    public:
+      UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Camera")
+      TSubclassOf<UMatineeCameraShake> CamShake;
+    ```
+    </details>
+
+
+> **<h3>Realization</h3>** 
+- 공격시 여러번 피격되는 경우가 있기에 추후 구체를 그리는 방식으로 수정.
