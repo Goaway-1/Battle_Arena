@@ -26,6 +26,14 @@ public:
 
 	virtual void SetupPlayerInputComponent(class UInputComponent* PlayerInputComponent) override;
 
+	//Test
+	UPROPERTY()
+	class UEnemyAttackFunction* AttackFunction;
+
+	UFUNCTION(BlueprintCallable)
+	FORCEINLINE UEnemyAttackFunction* GetAttackFuntion() { return AttackFunction; }
+	//Test
+
 	UPROPERTY()
 	class UEnemyAnim* Anim;
 
@@ -46,34 +54,21 @@ public:
 	UFUNCTION()
 	void Attack();
 
-	//Component
-	UPROPERTY(EditAnywhere, BlueprintReadWrite,Category ="Attack")
-	class UBoxComponent* AttackBox_Left;
+	/** Sweap ½ÇÇà */
+	UFUNCTION(BlueprintCallable)	
+	void AttackStart();
 
-	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Attack")
-	class UBoxComponent* AttackBox_Right;
-	
+	//Component
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Attack")
 	TSubclassOf<UDamageType> EnemyDamageType;
-
-	UFUNCTION()
-	void OnAttackBoxOverlapBegin(UPrimitiveComponent* OverlappedComponent, AActor* OtherActor, UPrimitiveComponent* OtherComp, int32 OtherBodyIndex, bool bFromSweep, const FHitResult& SweepResult);
-
-	UFUNCTION()
-	void OnAttackBoxOverlapEnd(UPrimitiveComponent* OverlappedComponent, AActor* OtherActor, UPrimitiveComponent* OtherComp, int32 OtherBodyIndex);
 	
-	UFUNCTION(BlueprintCallable)
-	void ActiveOnCollision();
-	
-	UFUNCTION(BlueprintCallable)
-	void DeActiveOnCollision();
 
 	//knockback
 	UPROPERTY()
 	float KnockBackPower;
 
 	UFUNCTION()
-	void KnockBack();
+	void KnockBack(FVector Backward);
 #pragma endregion
 
 #pragma region HEALTH

@@ -6,6 +6,8 @@
 #include "Blueprint/UserWidget.h"
 #include "HealthWidget.h"
 #include "Engine/SkeletalMeshSocket.h"
+#include "EnemyAttackFunction.h"
+#include "CollisionQueryParams.h"
 
 AEnemy::AEnemy()
 {
@@ -17,17 +19,6 @@ AEnemy::AEnemy()
 
 	GetCapsuleComponent()->SetCollisionProfileName(TEXT("Enemy"));	//콜리전 설정
 
-#pragma region ATTACK
-	AttackBox_Left = CreateDefaultSubobject<UBoxComponent>(TEXT("AttackBox_Left"));
-	AttackBox_Left->SetupAttachment(GetMesh(), FName("Left_Weapon"));
-
-	AttackBox_Right = CreateDefaultSubobject<UBoxComponent>(TEXT("AttackBox_Right"));
-	AttackBox_Right->SetupAttachment(GetMesh(), FName("Right_Weapon"));
-
-	//SetCollision_AttackBoxs
-	AttackBox_Left->SetCollisionProfileName(TEXT("EnemyWeapon"));
-	AttackBox_Right->SetCollisionProfileName(TEXT("EnemyWeapon"));
-#pragma endregion
 
 #pragma region HUD
 	//Health
@@ -40,6 +31,8 @@ AEnemy::AEnemy()
 	HealthWidget->SetRelativeLocation(FVector(0.f, 0.f, 200.f));
 	HealthWidget->SetWidgetSpace(EWidgetSpace::Screen);
 #pragma endregion
+
+	AttackFunction = CreateDefaultSubobject<UEnemyAttackFunction>(TEXT("AttackFunction"));
 }
 
 void AEnemy::PossessedBy(AController* NewController) {
@@ -57,16 +50,9 @@ void AEnemy::BeginPlay()
 	if (!Anim) Anim = Cast<UEnemyAnim>(GetMesh()->GetAnimInstance());
 
 #pragma region ATTACK
-	AttackBox_Left->OnComponentBeginOverlap.AddDynamic(this, &AEnemy::OnAttackBoxOverlapBegin);
-	AttackBox_Left->OnComponentEndOverlap.AddDynamic(this, &AEnemy::OnAttackBoxOverlapEnd);
-	AttackBox_Right->OnComponentBeginOverlap.AddDynamic(this, &AEnemy::OnAttackBoxOverlapBegin);
-	AttackBox_Right->OnComponentEndOverlap.AddDynamic(this, &AEnemy::OnAttackBoxOverlapEnd);
-
-	AttackBox_Left->SetCollisionEnabled(ECollisionEnabled::NoCollision);
-	AttackBox_Right->SetCollisionEnabled(ECollisionEnabled::NoCollision);
 
 	//KnockBack
-	KnockBackPower = -1000.f;
+	KnockBackPower = 1000.f;
 #pragma endregion
 
 #pragma region HUD
@@ -80,7 +66,6 @@ void AEnemy::BeginPlay()
 	//HealthBar
 	HealthBar = Cast<UHealthWidget>(HealthWidget->GetUserWidgetObject());
 	HealthBar->SetEnemyOwner(this);
-	DeActiveOnCollision();
 	HealthBar->SetOwnerHealth(GetHealthRatio(), MaxHealth, CurrentHealth);
 #pragma endregion
 }
@@ -114,6 +99,10 @@ void AEnemy::Attack() {
 	}
 }
 
+void AEnemy::AttackStart() {
+	AttackFunction->AttackStart();
+}
+
 void AEnemy::OnAttackMontageEnded(UAnimMontage* Montage, bool bInterrupted)
 {
 	if (IsAttacking) return;
@@ -144,7 +133,6 @@ void AEnemy::DeathEnd() {
 
 	Cast<AEnemyController>(GetController())->StopBeTree();	//비헤이비어 트리 정지 (내가 만듬)
 	GetCapsuleComponent()->SetCollisionEnabled(ECollisionEnabled::NoCollision);
-	DeActiveOnCollision();
 }
 
 void AEnemy::DestroyEnemy() {
@@ -153,38 +141,8 @@ void AEnemy::DestroyEnemy() {
 	Destroy();
 }
 
-void AEnemy::OnAttackBoxOverlapBegin(UPrimitiveComponent* OverlappedComponent, AActor* OtherActor, UPrimitiveComponent* OtherComp, int32 OtherBodyIndex, bool bFromSweep, const FHitResult& SweepResult) {
-	if (OtherActor) {
-		AMainPlayer* Player = Cast<AMainPlayer>(OtherActor);
-		if (Player) {
-			UGameplayStatics::ApplyDamage(Player, 10.f, EnemyController,this, EnemyDamageType);
-
-			const USkeletalMeshSocket* R_HitSocket = GetMesh()->GetSocketByName("Right_Weapon");
-			const USkeletalMeshSocket* L_HitSocket = GetMesh()->GetSocketByName("Left_Weapon");
-			if (R_HitSocket && L_HitSocket && Player->GetHitParticle()) {
-				FVector R_ParticleSpawnLocation = R_HitSocket->GetSocketLocation(GetMesh());
-				UGameplayStatics::SpawnEmitterAtLocation(GetWorld(), Player->GetHitParticle(), R_ParticleSpawnLocation, FRotator(0.f));
-
-				FVector L_ParticleSpawnLocation = L_HitSocket->GetSocketLocation(GetMesh());
-				UGameplayStatics::SpawnEmitterAtLocation(GetWorld(), Player->GetHitParticle(), L_ParticleSpawnLocation, FRotator(0.f));
-			}
-		}
-	}
-}
-
-void AEnemy::OnAttackBoxOverlapEnd(UPrimitiveComponent* OverlappedComponent, AActor* OtherActor, UPrimitiveComponent* OtherComp, int32 OtherBodyIndex) {
-
-}
-void AEnemy::ActiveOnCollision() {
-	AttackBox_Left->SetCollisionEnabled(ECollisionEnabled::QueryOnly);
-	AttackBox_Right->SetCollisionEnabled(ECollisionEnabled::QueryOnly);
-}
-void AEnemy::DeActiveOnCollision() {
-	AttackBox_Left->SetCollisionEnabled(ECollisionEnabled::NoCollision);
-	AttackBox_Right->SetCollisionEnabled(ECollisionEnabled::NoCollision);
-}
-void AEnemy::KnockBack() {
-	LaunchCharacter(FVector(GetActorForwardVector().X, GetActorForwardVector().Y, 0.f) * KnockBackPower, true, true);	//입력 방향대로
+void AEnemy::KnockBack(FVector Backward) {
+	LaunchCharacter(Backward * KnockBackPower, true, true);	//입력 방향대로
 }
 
 #pragma endregion

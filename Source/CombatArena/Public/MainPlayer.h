@@ -32,6 +32,12 @@ class COMBATARENA_API AMainPlayer : public ACharacter
 public:
 	AMainPlayer();
 
+	UPROPERTY()
+	class UPlayerAttackFunction* AttackFunction;
+
+	UFUNCTION(BlueprintCallable)
+	FORCEINLINE UPlayerAttackFunction* GetAttackFuntion() { return AttackFunction; }
+
 protected:
 	virtual void BeginPlay() override;
 
@@ -189,28 +195,8 @@ public:
 	UFUNCTION(BlueprintCallable)	//Weapon의 콜리전을 키고 끄는 기능
 	void DeActiveWeaponCollision();
 
-	//Another Attack Way
-	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Attack | Kick")
-	float KickRange;
-
-	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Attack | Kick")
-	float KickRadius;
-
-	UPROPERTY(VisibleAnywhere,BlueprintReadOnly, Category = "Attack | Kick")
-	bool bKicking;			//현재 Kick 중인지
-	
-	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Attack | Kick")
-	bool bCanKick;			//Kick이 가능한지
-
 	UFUNCTION()
 	void Kick();
-
-	UFUNCTION(BlueprintCallable)
-	void KickStart();
-
-	UFUNCTION(BlueprintCallable)
-	void KickEnd();
-	//End
 
 	//Death
 	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "Anims")

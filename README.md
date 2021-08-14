@@ -11,6 +11,7 @@
 |Action|Left Ctrl|Dodge| 
 |Action|E|Equip Item| 
 |Action|Q|Drop Item| 
+|Action|F|Kick (knock Back)| 
 |Axis|Mouse_X|Camera LookUp| 
 |Axis|Mouse_Y|Camera Turn|  
 |Axis|S & W|Forward Move| 
@@ -21,6 +22,9 @@
   2. 로마 관련 에셋
   3. 카오스 디스트럭션 툴을 사용하여 무너짐 표현
   4. 발소리
+  5. 막기
+  6. 보스 패턴
+  7. 
 ## **07.27**
 > **<h3>Today Dev Story</h3>**
 - ## <span style = "color:yellow;">기초적인 설정</span>
@@ -2413,3 +2417,177 @@
 
 > **<h3>Realization</h3>** 
 - 공격시 여러번 피격되는 경우가 있기에 추후 구체를 그리는 방식으로 수정.
+
+## **08.14**
+> **<h3>Today Dev Story</h3>**
+- ## <span style = "color:yellow;">Enemy Knock Back (수정)</span>
+  - <img src="Image/Enemy_KnockBack_2.gif" height="300" title="Enemy_KnockBack_2">
+  - 기존 넉백시 플레이어의 시점의 기준이 아닌 적의 뒤로만 향했는데, 이렇게 되면 발로 차는 방향이 어디든 적의 뒤로 가는 문제 발생.
+  - MianPlayer.cpp의 KickStart() 메서드에서 Enemy의 KnockBack()메서드 호출 시 플레이어의 시점을 전달.
+    - Enemy의 KnockBack()메서드는 FVector를 인자값으로 받아 적용.
+      <details><summary>cpp 코드</summary> 
+
+      ```c++
+      //MainPlayer.cpp
+      void AMainPlayer::KickStart() {
+        ...
+        if (bReslut) {
+          if (HitResult.Actor.IsValid()) {
+            AEnemy* KnockBackEnemy = Cast<AEnemy>(HitResult.Actor);
+            if (KnockBackEnemy) {		
+              FVector VectorToBack = FVector(GetActorForwardVector().X, GetActorForwardVector().Y, 0);
+              KnockBackEnemy->KnockBack(VectorToBack);
+            }
+          }
+        }
+      }
+
+      ```
+      ```c++
+      //Enemy.cpp
+      void AEnemy::KnockBack(FVector Backward) {
+        LaunchCharacter(Backward * KnockBackPower, true, true);	//입력 방향대로
+      }
+      ```
+      </details>
+      <details><summary>h 코드</summary> 
+
+      ```c++
+      //Enemy.h
+      UFUNCTION()
+      void KnockBack(FVector Backward);
+      ```
+      </details>
+
+- ## <span style = "color:yellow;">적과 플레이어의 공격방법 수정.</span>
+  - ActorComponent클래스를 상속받은 AttackFucntion클래스를 생성하고 하위 클래스로 Enemy와 Player의 공격을 담당하는 PlayerAttackFunction, EnemyAttackFuncion클래스로 나눔
+    - 해당 클래스의 공통 부분을 상위 클래스에 추상 메서드로 구현하고 오바라이딩하여 하위에서 추가로 구현하고 싶은데 Enemy와 Player의 타입이 다르다 보니 구현에 어려움이 있다. Template을 사용하려도 해봤고, 다형성을 도전해봤지만 무용지물이였다.
+    - 일단 구현만 해보기 위해서 PlayerAttackFunction클래스에서는 Kick()메서드만 구현해보았고, EnemyAttackFunction클래스에서는 공격 판정만을 구현해 보았다.
+  - EnemyAttackFunction클래스에서 기존 Enemy의 공격은 BoxComponent를 이용하여 overlap판정으로 공격을 진행했지만, Player의 Kick()메서드와 동일한 방식으로 구현했다. 
+    - 기존 ObjectChannel에 있던 EnemyWeapon을 삭제하고 TraceChannel에 EnemyAttack으로 구현했다. (Player와만 Block 처리 // 번호 : 4번)
+    - 기존 BoxComponent 삭제 및 관련된 함수 삭제.
+    - 나머지는 Kick 메서드와 동일.
+     
+      <details><summary>cpp 코드</summary> 
+
+      ```c++
+      //PlayerAttackFunction.cpp
+      UPlayerAttackFunction::UPlayerAttackFunction() {
+
+        KickRange = 120.f;
+        KickRadius = 30.f;
+        bKicking = false;
+        bCanKick = true;
+      }
+
+      void UPlayerAttackFunction::BeginPlay() {
+        Super::BeginPlay();
+        Owner = Cast<AMainPlayer>(GetOwner());
+      }
+
+      void UPlayerAttackFunction::Kick(UAnimInstance* Anim, UAnimMontage* Montage) {
+        if (!bCanKick) return;
+
+        bCanKick = false;
+        bKicking = true;
+        if (Anim && Montage) {
+          Anim->Montage_Play(Montage);
+          Anim->Montage_JumpToSection("Kick", Montage);
+        }
+      }
+      ```
+      ```c++
+      //EnemyAttackFunction.cpp
+      void UEnemyAttackFunction::BeginPlay() {
+        Super::BeginPlay();
+        Owner = Cast<AEnemy>(GetOwner());
+      }
+
+      void UEnemyAttackFunction::AttackStart() {
+        FHitResult HitResult; //맞은 정보를 저장
+
+        FCollisionQueryParams Params(NAME_None, false, Owner);
+
+        bool bReslut = GetWorld()->SweepSingleByChannel(HitResult, Owner->GetActorLocation(), Owner->GetActorLocation() + Owner->GetActorForwardVector() * 100.f,
+          FQuat::Identity, ECollisionChannel::ECC_GameTraceChannel4,FCollisionShape::MakeSphere(200.f), Params);
+
+        //구의 정보 (생략가능)
+        FVector TraceVec = Owner->GetActorForwardVector() * 200.f;
+        FVector Center = Owner->GetActorLocation() + TraceVec * 0.5f;
+        float HalfHeight = 200.f * 0.5f + 30.f;
+        FQuat CapsuleRot = FRotationMatrix::MakeFromZ(TraceVec).ToQuat();
+        FColor DrawColor = bReslut ? FColor::Green : FColor::Red;
+        float DebugLifeTime = 0.5f;
+
+        DrawDebugCapsule(GetWorld(), Center, HalfHeight, 30.f, CapsuleRot, DrawColor, false, DebugLifeTime);
+
+        if (bReslut) {
+          if (HitResult.Actor.IsValid()) {
+            AMainPlayer* HitedPlayer = Cast<AMainPlayer>(HitResult.Actor);
+            if (HitedPlayer) {
+              UGameplayStatics::ApplyDamage(HitedPlayer, 10.f, Owner->EnemyController, Owner, Owner->EnemyDamageType);
+              const USkeletalMeshSocket* R_HitSocket = Owner->GetMesh()->GetSocketByName("Right_Weapon");
+              const USkeletalMeshSocket* L_HitSocket = Owner->GetMesh()->GetSocketByName("Left_Weapon");
+              if (R_HitSocket && L_HitSocket && HitedPlayer->GetHitParticle()) {
+                FVector R_ParticleSpawnLocation = R_HitSocket->GetSocketLocation(Owner->GetMesh());
+                UGameplayStatics::SpawnEmitterAtLocation(GetWorld(), HitedPlayer->GetHitParticle(), R_ParticleSpawnLocation, FRotator(0.f));
+
+                FVector L_ParticleSpawnLocation = L_HitSocket->GetSocketLocation(Owner->GetMesh());
+                UGameplayStatics::SpawnEmitterAtLocation(GetWorld(), HitedPlayer->GetHitParticle(), L_ParticleSpawnLocation, FRotator(0.f));
+              }
+            }
+          }
+        }
+      }
+      ```
+      </details>
+      <details><summary>h 코드</summary> 
+
+      ```c++
+      //PlayerAttackFunction.h
+      public:
+        UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Owner")
+        class AMainPlayer* Owner;
+
+        UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Owner")
+        class UAnimInstance* OwnerAnimInstance;
+
+        UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Attack | Kick")
+        float KickRange;
+
+        UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Attack | Kick")
+        float KickRadius;
+
+        UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Attack | Kick")
+        bool bKicking;			//현재 Kick 중인지
+
+        UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Attack | Kick")
+        bool bCanKick;			//Kick이 가능한지
+
+        UFUNCTION()
+        void Kick(UAnimInstance* Anim, UAnimMontage* Montage);
+
+        UFUNCTION(BlueprintCallable)
+        void KickStart();
+
+        UFUNCTION(BlueprintCallable)
+        void KickEnd();
+      ```
+      ```c++
+      //EnemyAttackFunction.h
+      public:
+        UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Owner")
+        class AEnemy* Owner;
+
+        UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Owner")
+        class UAnimInstance* OwnerAnimInstance;
+
+        UFUNCTION()
+        void AttackStart();
+      ```
+      </details>
+
+
+  
+> **<h3>Realization</h3>** 
+- ActorComponent를 추가하여 비슷한 기능을 서로 공유하여 사용가능. (has - a 의 개념)
