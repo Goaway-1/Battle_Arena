@@ -39,6 +39,7 @@ void AEnemy::PossessedBy(AController* NewController) {
 	Super::PossessedBy(NewController);
 
 	EnemyController = NewController;
+	AttackFunction->SetOwner(GetMesh(),EnemyController);
 }
 void AEnemy::BeginPlay()
 {
@@ -52,7 +53,9 @@ void AEnemy::BeginPlay()
 #pragma region ATTACK
 
 	//KnockBack
+	AttackRange = 100.f;
 	KnockBackPower = 1000.f;
+
 #pragma endregion
 
 #pragma region HUD
@@ -100,7 +103,8 @@ void AEnemy::Attack() {
 }
 
 void AEnemy::AttackStart() {
-	AttackFunction->AttackStart();
+	FString Type = "Enemy";
+	AttackFunction->AttackStart(GetActorLocation(),GetActorForwardVector(),EnemyDamageType, Type, GetHitParticle(),GetAttackRange());
 }
 
 void AEnemy::OnAttackMontageEnded(UAnimMontage* Montage, bool bInterrupted)

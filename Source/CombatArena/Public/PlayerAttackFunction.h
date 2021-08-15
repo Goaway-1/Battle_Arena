@@ -3,6 +3,7 @@
 
 #include "EngineMinimal.h"
 #include "AttackFunction.h"
+#include "Engine/SkeletalMeshSocket.h"
 #include "PlayerAttackFunction.generated.h"
 
 /**
@@ -17,34 +18,29 @@ public:
 	UPlayerAttackFunction();
 
 	virtual void BeginPlay() override;
+
 #pragma region KICK
-
-	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Owner")
-	class AMainPlayer* Owner;
-
-	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Owner")
-	class UAnimInstance* OwnerAnimInstance;
 
 	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Attack | Kick")
 	float KickRange;
 
 	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Attack | Kick")
-		float KickRadius;
+	float KickRadius;
 
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Attack | Kick")
-		bool bKicking;			//현재 Kick 중인지
+	bool bKicking;			//현재 Kick 중인지
 
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Attack | Kick")
-		bool bCanKick;			//Kick이 가능한지
+	bool bCanKick;			//Kick이 가능한지
 
 	UFUNCTION()
-		void Kick(UAnimInstance* Anim, UAnimMontage* Montage);
+	void Kick(UAnimInstance* Anim, UAnimMontage* Montage);
+
+	UFUNCTION()
+	void KickStart(FVector Location,FVector Forward);
 
 	UFUNCTION(BlueprintCallable)
-		void KickStart();
-
-	UFUNCTION(BlueprintCallable)
-		void KickEnd();
+	void KickEnd();
 
 #pragma endregion
 };

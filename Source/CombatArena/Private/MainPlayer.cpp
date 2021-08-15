@@ -62,6 +62,7 @@ AMainPlayer::AMainPlayer()
 #pragma endregion
 
 #pragma region ATTACK
+	AttackFunction = CreateDefaultSubobject<UPlayerAttackFunction>(TEXT("AttackFunction"));
 	SetWeaponStatus(EWeaponStatus::EWS_Normal);
 
 	bLMBDown = false;
@@ -69,6 +70,8 @@ AMainPlayer::AMainPlayer()
 	bIsAttackCheck = false;
 	ComboCnt = 0;
 	ComboMaxCnt = 0;	
+	DefaultAttackRange = 50.f;
+	AttackRange = DefaultAttackRange;
 
 #pragma endregion
 
@@ -94,9 +97,6 @@ AMainPlayer::AMainPlayer()
 
 	CombatTarget = nullptr;
 #pragma endregion
-
-	//Test
-	AttackFunction = CreateDefaultSubobject<UPlayerAttackFunction>(TEXT("AttackFunction"));
 }
 
 void AMainPlayer::BeginPlay()
@@ -112,6 +112,7 @@ void AMainPlayer::PossessedBy(AController* NewController) {
 	Super::PossessedBy(NewController);
 
 	PlayerController = Cast<AMainController>(GetController());
+	AttackFunction->SetOwner(GetMesh(),PlayerController);
 }
 
 void AMainPlayer::Tick(float DeltaTime)
@@ -288,6 +289,10 @@ void AMainPlayer::EndAttack() {
 }
 
 void AMainPlayer::AttackInputCheck() {
+	//여기서 공격 발동!
+	FString Type = "Player";
+	AttackFunction->AttackStart(GetActorLocation(), GetActorForwardVector(), PlayerDamageType,Type, GetHitParticle(), GetAttackRange());
+
 	if (bIsAttackCheck) {
 		ComboCnt++;
 		if (ComboCnt >= ComboMaxCnt) ComboCnt = 0;
@@ -302,12 +307,12 @@ FName AMainPlayer::GetAttackMontageSection(FString Type, int32 Section) {
 	else return "Error";
 }
 
-void AMainPlayer::ActiveWeaponCollision() {
-	GetCurrentWeapon()->ActiveOnCollision();
-}
-void AMainPlayer::DeActiveWeaponCollision() {
-	GetCurrentWeapon()->DeActiveOnCollision();
-}
+//void AMainPlayer::ActiveWeaponCollision() {
+//	GetCurrentWeapon()->ActiveOnCollision();
+//}
+//void AMainPlayer::DeActiveWeaponCollision() {
+//	GetCurrentWeapon()->DeActiveOnCollision();
+//}
 float AMainPlayer::TakeDamage(float DamageAmount, struct FDamageEvent const& DamageEvent, class AController* EventInstigator, AActor* DamageCauser) {
 	Super::TakeDamage(DamageAmount, DamageEvent, EventInstigator, DamageCauser);
 
@@ -334,6 +339,10 @@ void AMainPlayer::Kick() {
 	AttackFunction->Kick(AnimInstance, AttackMontage);
 }
 
+void AMainPlayer::KickStart() {
+	AttackFunction->KickStart(GetActorLocation(),GetActorForwardVector());
+}
+
 void AMainPlayer::Death() {
 	SetMovementStatus(EMovementStatus::EMS_Death);
 
@@ -356,18 +365,19 @@ void AMainPlayer::DeathEnd() {
 void AMainPlayer::ItemEquip() {
 	if (ActiveOverlappingItem != nullptr) {
 		AWeapon* CurWeapon = Cast<AWeapon>(ActiveOverlappingItem);
-
 		if (nullptr != CurrentWeapon) ItemDrop();
 		
 		CurWeapon->Equip(this);
+		AttackRange = CurWeapon->GetAttackRange();		//공격 범위 조절
 		SetActiveOverlappingItem(nullptr);
 	}
 }
 void AMainPlayer::ItemDrop() {
 	if (GetWeaponStatus() == EWeaponStatus::EWS_Weapon) {
-		CurrentWeapon->DetachFromActor(FDetachmentTransformRules::KeepWorldTransform);
-		CurrentWeapon->Destroy();
+		CurrentWeapon->UnEquip();
+
 		CurrentWeapon = nullptr;
+		AttackRange = DefaultAttackRange;				//공격 범위 조절
 		SetWeaponStatus(EWeaponStatus::EWS_Normal);
 	}
 }

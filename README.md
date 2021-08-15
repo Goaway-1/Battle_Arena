@@ -17,6 +17,14 @@
 |Axis|S & W|Forward Move| 
 |Axis|A & D|Right Move| 
 
+
+|Character|Speed|Sprinting_Speed|AttackRange||
+|:--:|:--:|:--:|:--:|:--:|
+|Player|500.f|750.f|50.f||
+|Enemy_1|300.f|300.f|100.f||
+|Weapon_1|null|null|200.f||
+
+
 > **추후 할일**
   1. Infinity Blade : fire Lands 를 사용하여 꾸미기
   2. 로마 관련 에셋
@@ -24,7 +32,7 @@
   4. 발소리
   5. 막기
   6. 보스 패턴
-  7. 
+  7. 던지기, 무기장착알고리즘, 활, 보스패턴 , 파쿠르, 내려놓기
 ## **07.27**
 > **<h3>Today Dev Story</h3>**
 - ## <span style = "color:yellow;">기초적인 설정</span>
@@ -2587,7 +2595,257 @@
       ```
       </details>
 
-
-  
 > **<h3>Realization</h3>** 
 - ActorComponent를 추가하여 비슷한 기능을 서로 공유하여 사용가능. (has - a 의 개념)
+
+## **08.15**
+> **<h3>Today Dev Story</h3>**
+- ## <span style = "color:yellow;">AttackFunction 추상화</span>
+  - <img src="Image/virtual_AttackFunction.gif" height="300" title="virtual_AttackFunction">
+  - AttackFunction클래스에 공격메서드를 추상화하여 구상하고, 아래 클래스에서 호출하여 사용. (공통되는 기능)
+    - Owner의 타입을 Actor로 받았고, SetOwner()메서드에서 정의한다. __이는 클래스를 사용할 모든 객체에서 PossessedBy()에서 호출해야한다. (필수)__
+      - Mesh, Controller, Owner를 정의.
+    - Owner의 타입이 Actor이기 때문에 Player나 Enemy객체가 AttackStart()메서드 실행 시 자동으로 값을 넘겨오지 못한다. 그렇기에 필요한 매개변수를 넘겨줘야한다.
+    - 도중 ECollisionChannel의 타입은 넘기는 방법을 몰라서 임시 방편으로 FString형식을 인자값으로 받아 Player일때는 5번 채널을 Enemy일때는 4번 채널으로 선언했다.
+    - Player의 기존 공격, 무기에 콜리전을 부착하여 사용하는 방식은 제거하고 Damage타입을 새로 정의해주었고 AttackCheck()메서드에서 AttackFunction->AttackStart()메서드를 호출하여 사용. (임시 - 추후수정)
+
+      <details><summary>cpp 코드</summary> 
+
+      ```c++
+      //AttackFunction.cpp
+      void UAttackFunction::SetOwner(USkeletalMeshComponent* TakeMesh,AController* TakeController ) {
+        Owner = GetOwner();
+        Mesh = TakeMesh;
+        Controller = TakeController;
+      }
+
+      void UAttackFunction::AttackStart(FVector Location, FVector Forward,TSubclassOf<UDamageType> DamageType, FString Type)
+      {
+        ECollisionChannel AttackChanel;
+
+        if (Type == "Player") {
+          Hited = Cast<AEnemy>(Hited);
+          AttackChanel = ECollisionChannel::ECC_GameTraceChannel5;
+        }
+        else if (Type == "Enemy") {
+          Hited = Cast<AMainPlayer>(Hited);
+          AttackChanel = ECollisionChannel::ECC_GameTraceChannel4;
+        }
+
+        FHitResult HitResult; //맞은 정보를 저장
+
+        FCollisionQueryParams Params(NAME_None, false, Owner);
+
+        bool bReslut = GetWorld()->SweepSingleByChannel(HitResult, Location, Location + Forward * 100.f,
+          FQuat::Identity, AttackChanel, FCollisionShape::MakeSphere(200.f), Params);
+
+        //구의 정보 (생략가능)
+        FVector TraceVec = Forward * 200.f;
+        FVector Center = Location + TraceVec * 0.5f;
+        float HalfHeight = 200.f * 0.5f + 30.f;
+        FQuat CapsuleRot = FRotationMatrix::MakeFromZ(TraceVec).ToQuat();
+        FColor DrawColor = bReslut ? FColor::Green : FColor::Red;
+        float DebugLifeTime = 0.5f;
+
+        DrawDebugCapsule(GetWorld(), Center, HalfHeight, 30.f, CapsuleRot, DrawColor, false, DebugLifeTime);
+
+        if (bReslut) {
+          if (HitResult.Actor.IsValid()) {
+            if (Type == "Player") Hited = Cast<AEnemy>(HitResult.Actor);
+            else if (Type == "Enemy") Hited = Cast<AMainPlayer>(HitResult.Actor);
+            if (Hited) {
+              UGameplayStatics::ApplyDamage(Hited, 10.f, Controller, Owner, DamageType);
+              const USkeletalMeshSocket* R_HitSocket = Mesh->GetSocketByName("Right_Weapon");
+              const USkeletalMeshSocket* L_HitSocket = Mesh->GetSocketByName("Left_Weapon");
+              /*if (R_HitSocket && L_HitSocket && Hited->GetHitParticle()) {
+                FVector R_ParticleSpawnLocation = R_HitSocket->GetSocketLocation(Mesh);
+                UGameplayStatics::SpawnEmitterAtLocation(GetWorld(), HitedPlayer->GetHitParticle(), R_ParticleSpawnLocation, FRotator(0.f));
+
+                FVector L_ParticleSpawnLocation = L_HitSocket->GetSocketLocation(Mesh);
+                UGameplayStatics::SpawnEmitterAtLocation(GetWorld(), HitedPlayer->GetHitParticle(), L_ParticleSpawnLocation, FRotator(0.f));
+              }*/
+            }
+          }
+        }
+      }
+      ```
+      ```c++
+      //MainPlayer.cpp
+      void AMainPlayer::PossessedBy(AController* NewController) {
+        Super::PossessedBy(NewController);
+
+        ...
+        AttackFunction->SetOwner(GetMesh(),PlayerController);
+      }
+      ...
+      void AMainPlayer::AttackInputCheck() {
+        //여기서 공격 발동 (임시)
+        FString Type = "Player";
+        AttackFunction->AttackStart(GetActorLocation(), GetActorForwardVector(), PlayerDamageType,Type);
+
+        if (bIsAttackCheck) {
+          ComboCnt++;
+          if (ComboCnt >= ComboMaxCnt) ComboCnt = 0;
+          bIsAttackCheck = false;
+          Attack();
+        }
+      }
+      ```
+      </details>
+
+      <details><summary>h 코드</summary> 
+
+      ```c++
+      //AttackFunction.h
+      protected:
+        UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Owner")
+        class AActor* Owner;
+
+        UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Owner")
+        class UAnimInstance* OwnerAnimInstance;
+
+        UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Owner")
+        class ACharacter* Hited = nullptr;
+
+        UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Owner")
+        class AController* Controller;
+
+        UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Owner")
+        class USkeletalMeshComponent* Mesh;
+      public:
+        UFUNCTION()
+	      void SetOwner(USkeletalMeshComponent* TakeMesh, AController* TakeController);
+
+        UFUNCTION(BlueprintCallable)
+        virtual void AttackStart(FVector Location, FVector Forward, TSubclassOf<UDamageType> DamageType, FString Type);
+      ```
+      ```c++
+      //MainPlayer.h
+      public:
+        UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Combat")
+        TSubclassOf<UDamageType> PlayerDamageType;
+      ```
+      </details>
+
+- ## <span style = "color:yellow;">Weapon PutDown</span>
+  - <img src="Image/Weapon_Drop_2.gif" height="300" title="Weapon_Drop_2">
+  - 기존에는 무기를 해제할때 DetachFromActor()메서드를 사용하여 소켓에서 내려놓고 파괴했지만 SetActorLocation()메서드를 통해 내려놓고, 콜리전을 QueryOnly로 전환하여 다시 줍기가 가능하도록 수정.
+  - Weapon클래스의 UnEquip()메서드를 생성하고 이 메서드를 MainPlayer클래스의 ItemDrop()메서드에서 호출
+    <details><summary>cpp 코드</summary> 
+
+    ```c++
+    //Weapon.cpp
+    void AWeapon::UnEquip() {
+      DetachFromActor(FDetachmentTransformRules::KeepWorldTransform);
+      CollisionVolume->SetCollisionEnabled(ECollisionEnabled::QueryOnly);
+      SetActorLocation(GetActorLocation());
+    }
+    ```
+    ```c++
+    //MainPlayer.cpp
+    void AMainPlayer::ItemDrop() {
+      if (GetWeaponStatus() == EWeaponStatus::EWS_Weapon) {
+        CurrentWeapon->UnEquip();
+
+        CurrentWeapon = nullptr;
+        SetWeaponStatus(EWeaponStatus::EWS_Normal);
+      }
+    }
+    ```
+    </details>
+
+    <details><summary>h 코드</summary> 
+
+    ```c++
+    //Weapon.h
+    public:
+      UFUNCTION()
+      void UnEquip();
+    ```
+    </details>
+
+- ## <span style = "color:yellow;">Hited Particle Location</span>
+  - <img src="Image/Hited_Particle.gif" height="300" title="Hited_Particle">
+  - 기존에는 피격시 소켓 위치에 Particle을 SpawnEmitterAtLocation()메서드를 사용하여 ParticleSystem을 생성했는데, 기능을 분리하다보니 Particle을 매개변수로 넘기고 맞은 정보가 저장되는 HitResult의 Location에 생성.
+    - 단점은 상대의 Particle을 가져오지 못했다는 점. (단점을 장점으로 승화하여 추후 무기마다 다른 Particle을 추가.)  
+      <details><summary>cpp 코드</summary> 
+
+      ```c++
+      //Weapon.cpp
+      void UAttackFunction::AttackStart(FVector Location, FVector Forward, TSubclassOf<UDamageType> DamageType,FString Type, UParticleSystem* HitParticle)
+      {
+        ...
+        if (bResult) {
+          if (HitResult.Actor.IsValid()) {
+            if (Type == "Player") Hited = Cast<AEnemy>(HitResult.Actor);
+            else if (Type == "Enemy") Hited = Cast<AMainPlayer>(HitResult.Actor);
+            if (Hited) {
+              UGameplayStatics::ApplyDamage(Hited, 10.f, Controller, Owner, DamageType);
+              UGameplayStatics::SpawnEmitterAtLocation(GetWorld(), HitParticle, HitResult.GetActor()->GetActorLocation(), FRotator(0.f));
+            }
+          }
+        }
+      }
+      ```
+      </details>
+
+- ## <span style = "color:yellow;">Attack Range</span>
+  - <img src="Image/Attack_Range.gif" height="300" title="Attack_Range">
+  - Enemy, MainPlayer, Weapon클래스에 각각 float 타입의 AttackRange와 Getter()메서드 구현. MainPlayer는 무기에 따라 범위가 달라지기에 DefaultAttackRange도 구현.
+    - AttackFunction클래스의 AttackStart()메서드의 매개변수 AttackRange가 추가되며 이를 통해 범위 지정.
+    - MainPlayer의 경우 무기를 장착하지 않았을 경우 DefaultAttackRange, 장착시 ItemEquip(),ItemDrop()메서드에서 범위를 수정.
+    - 아래에서는 MainPlayer만 적어놨고 나머지 Enemy와 Weapon은 방식이 MainPlayer와 동일.
+      <details><summary>cpp 코드</summary> 
+
+      ```c++
+      //MainPlayer.cpp
+      AMainPlayer::AMainPlayer()
+      {
+        PrimaryActorTick.bCanEverTick = true;
+        ...
+        DefaultAttackRange = 50.f;
+        AttackRange = DefaultAttackRange;
+      }
+      void AMainPlayer::ItemEquip() {
+        if (ActiveOverlappingItem != nullptr) {
+          AWeapon* CurWeapon = Cast<AWeapon>(ActiveOverlappingItem);
+          if (nullptr != CurrentWeapon) ItemDrop();
+          
+          CurWeapon->Equip(this);
+          AttackRange = CurWeapon->GetAttackRange();		//공격 범위 조절
+          SetActiveOverlappingItem(nullptr);
+        }
+      }
+      void AMainPlayer::ItemDrop() {
+        if (GetWeaponStatus() == EWeaponStatus::EWS_Weapon) {
+          CurrentWeapon->UnEquip();
+
+          CurrentWeapon = nullptr;
+          AttackRange = DefaultAttackRange;				//공격 범위 조절
+          SetWeaponStatus(EWeaponStatus::EWS_Normal);
+        }
+      }
+      ```
+      </details>
+
+      <details><summary>h 코드</summary> 
+
+      ```c++
+      //MainPlayer.h
+      public:
+        UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Attack")
+        float AttackRange;
+
+        FORCEINLINE float GetAttackRange() { return AttackRange; }
+      ```
+      ```c++
+      //AttackFunction.h
+      public:
+        UFUNCTION(BlueprintCallable)
+        virtual void AttackStart(FVector Location, FVector Forward, TSubclassOf<UDamageType> DamageType, FString Type, UParticleSystem* HitParticle,float AttackRange);
+      ```
+      </details>
+
+> **<h3>Realization</h3>** 
+- ActorComponent를 정말 유용하게 활용하는 중.
+- 최근 잡다한 수정이 많은편

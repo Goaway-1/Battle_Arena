@@ -10,7 +10,6 @@ UPlayerAttackFunction::UPlayerAttackFunction() {
 
 void UPlayerAttackFunction::BeginPlay() {
 	Super::BeginPlay();
-	Owner = Cast<AMainPlayer>(GetOwner());
 }
 
 void UPlayerAttackFunction::Kick(UAnimInstance* Anim, UAnimMontage* Montage) {
@@ -24,7 +23,7 @@ void UPlayerAttackFunction::Kick(UAnimInstance* Anim, UAnimMontage* Montage) {
 	}
 }
 
-void UPlayerAttackFunction::KickStart() {
+void UPlayerAttackFunction::KickStart(FVector Location, FVector Forward) {
 	FHitResult HitResult; //맞은 정보를 저장
 
 	//탐색방법에 대한 설정 값을 모은 구조체
@@ -32,16 +31,16 @@ void UPlayerAttackFunction::KickStart() {
 	FCollisionQueryParams Params(NAME_None, false, Owner);
 	bool bReslut = GetWorld()->SweepSingleByChannel(
 		HitResult,
-		Owner->GetActorLocation(),
-		Owner->GetActorLocation() + Owner->GetActorForwardVector() * KickRange,
+		Location,
+		Location + Forward * KickRange,
 		FQuat::Identity,		//회전없음.
 		ECollisionChannel::ECC_GameTraceChannel5,	//Kick의 채널 번호
 		FCollisionShape::MakeSphere(KickRadius),
 		Params);
 
 	//구의 정보 (생략가능)
-	FVector TraceVec = Owner->GetActorForwardVector() * KickRange;
-	FVector Center = Owner->GetActorLocation() + TraceVec * 0.5f;
+	FVector TraceVec = Forward * KickRange;
+	FVector Center = Location + TraceVec * 0.5f;
 	float HalfHeight = KickRange * 0.5f + KickRadius;
 	FQuat CapsuleRot = FRotationMatrix::MakeFromZ(TraceVec).ToQuat();
 	FColor DrawColor = bReslut ? FColor::Green : FColor::Red;
@@ -57,7 +56,7 @@ void UPlayerAttackFunction::KickStart() {
 		if (HitResult.Actor.IsValid()) {
 			AEnemy* KnockBackEnemy = Cast<AEnemy>(HitResult.Actor);
 			if (KnockBackEnemy) {
-				FVector VectorToBack = FVector(Owner->GetActorForwardVector().X, Owner->GetActorForwardVector().Y, 0);
+				FVector VectorToBack = FVector(Forward.X, Forward.Y, 0);
 				KnockBackEnemy->KnockBack(VectorToBack);
 			}
 		}

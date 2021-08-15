@@ -16,32 +16,22 @@ public:
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "SkeltalMesh")
 	class USkeletalMeshComponent* SkeletalMesh;
 
+	UFUNCTION()
 	void Equip(class AMainPlayer* Player);
+
+	UFUNCTION()
+	void UnEquip();
 
 	virtual void OnOverlapBegin(UPrimitiveComponent* OverlappedComponent, AActor* OtherActor, UPrimitiveComponent* OtherComp, int32 OtherBodyIndex, bool bFromSweep, const FHitResult& SweepResult) override;
 	
 	virtual void OnOverlapEnd(UPrimitiveComponent* OverlappedComponent, AActor* OtherActor, UPrimitiveComponent* OtherComp, int32 OtherBodyIndex) override;
+#pragma	region ATTACK
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Attack")
+	float AttackRange;
 
-#pragma region ATTACK
-	//공격 피직스담당
-	UPROPERTY(VisibleAnywhere, BlueprintReadOnly,Category = "Attack")
-	class UBoxComponent* AttackBox;
-	
-	//맞았을때의 파티클
+	FORCEINLINE float GetAttackRange() { return AttackRange; }
 
-	UFUNCTION()
-	void OnAttackBoxOverlapBegin(UPrimitiveComponent* OverlappedComponent, AActor* OtherActor, UPrimitiveComponent* OtherComp, int32 OtherBodyIndex, bool bFromSweep, const FHitResult& SweepResult);
-
-	UFUNCTION()
-	void OnAttackBoxOverlapEnd(UPrimitiveComponent* OverlappedComponent, AActor* OtherActor, UPrimitiveComponent* OtherComp, int32 OtherBodyIndex);
-
-	UFUNCTION()	//WeaponBox의 콜리전을 키고 끄는 기능 (Main에게 호출 되어 사용)
-	void ActiveOnCollision();
-
-	UFUNCTION()	//WeaponBox의 콜리전을 키고 끄는 기능 (Main에게 호출 되어 사용)
-	void DeActiveOnCollision();
 #pragma endregion
-
 #pragma region DAMAGE
 	UPROPERTY(EditAnyWhere, BlueprintReadWrite, Category = "Combat")
 	float Damage;
@@ -54,6 +44,4 @@ public:
 
 	FORCEINLINE void SetInstigator(AController* Inst) { WeaponInstigator = Inst; }
 #pragma endregion
-
-
 };

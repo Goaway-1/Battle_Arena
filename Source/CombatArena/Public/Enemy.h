@@ -26,14 +26,6 @@ public:
 
 	virtual void SetupPlayerInputComponent(class UInputComponent* PlayerInputComponent) override;
 
-	//Test
-	UPROPERTY()
-	class UEnemyAttackFunction* AttackFunction;
-
-	UFUNCTION(BlueprintCallable)
-	FORCEINLINE UEnemyAttackFunction* GetAttackFuntion() { return AttackFunction; }
-	//Test
-
 	UPROPERTY()
 	class UEnemyAnim* Anim;
 
@@ -41,7 +33,18 @@ public:
 	AController* EnemyController;
 
 #pragma region ATTACK
+	UPROPERTY()
+	class UEnemyAttackFunction* AttackFunction;
+
+	UFUNCTION(BlueprintCallable)
+	FORCEINLINE UEnemyAttackFunction* GetAttackFuntion() { return AttackFunction; }
+
 	bool IsAttacking = false;
+
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Attack")
+	float AttackRange;
+
+	FORCEINLINE float GetAttackRange() { return AttackRange; }
 
 	FOnAttackEndDelegate OnAttackEnd;
 
@@ -61,7 +64,6 @@ public:
 	//Component
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Attack")
 	TSubclassOf<UDamageType> EnemyDamageType;
-	
 
 	//knockback
 	UPROPERTY()

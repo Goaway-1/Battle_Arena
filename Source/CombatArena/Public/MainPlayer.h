@@ -32,12 +32,6 @@ class COMBATARENA_API AMainPlayer : public ACharacter
 public:
 	AMainPlayer();
 
-	UPROPERTY()
-	class UPlayerAttackFunction* AttackFunction;
-
-	UFUNCTION(BlueprintCallable)
-	FORCEINLINE UPlayerAttackFunction* GetAttackFuntion() { return AttackFunction; }
-
 protected:
 	virtual void BeginPlay() override;
 
@@ -151,6 +145,12 @@ public:
 
 #pragma region ATTACK
 public:
+	UPROPERTY()
+	class UPlayerAttackFunction* AttackFunction;
+
+	UFUNCTION(BlueprintCallable)
+	FORCEINLINE UPlayerAttackFunction* GetAttackFunction() { return AttackFunction; }
+
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Anims")
 	class UAnimInstance* AnimInstance;
 
@@ -164,6 +164,14 @@ public:
 	bool bAttacking;		//공격중인지 여부
 	bool bIsAttackCheck;	//또 공격할 건지에 대한 여부
 	int ComboCnt;			//현재 공격 횟수
+
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Attack")
+	float DefaultAttackRange;		//공격 범위
+
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Attack")
+	float AttackRange;		//공격 범위
+
+	FORCEINLINE float GetAttackRange() { return AttackRange; }
 	
 	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "Anims")
 	int ComboMaxCnt;		//최대 공격 횟수
@@ -178,6 +186,9 @@ public:
 
 	void Attack();
 
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Combat")
+	TSubclassOf<UDamageType> PlayerDamageType;
+
 	UFUNCTION(BlueprintCallable)
 	void EndAttack();
 
@@ -189,14 +200,17 @@ public:
 
 	FName GetAttackMontageSection(FString Type,int32 Section);
 
-	UFUNCTION(BlueprintCallable)	//Weapon의 콜리전을 키고 끄는 기능
-	void ActiveWeaponCollision();
+	//UFUNCTION(BlueprintCallable)	//Weapon의 콜리전을 키고 끄는 기능
+	//void ActiveWeaponCollision();
 
-	UFUNCTION(BlueprintCallable)	//Weapon의 콜리전을 키고 끄는 기능
-	void DeActiveWeaponCollision();
+	//UFUNCTION(BlueprintCallable)	//Weapon의 콜리전을 키고 끄는 기능
+	//void DeActiveWeaponCollision();
 
 	UFUNCTION()
 	void Kick();
+
+	UFUNCTION(BlueprintCallable)
+	void KickStart();
 
 	//Death
 	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "Anims")
