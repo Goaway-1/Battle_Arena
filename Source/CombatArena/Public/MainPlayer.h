@@ -1,6 +1,7 @@
 #pragma once
 
 #include "EngineMinimal.h"
+#include "Weapon.h"
 #include "GameFramework/Character.h"
 #include "MainPlayer.generated.h"
 
@@ -16,6 +17,7 @@ enum class EMovementStatus : uint8 {
 	EMS_Default		UMETA(DisplayName = "Default")
 }; 
 
+/** Weapon의 장착 여부 */
 UENUM(BlueprintType)
 enum class EWeaponStatus : uint8 {
 	EWS_Normal		UMETA(DisplayName = "Normal"),
@@ -141,6 +143,16 @@ public:
 
 	UFUNCTION()
 	bool IsCanMove();
+
+	/** Target 관련 */
+	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Tageting")
+	bool bTargeting;
+
+	UFUNCTION()
+	void Targeting();
+
+	UFUNCTION()
+	void SetTargeting();
 #pragma endregion
 
 #pragma region ATTACK
@@ -176,6 +188,7 @@ public:
 	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "Anims")
 	int ComboMaxCnt;		//최대 공격 횟수
 
+	/** Weapon의 장착 여부 */
 	UPROPERTY(VisibleAnywhere, BlueprintReadWrite, Category = "Weapon")
 	EWeaponStatus WeaponStatus;
 
@@ -184,14 +197,28 @@ public:
 	UFUNCTION()
 	FORCEINLINE EWeaponStatus GetWeaponStatus() { return WeaponStatus; }
 
+	////부착될 Pos 지정 (Weapon와 동일)
+	//UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Pos")
+	//EWeaponPos WeaponPos;
+
+	//FORCEINLINE void SetWeaponPos(EWeaponPos Pos) { WeaponPos = Pos; }
+
+	//FORCEINLINE EWeaponPos GetWeaponPos() { return WeaponPos; }
+
 	void Attack();
 
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Combat")
 	TSubclassOf<UDamageType> PlayerDamageType;
 
+	/** 노티파이를 통하여 호출 되며 Sweep 구체 생성 */
+	UFUNCTION(BlueprintCallable)
+	void StartAttack();
+
+	/** bAttacking을 false로 전환 */
 	UFUNCTION(BlueprintCallable)
 	void EndAttack();
 
+	/** 콤보의 구현을 위해서 사용 */
 	UFUNCTION(BlueprintCallable)
 	void AttackInputCheck();
 
@@ -199,12 +226,6 @@ public:
 	FORCEINLINE void LMBUp() { bLMBDown = false; }
 
 	FName GetAttackMontageSection(FString Type,int32 Section);
-
-	//UFUNCTION(BlueprintCallable)	//Weapon의 콜리전을 키고 끄는 기능
-	//void ActiveWeaponCollision();
-
-	//UFUNCTION(BlueprintCallable)	//Weapon의 콜리전을 키고 끄는 기능
-	//void DeActiveWeaponCollision();
 
 	UFUNCTION()
 	void Kick();

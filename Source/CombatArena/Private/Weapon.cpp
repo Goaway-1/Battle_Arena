@@ -35,11 +35,21 @@ void AWeapon::OnOverlapEnd(UPrimitiveComponent* OverlappedComponent, AActor* Oth
 
 void AWeapon::Equip(class AMainPlayer* Player) {
 	if (Player) {
-		const USkeletalMeshSocket* RightHandSocket = Player->GetMesh()->GetSocketByName("RightWeapon");
-		SetInstigator(Player->GetController());	//
-		if (RightHandSocket) {
-			RightHandSocket->AttachActor(this, Player->GetMesh());
+		/*if (nullptr != Player->GetCurrentWeapon()) {
+			if(Player->GetWeaponPos() == GetWeaponPos()) Player->ItemDrop();
+		}*/
+
+		/*const USkeletalMeshSocket* HandSocket = nullptr;
+		if(GetWeaponPos() == EWeaponPos::EWP_Right) HandSocket = Player->GetMesh()->GetSocketByName("RightWeapon");
+		else HandSocket = Player->GetMesh()->GetSocketByName("LeftWeapon");*/
+		Player->ItemDrop();
+
+		const USkeletalMeshSocket* HandSocket = Player->GetMesh()->GetSocketByName("RightWeapon");
+		SetInstigator(Player->GetController());
+		if (HandSocket) {
+			HandSocket->AttachActor(this, Player->GetMesh());
 			Player->SetWeaponStatus(EWeaponStatus::EWS_Weapon);
+			//Player->SetWeaponPos(GetWeaponPos());
 			Player->SetCurrentWeapon(this);
 			//ÄÝ¸®ÀüÀ» ²¨¾ßµÅ
 			CollisionVolume->SetCollisionEnabled(ECollisionEnabled::NoCollision);

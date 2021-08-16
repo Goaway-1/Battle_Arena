@@ -23,7 +23,7 @@ void UAttackFunction::SetOwner(USkeletalMeshComponent* TakeMesh,AController* Tak
 
 void UAttackFunction::AttackStart(FVector Location, FVector Forward, TSubclassOf<UDamageType> DamageType,FString Type, UParticleSystem* HitParticle,float AttackRange)
 {
-	ECollisionChannel AttackChanel;
+	ECollisionChannel AttackChanel = ECollisionChannel::ECC_Visibility;
 
 	if (Type == "Player") {
 		AttackChanel = ECollisionChannel::ECC_GameTraceChannel5;

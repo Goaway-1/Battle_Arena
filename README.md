@@ -32,7 +32,7 @@
   4. 발소리
   5. 막기
   6. 보스 패턴
-  7. 던지기, 무기장착알고리즘, 활, 보스패턴 , 파쿠르, 내려놓기
+  7. 던지기, 무기장착알고리즘, 활, 보스패턴 , 파쿠르
 ## **07.27**
 > **<h3>Today Dev Story</h3>**
 - ## <span style = "color:yellow;">기초적인 설정</span>
@@ -2849,3 +2849,99 @@
 > **<h3>Realization</h3>** 
 - ActorComponent를 정말 유용하게 활용하는 중.
 - 최근 잡다한 수정이 많은편
+
+## **08.16**
+> **<h3>Today Dev Story</h3>**
+- ## <span style = "color:yellow;">Targeting System</span>
+  - <img src="Image/Enemy_Targeting.gif" height="300" title="Enemy_Targeting">
+  - MainPlayer클래스의 Tick()메서드에서 Targeting()메서드를 실행. (bTargeting 활성화시에만 호출.)
+    - UKismetMathLibrary::FindLookAtRotation()메서드를 사용하여 Controller의 Rotation을 수정하며 Pitch를 추가로 수정. (내일 줌 아웃으로 변경 예정.)
+    - SetTarget()메서드는 Tab키 활성화시 호출되며, Tab을 한번 누르면 bTarget이 true, 또 누르면 false로 전환.
+    - 추가로 OnEnemyHUD_OverlapEnd()메서드 호출시 자동으로 bTargeting 변수를 false로 전환.
+      <details><summary>cpp 코드</summary> 
+
+      ```c++
+      //MainPlayer.cpp
+      void AMainPlayer::Tick(float DeltaTime)
+      {
+        ...
+        Targeting();
+      }
+      void AMainPlayer::SetupPlayerInputComponent(UInputComponent* PlayerInputComponent)
+      {
+        ...
+        PlayerInputComponent->BindAction("Tab", EInputEvent::IE_Pressed, this, &AMainPlayer::SetTargeting);
+      }
+      void AMainPlayer::Targeting() {
+        if (bTargeting && CombatTarget != nullptr) {
+          FRotator AA = UKismetMathLibrary::FindLookAtRotation(GetActorLocation(), CombatTarget->GetActorLocation());
+          AA.Pitch -= 30.f;
+
+          Controller->SetControlRotation(AA);
+        }
+      }
+      void AMainPlayer::SetTargeting() {
+        bTargeting = (!bTargeting) ? true : false; 
+      }
+      void AMainPlayer::OnEnemyHUD_OverlapEnd(UPrimitiveComponent* OverlappedComponent, AActor* OtherActor, UPrimitiveComponent* OtherComp, int32 OtherBodyIndex) {
+        if (OtherActor) {
+          CombatTarget = Cast<AEnemy>(OtherActor);
+          if (CombatTarget) {
+            CombatTarget->HideEnemyHealth();
+            CombatTarget = nullptr;
+            
+            bTargeting = false;
+          }
+        }
+      }
+      ```
+      </details>
+
+      <details><summary>h 코드</summary> 
+
+      ```c++
+      //MainPlayer.h
+      public:
+        /** Target 관련 */
+        UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Tageting")
+        bool bTargeting;
+
+        UFUNCTION()
+        void Targeting();
+
+        UFUNCTION()
+        void SetTargeting();
+      ```
+      </details>
+
+- ## <span style = "color:yellow;">잡다한 것</span>
+  1. MainPlayer의 공격 수정.
+    - 이전에 임시로 AttakCheck()메서드에서 AttackFunction->AttackStart()메서드를 호출하여 데미지를 입혔는데 모든 AttackMontage에 새로운 노티파이 "AttackStart"를 생성하고 MainPlayer클래스에 StartAttack()메서드를 생성하고 연결.
+      <details><summary>cpp 코드</summary> 
+
+      ```c++
+      //MainPlayer.cpp
+      void AMainPlayer::StartAttack() {
+        FString Type = "Player";
+        AttackFunction->AttackStart(GetActorLocation(), GetActorForwardVector(), PlayerDamageType, Type, GetHitParticle(), GetAttackRange());
+      }
+      ```
+      </details>
+
+      <details><summary>h 코드</summary> 
+
+      ```c++
+      //MainPlayer.h
+      public:
+        UFUNCTION(BlueprintCallable)
+        void StartAttack();
+      ```
+      </details>
+
+> **<h3>Realization</h3>** 
+- 시점 변환시 사용하는 메서드
+  - Controller->SetViewTargetWithBlend()메서드 사용. 
+  - 카메라가 Target으로 이동. (다양한 시점 추가시 유용하며 박스와 연계하여 사용.)
+- __시점 변환시 항상 Controller를 변화시켜야 한다.__
+
+    

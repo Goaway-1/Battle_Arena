@@ -8,6 +8,7 @@
 #include "Camera/PlayerCameraManager.h"
 #include "PlayerAttackFunction.h"
 
+
 AMainPlayer::AMainPlayer()
 {
  	PrimaryActorTick.bCanEverTick = true;
@@ -64,6 +65,7 @@ AMainPlayer::AMainPlayer()
 #pragma region ATTACK
 	AttackFunction = CreateDefaultSubobject<UPlayerAttackFunction>(TEXT("AttackFunction"));
 	SetWeaponStatus(EWeaponStatus::EWS_Normal);
+	//SetWeaponPos(EWeaponPos::EWP_Empty);
 
 	bLMBDown = false;
 	bAttacking = false;
@@ -72,6 +74,7 @@ AMainPlayer::AMainPlayer()
 	ComboMaxCnt = 0;	
 	DefaultAttackRange = 50.f;
 	AttackRange = DefaultAttackRange;
+	bTargeting = false;
 
 #pragma endregion
 
@@ -120,6 +123,9 @@ void AMainPlayer::Tick(float DeltaTime)
 	Super::Tick(DeltaTime);
 
 	CheckIdle();
+
+	/** Targeting Check */
+	Targeting();
 }
 
 void AMainPlayer::SetupPlayerInputComponent(UInputComponent* PlayerInputComponent)
@@ -140,6 +146,9 @@ void AMainPlayer::SetupPlayerInputComponent(UInputComponent* PlayerInputComponen
 
 	//Dodge
 	PlayerInputComponent->BindAction("Dodge", EInputEvent::IE_Pressed, this, &AMainPlayer::Dodge);
+
+	//SetTargeting
+	PlayerInputComponent->BindAction("Tab", EInputEvent::IE_Pressed, this, &AMainPlayer::SetTargeting);
 
 	//sprinting
 	PlayerInputComponent->BindAction("Shift", EInputEvent::IE_Pressed, this, &AMainPlayer::Switch_Sprinting);
@@ -253,6 +262,19 @@ bool AMainPlayer::IsCanMove() {
 	if (bAttacking || GetMovementStatus() == EMovementStatus::EMS_Death) return false;
 	else return true;
 }
+
+
+void AMainPlayer::Targeting() {
+	if (bTargeting && CombatTarget != nullptr) {
+		FRotator AA = UKismetMathLibrary::FindLookAtRotation(GetActorLocation(), CombatTarget->GetActorLocation());
+		AA.Pitch -= 30.f;
+
+		Controller->SetControlRotation(AA);
+	}
+}
+void AMainPlayer::SetTargeting() {
+	bTargeting = (!bTargeting) ? true : false; 
+}
 #pragma endregion
 
 #pragma region ATTACK
@@ -284,15 +306,16 @@ void AMainPlayer::Attack() {
 	}
 }
 
+void AMainPlayer::StartAttack() {
+	FString Type = "Player";
+	AttackFunction->AttackStart(GetActorLocation(), GetActorForwardVector(), PlayerDamageType, Type, GetHitParticle(), GetAttackRange());
+}
+
 void AMainPlayer::EndAttack() {
 	bAttacking = false;
 }
 
 void AMainPlayer::AttackInputCheck() {
-	//여기서 공격 발동!
-	FString Type = "Player";
-	AttackFunction->AttackStart(GetActorLocation(), GetActorForwardVector(), PlayerDamageType,Type, GetHitParticle(), GetAttackRange());
-
 	if (bIsAttackCheck) {
 		ComboCnt++;
 		if (ComboCnt >= ComboMaxCnt) ComboCnt = 0;
@@ -307,12 +330,6 @@ FName AMainPlayer::GetAttackMontageSection(FString Type, int32 Section) {
 	else return "Error";
 }
 
-//void AMainPlayer::ActiveWeaponCollision() {
-//	GetCurrentWeapon()->ActiveOnCollision();
-//}
-//void AMainPlayer::DeActiveWeaponCollision() {
-//	GetCurrentWeapon()->DeActiveOnCollision();
-//}
 float AMainPlayer::TakeDamage(float DamageAmount, struct FDamageEvent const& DamageEvent, class AController* EventInstigator, AActor* DamageCauser) {
 	Super::TakeDamage(DamageAmount, DamageEvent, EventInstigator, DamageCauser);
 
@@ -326,7 +343,7 @@ float AMainPlayer::TakeDamage(float DamageAmount, struct FDamageEvent const& Dam
 	SetHealthRatio();
 
 	//CameraShake
-	PlayerController->PlayerCameraManager->PlayCameraShake(CamShake, 1.f);
+	if (PlayerController) PlayerController->PlayerCameraManager->StartCameraShake(CamShake, 1.f);
 
 	return DamageAmount;
 }
@@ -365,8 +382,7 @@ void AMainPlayer::DeathEnd() {
 void AMainPlayer::ItemEquip() {
 	if (ActiveOverlappingItem != nullptr) {
 		AWeapon* CurWeapon = Cast<AWeapon>(ActiveOverlappingItem);
-		if (nullptr != CurrentWeapon) ItemDrop();
-		
+
 		CurWeapon->Equip(this);
 		AttackRange = CurWeapon->GetAttackRange();		//공격 범위 조절
 		SetActiveOverlappingItem(nullptr);
@@ -379,6 +395,7 @@ void AMainPlayer::ItemDrop() {
 		CurrentWeapon = nullptr;
 		AttackRange = DefaultAttackRange;				//공격 범위 조절
 		SetWeaponStatus(EWeaponStatus::EWS_Normal);
+	//	SetWeaponPos(EWeaponPos::EWP_Empty);
 	}
 }
 #pragma endregion
@@ -400,6 +417,8 @@ void AMainPlayer::OnEnemyHUD_OverlapEnd(UPrimitiveComponent* OverlappedComponent
 		if (CombatTarget) {
 			CombatTarget->HideEnemyHealth();
 			CombatTarget = nullptr;
+			
+			bTargeting = false;
 		}
 	}
 }
