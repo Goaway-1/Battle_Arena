@@ -273,10 +273,13 @@ public:
 
 	//현재 장착중인 무기
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly,Category = "Weapon")
-	class AWeapon* CurrentWeapon;
+	class AWeapon* CurrentLeftWeapon;
 
-	FORCEINLINE void SetCurrentWeapon(AWeapon* Weapon) { CurrentWeapon = Weapon; }
-	FORCEINLINE AWeapon* GetCurrentWeapon() { return CurrentWeapon; }
+	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Weapon")
+	class AWeapon* CurrentRightWeapon;
+
+	void SetCurrentWeapon(AWeapon* Weapon,FString Type);
+	AWeapon* GetCurrentWeapon(FString Type);
 
 	UFUNCTION()
 	void ItemEquip();

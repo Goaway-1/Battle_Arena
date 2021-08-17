@@ -8,7 +8,7 @@
 |Action|Space Bar|Jump|
 |Action|Shift|Sprinting| 
 |Action|LMB|Attack| 
-|Action|Left Ctrl|Dodge| 
+|Action|Left Ctrl|Dodge // 4000.f| 
 |Action|E|Equip Item| 
 |Action|Q|Drop Item| 
 |Action|F|Kick (knock Back)| 
@@ -24,15 +24,19 @@
 |Enemy_1|300.f|300.f|100.f||
 |Weapon_1|null|null|200.f||
 
-
+> **<h3>응용 사이트</h3>**
+ [오디오 변환기](https://online-audio-converter.com/ko/)
+ [무료 소리](https://freesound.org/)
+ [오디오 증폭기](https://www.mp3louder.com/ko/)
+ [오디오 자르기](https://mp3cut.net/ko/)
 > **추후 할일**
   1. Infinity Blade : fire Lands 를 사용하여 꾸미기
   2. 로마 관련 에셋
   3. 카오스 디스트럭션 툴을 사용하여 무너짐 표현
-  4. 발소리
   5. 막기
   6. 보스 패턴
-  7. 던지기, 무기장착알고리즘, 활, 보스패턴 , 파쿠르
+  7. 던지기, 파쿠르
+
 ## **07.27**
 > **<h3>Today Dev Story</h3>**
 - ## <span style = "color:yellow;">기초적인 설정</span>
@@ -2944,4 +2948,140 @@
   - 카메라가 Target으로 이동. (다양한 시점 추가시 유용하며 박스와 연계하여 사용.)
 - __시점 변환시 항상 Controller를 변화시켜야 한다.__
 
-    
+## **08.17**
+> **<h3>Today Dev Story</h3>**
+- ## <span style = "color:yellow;">Equip Weapon Full</span>
+  - <img src="Image/Weapon_Equip_Drop_2.gif" height="300" title="Weapon_Equip_Drop_2">   
+  - 좌우 무기를 장착하고 해제하는 로직 생성.
+  - MainPlayer클래스는 기존과 매우 유사하며 무기가 아에 없을 때만 WeaponStatus를 Normal로 변경.
+    - 기존의 CurrentWeapon을 2개로 분리하여 CurrentLeftWeapon과 CurrentRightWeapon으로 구분.
+    - get,set 메서드들은 String 값에 따라 좌우를 구분하며, 오른쪽 무기 드랍시에만 기본 범위로 지정.
+  - Weapon클래스에 새로운 enum인 EWeaponPos생성. 이는 무기가 플레이어에게 배치되는 위치를 나타냄.
+    - ItemDrop()시 __오른쪽 무기가 우선으로 드랍.__
+    - 무기 장착시 오른쪽에 장착된다면 주무기로 판단하여 공격범위가 증가.
+      <details><summary>cpp 코드</summary> 
+
+      ```c++
+      //Weapon.cpp
+      void AWeapon::Equip(class AMainPlayer* Player) {
+        if (Player) {
+          if ((GetWeaponPos() == EWeaponPos::EWP_Left && Player->GetCurrentWeapon("Left") != nullptr) || (GetWeaponPos() == EWeaponPos::EWP_Right && Player->GetCurrentWeapon("Right") != nullptr)) {
+            Player->ItemDrop();
+          }
+
+          /** 장착 로직 */
+          const USkeletalMeshSocket* HandSocket = nullptr;
+          if(GetWeaponPos() == EWeaponPos::EWP_Right) HandSocket = Player->GetMesh()->GetSocketByName("RightWeapon");
+          else HandSocket = Player->GetMesh()->GetSocketByName("LeftWeapon");
+
+          SetInstigator(Player->GetController());
+          if (HandSocket) {
+            HandSocket->AttachActor(this, Player->GetMesh());
+            Player->SetWeaponStatus(EWeaponStatus::EWS_Weapon);
+
+            if (GetWeaponPos() == EWeaponPos::EWP_Right) {
+              Player->AttackRange = GetAttackRange();   //오른쪽 무기만 거리 지정
+              Player->SetCurrentWeapon(this, "Right");    
+            }
+            else if(GetWeaponPos() == EWeaponPos::EWP_Left)	Player->SetCurrentWeapon(this, "Left");
+
+            CollisionVolume->SetCollisionEnabled(ECollisionEnabled::NoCollision);
+          }
+        }
+      }
+      void AWeapon::UnEquip() {
+        /** 해제 로직 */
+        DetachFromActor(FDetachmentTransformRules::KeepWorldTransform);
+        CollisionVolume->SetCollisionEnabled(ECollisionEnabled::QueryOnly);
+        SetActorLocation(GetActorLocation());
+      }
+      ```
+      ```c++
+      //MainPlayer.cpp
+      void AMainPlayer::ItemEquip() {
+        if (ActiveOverlappingItem != nullptr) {
+          AWeapon* CurWeapon = Cast<AWeapon>(ActiveOverlappingItem);
+
+          CurWeapon->Equip(this);
+          SetActiveOverlappingItem(nullptr);
+        }
+      }
+      void AMainPlayer::ItemDrop() {
+        if (GetWeaponStatus() == EWeaponStatus::EWS_Weapon) {
+          if (CurrentRightWeapon != nullptr) {
+            CurrentRightWeapon->UnEquip();
+            CurrentRightWeapon = nullptr;		
+            AttackRange = DefaultAttackRange;				//공격 범위 조절
+            if (CurrentLeftWeapon == nullptr) SetWeaponStatus(EWeaponStatus::EWS_Normal);
+          }
+          else if (CurrentLeftWeapon != nullptr) {
+            CurrentLeftWeapon->UnEquip();
+            CurrentLeftWeapon = nullptr;
+            if(CurrentRightWeapon == nullptr) SetWeaponStatus(EWeaponStatus::EWS_Normal);
+          }
+        }
+      }
+
+      void AMainPlayer::SetCurrentWeapon(AWeapon* Weapon, FString Type) {
+        if(Type == "Right") CurrentRightWeapon = Weapon;
+        else CurrentLeftWeapon = Weapon;
+      }
+      AWeapon* AMainPlayer::GetCurrentWeapon(FString Type) {
+        if (Type == "Right") return CurrentRightWeapon;
+        else return CurrentLeftWeapon;
+      }
+      ```
+      </details>
+
+      <details><summary>h 코드</summary> 
+
+      ```c++
+      //Weapon.h
+      public:
+        //부착될 Pos 지정 
+        UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Pos")
+        EWeaponPos WeaponPos;
+
+        FORCEINLINE void SetWeaponPosLoc(EWeaponPos Pos) { WeaponPos = Pos; }
+
+        FORCEINLINE EWeaponPos GetWeaponPos() { return WeaponPos; }
+      ```
+      ```c++
+      //MainPlayer.h
+      public:
+        UPROPERTY(VisibleAnywhere, BlueprintReadOnly,Category = "Weapon")
+        class AWeapon* CurrentLeftWeapon;
+
+        UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Weapon")
+        class AWeapon* CurrentRightWeapon;
+
+        void SetCurrentWeapon(AWeapon* Weapon,FString Type);
+        AWeapon* GetCurrentWeapon(FString Type);
+      ```
+      </details>
+
+- ## <span style = "color:yellow;">Add FootStep Sound</span>
+  - <img src="Image/Walk_Sound.png" height="300" title="Walk_Sound">   
+  - 발걸음마다 사운드를 나게 하기 위해서 모든 애니메이션에 PlaySound 노티파이를 추가하여 사운드큐와 어태치
+    - 사운드큐의 이름을 Walk라고 지정하고, 자연스러움을 추가하기 위해서 4개의 소리를 받아 Random으로 발생하도록 사운드 큐 생성.
+
+
+- ## <span style = "color:yellow;">잡다한 것</span>
+  1. 공격 모션 수정.
+    - 기존 공격 모션의 선택 여부를 Attack()메서드의 GetWeaponStatus()메서드의 반환값으로 지정했지만 왼쪽의 보조무기를 장착했을때도 새로운 모션을 사용.
+    - 이를 수정하기 위해서 아래와 같이 수정. __주무기의 장착여부에 따른 공격 모션으로 수정.__
+      ```c++
+      //MainPlayer.cpp
+      void AMainPlayer::Attack() {
+        ...
+        if (GetCurrentWeapon("Right") == nullptr) PlayMontage = AttackMontage;
+        else PlayMontage = WeaponAttackMontage;
+        ...
+      }
+      ```
+  2. root 모션의 적응을 위해서 mixamo에서 받은 Paladin.fbx외의 모든 애니메이션에 root 추가
+    - Blend를 사용하여 모든 파일에 root를 추가한 채로 빌드. 많은 시간 소요
+    - 공격시 앞으로 자연스럽게 가는거.
+
+> **<h3>Realization</h3>** 
+- runsound 수정하기

@@ -35,28 +35,32 @@ void AWeapon::OnOverlapEnd(UPrimitiveComponent* OverlappedComponent, AActor* Oth
 
 void AWeapon::Equip(class AMainPlayer* Player) {
 	if (Player) {
-		/*if (nullptr != Player->GetCurrentWeapon()) {
-			if(Player->GetWeaponPos() == GetWeaponPos()) Player->ItemDrop();
-		}*/
+		if ((GetWeaponPos() == EWeaponPos::EWP_Left && Player->GetCurrentWeapon("Left") != nullptr) || (GetWeaponPos() == EWeaponPos::EWP_Right && Player->GetCurrentWeapon("Right") != nullptr)) {
+			Player->ItemDrop();
+		}
 
-		/*const USkeletalMeshSocket* HandSocket = nullptr;
+		/** 장착 로직 */
+		const USkeletalMeshSocket* HandSocket = nullptr;
 		if(GetWeaponPos() == EWeaponPos::EWP_Right) HandSocket = Player->GetMesh()->GetSocketByName("RightWeapon");
-		else HandSocket = Player->GetMesh()->GetSocketByName("LeftWeapon");*/
-		Player->ItemDrop();
+		else HandSocket = Player->GetMesh()->GetSocketByName("LeftWeapon");
 
-		const USkeletalMeshSocket* HandSocket = Player->GetMesh()->GetSocketByName("RightWeapon");
 		SetInstigator(Player->GetController());
 		if (HandSocket) {
 			HandSocket->AttachActor(this, Player->GetMesh());
 			Player->SetWeaponStatus(EWeaponStatus::EWS_Weapon);
-			//Player->SetWeaponPos(GetWeaponPos());
-			Player->SetCurrentWeapon(this);
-			//콜리전을 꺼야돼
+
+			if (GetWeaponPos() == EWeaponPos::EWP_Right) {
+				Player->AttackRange = GetAttackRange();		//오른쪽 무기만 거리 지정
+				Player->SetCurrentWeapon(this, "Right");
+			}
+			else if(GetWeaponPos() == EWeaponPos::EWP_Left)	Player->SetCurrentWeapon(this, "Left");
+
 			CollisionVolume->SetCollisionEnabled(ECollisionEnabled::NoCollision);
 		}
 	}
 }
 void AWeapon::UnEquip() {
+	/** 해제 로직 */
 	DetachFromActor(FDetachmentTransformRules::KeepWorldTransform);
 	CollisionVolume->SetCollisionEnabled(ECollisionEnabled::QueryOnly);
 	SetActorLocation(GetActorLocation());

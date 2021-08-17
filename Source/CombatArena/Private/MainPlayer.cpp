@@ -53,7 +53,7 @@ AMainPlayer::AMainPlayer()
 	SprintingSpeed = 750.f;
 
 	//Dodge
-	DodgeSpeed = 7000.f;
+	DodgeSpeed = 4000.f;
 	bCanDodge = true;
 	DodgeCoolDownTime = 1.f;
 	DodgeStopTime = 0.1f;
@@ -87,7 +87,8 @@ AMainPlayer::AMainPlayer()
 	GetCapsuleComponent()->SetCollisionProfileName(TEXT("Player"));	//콜리전 설정
 
 	ActiveOverlappingItem = nullptr;
-	CurrentWeapon = nullptr;
+	CurrentLeftWeapon = nullptr;
+	CurrentRightWeapon = nullptr;
 #pragma endregion
 
 #pragma region HUD
@@ -227,17 +228,17 @@ void AMainPlayer::CheckIdle() {
 void AMainPlayer::Dodge() {
 	if (!IsCanMove()) return;
 	if (bCanDodge && DirX !=0 || DirY != 0) {
-		GetCharacterMovement()->BrakingFrictionFactor = 0.f;	//마찰계수
+		//GetCharacterMovement()->BrakingFrictionFactor = 0.f;	//마찰계수
 		AnimDodge();
-		LaunchCharacter(FVector(GetLastMovementInputVector().X , GetLastMovementInputVector().Y, 0.f) * DodgeSpeed, true, true);	//입력 방향대로
+	//	LaunchCharacter(FVector(GetLastMovementInputVector().X , GetLastMovementInputVector().Y, 0.f) * DodgeSpeed, true, true);	//입력 방향대로
 		GetWorldTimerManager().SetTimer(DodgeHandle, this, &AMainPlayer::DodgeEnd, DodgeStopTime,false);
 		bCanDodge = false;
 	}
 }
 void AMainPlayer::DodgeEnd() {
-	GetCharacterMovement()->StopMovementImmediately();	//움직임을 정지시킨다.
+	//GetCharacterMovement()->StopMovementImmediately();	//움직임을 정지시킨다.
 	GetWorldTimerManager().SetTimer(DodgeHandle, this, &AMainPlayer::ResetDodge, DodgeCoolDownTime, false);
-	GetCharacterMovement()->BrakingFrictionFactor = 2.f;
+	//GetCharacterMovement()->BrakingFrictionFactor = 2.f;
 }
 void AMainPlayer::ResetDodge() {
 	bCanDodge = true;
@@ -259,7 +260,7 @@ void AMainPlayer::AnimDodge() {
 
 bool AMainPlayer::IsCanMove() {
 	//if (AttackFunction->bKicking || bAttacking || GetMovementStatus() == EMovementStatus::EMS_Death) return false;
-	if (bAttacking || GetMovementStatus() == EMovementStatus::EMS_Death) return false;
+	if (!bCanDodge || bAttacking || GetMovementStatus() == EMovementStatus::EMS_Death) return false;
 	else return true;
 }
 
@@ -289,8 +290,8 @@ void AMainPlayer::LMBDown() {
 void AMainPlayer::Attack() {
 	UAnimMontage* PlayMontage = nullptr;
 
-	if (GetWeaponStatus() == EWeaponStatus::EWS_Normal) PlayMontage = AttackMontage;
-	else if (GetWeaponStatus() == EWeaponStatus::EWS_Weapon) PlayMontage = WeaponAttackMontage;
+	if (GetCurrentWeapon("Right") == nullptr) PlayMontage = AttackMontage;
+	else PlayMontage = WeaponAttackMontage;
 
 	bAttacking = true;
 	if (!AnimInstance) AnimInstance = GetMesh()->GetAnimInstance();
@@ -299,7 +300,7 @@ void AMainPlayer::Attack() {
 			ComboCnt = 0;
 			AnimInstance->Montage_Play(PlayMontage);
 		}
-		else {													//공격중일때
+		else {													//공격중일때 2타 3타
 			AnimInstance->Montage_Play(PlayMontage);
 			AnimInstance->Montage_JumpToSection(GetAttackMontageSection("Attack", ComboCnt), PlayMontage);
 		}
@@ -384,19 +385,34 @@ void AMainPlayer::ItemEquip() {
 		AWeapon* CurWeapon = Cast<AWeapon>(ActiveOverlappingItem);
 
 		CurWeapon->Equip(this);
-		AttackRange = CurWeapon->GetAttackRange();		//공격 범위 조절
 		SetActiveOverlappingItem(nullptr);
 	}
 }
 void AMainPlayer::ItemDrop() {
 	if (GetWeaponStatus() == EWeaponStatus::EWS_Weapon) {
-		CurrentWeapon->UnEquip();
-
-		CurrentWeapon = nullptr;
-		AttackRange = DefaultAttackRange;				//공격 범위 조절
-		SetWeaponStatus(EWeaponStatus::EWS_Normal);
-	//	SetWeaponPos(EWeaponPos::EWP_Empty);
+		if (CurrentRightWeapon != nullptr) {
+			CurrentRightWeapon->UnEquip();
+			CurrentRightWeapon = nullptr;		
+			AttackRange = DefaultAttackRange;				//공격 범위 조절
+			if (CurrentLeftWeapon == nullptr) SetWeaponStatus(EWeaponStatus::EWS_Normal);
+		}
+		else if (CurrentLeftWeapon != nullptr) {
+			CurrentLeftWeapon->UnEquip();
+			CurrentLeftWeapon = nullptr;
+			if(CurrentRightWeapon == nullptr) SetWeaponStatus(EWeaponStatus::EWS_Normal);
+		}
 	}
+}
+
+void AMainPlayer::SetCurrentWeapon(AWeapon* Weapon, FString Type) {
+	if(Type == "Right") CurrentRightWeapon = Weapon;
+	else CurrentLeftWeapon = Weapon;
+}
+AWeapon* AMainPlayer::GetCurrentWeapon(FString Type) {
+	if (Type == "Right") return CurrentRightWeapon;
+	else if (Type == "Left")return CurrentLeftWeapon;
+	else UE_LOG(LogTemp, Warning, TEXT("GetCurrentWeapon is Error!"));
+	return nullptr;
 }
 #pragma endregion
 

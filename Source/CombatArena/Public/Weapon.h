@@ -4,15 +4,15 @@
 #include "Item.h"
 #include "Weapon.generated.h"
 
-//UENUM(BlueprintType)
-//enum class EWeaponPos : uint8 {
-//	EWP_Empty		UMETA(DIsplayName = "Empty"),
-//	EWP_Left		UMETA(DisplayName = "Left"),
-//	EWP_Right		UMETA(DisplayName = "Right"),
-//	EWP_Full		UMETA(DisplayName = "Full"),
-//
-//	EWP_Default		UMETA(DisplayName = "Default")
-//};
+UENUM(BlueprintType)
+enum class EWeaponPos : uint8 {
+	EWP_Empty		UMETA(DIsplayName = "Empty"),
+	EWP_Left		UMETA(DisplayName = "Left"),
+	EWP_Right		UMETA(DisplayName = "Right"),
+	EWP_Full		UMETA(DisplayName = "Full"),
+
+	EWP_Default		UMETA(DisplayName = "Default")
+};
 
 UCLASS()
 class COMBATARENA_API AWeapon : public AItem
@@ -36,13 +36,13 @@ public:
 
 	virtual void OnOverlapEnd(UPrimitiveComponent* OverlappedComponent, AActor* OtherActor, UPrimitiveComponent* OtherComp, int32 OtherBodyIndex) override;
 
-	////부착될 Pos 지정 (Player와 동일)
-	//UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Pos")
-	//EWeaponPos WeaponPos;
+	//부착될 Pos 지정 
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Pos")
+	EWeaponPos WeaponPos;
 
-	//FORCEINLINE void SetWeaponPosLoc(EWeaponPos Pos) { WeaponPos = Pos; }
+	FORCEINLINE void SetWeaponPosLoc(EWeaponPos Pos) { WeaponPos = Pos; }
 
-	//FORCEINLINE EWeaponPos GetWeaponPos() { return WeaponPos; }
+	FORCEINLINE EWeaponPos GetWeaponPos() { return WeaponPos; }
 
 #pragma	region ATTACK
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Attack")
