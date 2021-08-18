@@ -3065,7 +3065,6 @@
   - 발걸음마다 사운드를 나게 하기 위해서 모든 애니메이션에 PlaySound 노티파이를 추가하여 사운드큐와 어태치
     - 사운드큐의 이름을 Walk라고 지정하고, 자연스러움을 추가하기 위해서 4개의 소리를 받아 Random으로 발생하도록 사운드 큐 생성.
 
-
 - ## <span style = "color:yellow;">잡다한 것</span>
   1. 공격 모션 수정.
     - 기존 공격 모션의 선택 여부를 Attack()메서드의 GetWeaponStatus()메서드의 반환값으로 지정했지만 왼쪽의 보조무기를 장착했을때도 새로운 모션을 사용.
@@ -3085,3 +3084,91 @@
 
 > **<h3>Realization</h3>** 
 - runsound 수정하기
+
+## **08.18**
+> **<h3>Today Dev Story</h3>**
+- ## <span style = "color:yellow;">Shield의 구현</span>
+  - <img src="Image/Shield_1.gif" height="300" title="Shield_1">   
+  - ShieldWeapon클래스는 새로운 BoxComponent를 생성하고 공격을 막는다.
+    - 기존 공격시 사용하는 Sweepsinglebychannel은 먼저 Hited된 하나의 결과값만 도출되기 때문에 BoxComponent에 맞게되면 데미지를 입지 않는다.
+    - 다중 피해값을 받기 위해서는 multi를 사용해야한다.
+    - 부가적인 처리는 후에 하고, 콜리전 채널 Shield를 만들고 Shield의 BoxComponent에 오버랩을 추가한다. 
+    - __해당 콜리전 채널은 EnemyAttack에만 Block처리__
+
+      <details><summary>cpp 코드</summary> 
+
+      ```c++
+      //ShieldWeapon.cpp
+      AShieldWeapon::AShieldWeapon() {
+        ShieldBox = CreateDefaultSubobject<UBoxComponent>(TEXT("ShieldBox"));
+
+        ShieldBox->OnComponentBeginOverlap.AddDynamic(this, &AShieldWeapon::OnShieldOverlapStart);
+        ShieldBox->OnComponentEndOverlap.AddDynamic(this, &AShieldWeapon::OnShieldOverlapEnd);
+        ShieldBox->SetCollisionEnabled(ECollisionEnabled::QueryOnly);
+        ShieldBox->SetRelativeLocation(FVector(0.f));
+      }
+      void AShieldWeapon::BeginPlay() {
+        Super::BeginPlay();
+      }
+
+      void AShieldWeapon::Equip(class AMainPlayer* Player) {
+        Super::Equip(Player);
+
+        if (Player) {
+          if ((GetWeaponPos() == EWeaponPos::EWP_Left && Player->GetLeftCurrentWeapon() != nullptr)) {
+            Player->ItemDrop();
+          }
+
+          /** 장착 로직 */
+          const USkeletalMeshSocket* HandSocket = nullptr;
+          HandSocket = Player->GetMesh()->GetSocketByName("LeftWeapon");
+
+          if (HandSocket) {
+            HandSocket->AttachActor(this, Player->GetMesh());
+            Player->SetWeaponStatus(EWeaponStatus::EWS_Weapon);
+            Player->SetLeftCurrentWeapon(this);
+
+            CollisionVolume->SetCollisionEnabled(ECollisionEnabled::NoCollision);
+          }
+        }
+      }
+
+      void AShieldWeapon::OnShieldOverlapStart(UPrimitiveComponent* OverlappedComponent, AActor* OtherActor, UPrimitiveComponent* OtherComp, int32 OtherBodyIndex, bool bFromSweep, const FHitResult& SweepResult){
+        UE_LOG(LogTemp, Warning, TEXT("Overlap"));
+      }
+      void AShieldWeapon::OnShieldOverlapEnd(UPrimitiveComponent* OverlappedComponent, AActor* OtherActor, UPrimitiveComponent* OtherComp, int32 OtherBodyIndex) {
+        UE_LOG(LogTemp, Warning, TEXT("OverlapEnd"));
+      }
+      ```
+      </details>
+
+      <details><summary>h 코드</summary> 
+
+      ```c++
+      //Weapon.h
+      public:
+        AShieldWeapon();
+
+        virtual void BeginPlay() override;
+        virtual void Equip(class AMainPlayer* Player) override;
+
+        UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Physical")
+        class UBoxComponent* ShieldBox;
+        
+        UFUNCTION()
+        void OnShieldOverlapStart(UPrimitiveComponent* OverlappedComponent, AActor* OtherActor, UPrimitiveComponent* OtherComp, int32 OtherBodyIndex, bool bFromSweep, const FHitResult& SweepResult);
+        
+        UFUNCTION()
+        void OnShieldOverlapEnd(UPrimitiveComponent* OverlappedComponent, AActor* OtherActor, UPrimitiveComponent* OtherComp, int32 OtherBodyIndex);
+      ```
+      </details>
+
+- ## <span style = "color:yellow;">잡다한 것</span>
+  1. Weapon에도 무기와 방패와 같이 분야가 나뉘기 때문에 Weapon클래스를 상속받은 AttackWeapon, ShieldWeapon으로 구분.
+    - AttackWeapon에는 주무기가 ShieldWeapon에는 말 그대로 방패가 적용된다.
+    - AttackWeapon클래스는 항상 오른쪽에 어태치되며, ShieldWeapon은 항상 왼쪽에 어태치된다.
+
+> **<h3>Realization</h3>** 
+- Sweepsinglebychannel은 하나의 HitResult만 반환.
+  - 이를 사용하여 Block의 구현.
+- SweepMultibychannel은 다중의 HitResult만 반환.

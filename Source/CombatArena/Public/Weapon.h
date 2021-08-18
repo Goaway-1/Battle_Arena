@@ -2,6 +2,9 @@
 
 #include "EngineMinimal.h"
 #include "Item.h"
+#include "MainPlayer.h"
+#include "Enemy.h"
+#include "Engine/SkeletalMeshSocket.h"
 #include "Weapon.generated.h"
 
 UENUM(BlueprintType)
@@ -27,7 +30,7 @@ public:
 	class USkeletalMeshComponent* SkeletalMesh;
 
 	UFUNCTION()
-	void Equip(class AMainPlayer* Player);
+	virtual void Equip(class AMainPlayer* Player);
 
 	UFUNCTION()
 	void UnEquip();
@@ -44,23 +47,7 @@ public:
 
 	FORCEINLINE EWeaponPos GetWeaponPos() { return WeaponPos; }
 
-#pragma	region ATTACK
-	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Attack")
-		float AttackRange;
-
-	FORCEINLINE float GetAttackRange() { return AttackRange; }
-
-#pragma endregion
-#pragma region DAMAGE
-	UPROPERTY(EditAnyWhere, BlueprintReadWrite, Category = "Combat")
-	float Damage;
-
-	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Combat")
-	TSubclassOf<UDamageType> DamageTypeClass;
-
-	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Combat")
-	AController* WeaponInstigator;		//메인을 받아와야 함
-
-	FORCEINLINE void SetInstigator(AController* Inst) { WeaponInstigator = Inst; }
-#pragma endregion
+	//SkeletalmeshCompoentn
+	//UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category="Socket")
+	//const USkeletalMeshSocket* HandSocket;
 };

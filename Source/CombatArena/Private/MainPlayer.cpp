@@ -1,7 +1,8 @@
 #include "MainPlayer.h"
 #include "Kismet/KismetMathLibrary.h"
 #include "Perception/AIPerceptionStimuliSourceComponent.h"
-#include "Weapon.h"
+#include "AttackWeapon.h"
+#include "ShieldWeapon.h"
 #include "Enemy.h"
 #include "MainController.h"
 #include "HealthWidget.h"
@@ -290,7 +291,7 @@ void AMainPlayer::LMBDown() {
 void AMainPlayer::Attack() {
 	UAnimMontage* PlayMontage = nullptr;
 
-	if (GetCurrentWeapon("Right") == nullptr) PlayMontage = AttackMontage;
+	if (GetRightCurrentWeapon() == nullptr) PlayMontage = AttackMontage;
 	else PlayMontage = WeaponAttackMontage;
 
 	bAttacking = true;
@@ -404,15 +405,12 @@ void AMainPlayer::ItemDrop() {
 	}
 }
 
-void AMainPlayer::SetCurrentWeapon(AWeapon* Weapon, FString Type) {
-	if(Type == "Right") CurrentRightWeapon = Weapon;
-	else CurrentLeftWeapon = Weapon;
+void AMainPlayer::SetLeftCurrentWeapon(AShieldWeapon* Weapon) {
+	CurrentLeftWeapon = Weapon;
 }
-AWeapon* AMainPlayer::GetCurrentWeapon(FString Type) {
-	if (Type == "Right") return CurrentRightWeapon;
-	else if (Type == "Left")return CurrentLeftWeapon;
-	else UE_LOG(LogTemp, Warning, TEXT("GetCurrentWeapon is Error!"));
-	return nullptr;
+
+void AMainPlayer::SetRightCurrentWeapon(AAttackWeapon* Weapon) {
+	CurrentRightWeapon = Weapon;
 }
 #pragma endregion
 

@@ -37,6 +37,7 @@ void UAttackFunction::AttackStart(FVector Location, FVector Forward, TSubclassOf
 
 	bool bResult = GetWorld()->SweepSingleByChannel(HitResult, Location, Location + Forward * AttackRange,
 		FQuat::Identity, AttackChanel, FCollisionShape::MakeSphere(AttackRange), Params);
+	
 
 	//구의 정보 (생략가능)
 	FVector TraceVec = Forward * AttackRange;
