@@ -31,7 +31,6 @@ protected:
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Owner")
 	class UAnimInstance* OwnerAnimInstance;
 
-
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Owner")
 	class ACharacter* Hited = nullptr;
 

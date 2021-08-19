@@ -1,4 +1,5 @@
 #include "AttackFunction.h"
+#include "CollisionQueryParams.h"
 
 UAttackFunction::UAttackFunction()
 {
@@ -24,6 +25,8 @@ void UAttackFunction::SetOwner(USkeletalMeshComponent* TakeMesh,AController* Tak
 void UAttackFunction::AttackStart(FVector Location, FVector Forward, TSubclassOf<UDamageType> DamageType,FString Type, UParticleSystem* HitParticle,float AttackRange)
 {
 	ECollisionChannel AttackChanel = ECollisionChannel::ECC_Visibility;
+	FHitResult HitResult; //맞은 정보를 저장
+	FCollisionQueryParams Params(NAME_None, false, Owner);
 
 	if (Type == "Player") {
 		AttackChanel = ECollisionChannel::ECC_GameTraceChannel5;
@@ -31,9 +34,6 @@ void UAttackFunction::AttackStart(FVector Location, FVector Forward, TSubclassOf
 	else if (Type == "Enemy") {
 		AttackChanel = ECollisionChannel::ECC_GameTraceChannel4;
 	}
-
-	FHitResult HitResult; //맞은 정보를 저장
-	FCollisionQueryParams Params(NAME_None, false, Owner);
 
 	bool bResult = GetWorld()->SweepSingleByChannel(HitResult, Location, Location + Forward * AttackRange,
 		FQuat::Identity, AttackChanel, FCollisionShape::MakeSphere(AttackRange), Params);
@@ -55,7 +55,7 @@ void UAttackFunction::AttackStart(FVector Location, FVector Forward, TSubclassOf
 			else if (Type == "Enemy") Hited = Cast<AMainPlayer>(HitResult.Actor);
 			if (Hited) {
 				UGameplayStatics::ApplyDamage(Hited, 10.f, Controller, Owner, DamageType);
-				UGameplayStatics::SpawnEmitterAtLocation(GetWorld(), HitParticle, HitResult.GetActor()->GetActorLocation(), FRotator(0.f));
+				//UGameplayStatics::SpawnEmitterAtLocation(GetWorld(), HitParticle, HitResult.GetActor()->GetActorLocation(), FRotator(0.f));
 			}
 		}
 	}

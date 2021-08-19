@@ -3172,3 +3172,168 @@
 - Sweepsinglebychannel은 하나의 HitResult만 반환.
   - 이를 사용하여 Block의 구현.
 - SweepMultibychannel은 다중의 HitResult만 반환.
+
+## **08.19**
+> **<h3>Today Dev Story</h3>**
+- ## <span style = "color:yellow;">Shield의 구현_2</span>
+  - <img src="Image/Shield_Blending.gif" height="300" title="Shield_Blending"> <img src="Image/Blending_Block.png" height="300" title="Blending_Block"> 
+  - Shield의 모션을 LocoMotion과 블랜딩하여 움직이면서 방어모션 구현.
+  - 먼저 상태를 구분하기 위해서 ECombatStatus라는 Enum클래스를 만들고 이값에 따라 방어 판정을 한다.
+    - 새로운 스테이트머신 Blocking을 생성하고, Block_start, Block_Idle, Block_End의 순서대로 구현한다.
+    - 내부의 모든 스테이트 구현시 기존 LocoMotion의 Cache와 적용할 애니메이션을 Layered blend per bone을 사용하여 뼈마다 레이어로 블렌딩을 진행한다.
+    - 블렌딩 진행시 BasePos는 기존값으로, Blend Poses 0은 Block의 애니메이션으로 지정하며, LayerSetup을 3가지(허리(Pelvis),좌우 허벅지(Thigh_r/l))를 설정한다. (이름은 Bone과 동일해야 한다.)
+  - 이제 애님그래프에서 MainPlayer의 상태 중 CombatStatus가 Blocking이라면 Blocking과 LocoMotion캐시를 Blend Poses by bool(bool로 포즈 블렌딩)하여 구분한다.
+    
+    <details><summary>cpp 코드</summary> 
+
+    ```c++
+    //MainPlayer.cpp
+    void AMainPlayer::SetupPlayerInputComponent(UInputComponent* PlayerInputComponent)
+    {
+      ...
+      //Block
+      PlayerInputComponent->BindAction("Block", EInputEvent::IE_Pressed, this, &AMainPlayer::Blocking);
+      PlayerInputComponent->BindAction("Block", EInputEvent::IE_Released, this, &AMainPlayer::UnBlocking);
+    }
+    void AMainPlayer::Blocking() {
+      if (CurrentLeftWeapon != nullptr) {
+        SetCombatStatus(ECombatStatus::ECS_Blocking);
+      }
+    }
+
+    void AMainPlayer::UnBlocking() {
+      if (CurrentLeftWeapon != nullptr) {
+        SetCombatStatus(ECombatStatus::ECS_Normal);
+      }
+    }
+    ```
+    </details>
+
+    <details><summary>h 코드</summary> 
+
+    ```c++
+    //MainPlayer.h
+    /** Shield의 상태 여부 (방어여부) */
+    UENUM(BlueprintType)
+    enum class ECombatStatus : uint8 {
+      ECS_Normal			UMETA(DisplayName = "Normal"),
+      ECS_Attacking		UMETA(DisplayName = "Attacking"),
+      ECS_Blocking		UMETA(DisplayName = "Blocking"),
+
+      ECS_Default			UMETA(DisplayName = "Default")
+    };
+
+    public:
+    	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Combat")
+      ECombatStatus CombatStatus;
+
+      FORCEINLINE void SetCombatStatus(ECombatStatus State) { CombatStatus = State;}
+      FORCEINLINE ECombatStatus GetCombatStatus() { return CombatStatus; }
+
+      UFUNCTION()
+      void Blocking();
+
+      UFUNCTION()
+      void UnBlocking();
+    ```
+    </details>
+
+- ## <span style = "color:yellow;">Shield의 구현_3</span>
+  - <img src="Image/ShieldSystem_1.gif" height="300" title="ShieldSystem_1"> 
+  - 기존 방어 판정에 있어 오류가 발생, 피격시 막아지는 경우도 존재하지만 그렇지 못하는 경우도 존재. (아마 첫번째로 Hit되는 경우를 기준으로 판정해서 생긴 오류)
+  - 그렇기에 기존에 존재했던 ShieldWeapon클래스의 콜리전은 모두 제거하고 새로운 방식으로 진행.
+    - 적이 플레이어를 피격시 플레이어의 상태와 공격의 방향을 체크하여 일정 범위 이내라면 데미지를 받는 않는 방식.
+    - ShieldWeapon에서 범위를 지정하는 float값인 ShiledMax(Min)Angle과 방어했을 시 발생하는 ParticleSystem타입의 HitedParticle 지정.
+  - MainPlayer클래스에서 TakeDamage()메서드를 수정하며 현재 상태가 Blocking이라면 막았는지의 대한 판정시작.
+    - 판정은 IsBlockingSuccess()메서드를 통해 진행하며 반환값 boolean에 따라 종료.
+    - FindLookAtRotation()을 사용하여 플레이어와 공격한 적의 각도를 반환하고 NormalizedDeltaRotator를 통해 각도를 정규화.
+    - InRange_FloatFloat()메서드를 사용하여 BetweenRot이 일정 범위 내에 있는 지 확인.
+    - 일정 범위 내에 있다면 방어하고 방패의 파티클을 생성하며, 일정 거리 뒤로 밀린다.
+
+      <details><summary>cpp 코드</summary> 
+
+      ```c++
+      //MainPlayer.cpp
+      float AMainPlayer::TakeDamage(float DamageAmount, struct FDamageEvent const& DamageEvent, class AController* EventInstigator, AActor* DamageCauser) {
+        Super::TakeDamage(DamageAmount, DamageEvent, EventInstigator, DamageCauser);
+
+        // 방어 성공시 
+        if (GetCombatStatus() == ECombatStatus::ECS_Blocking) {
+          if (IsBlockingSuccess(DamageCauser)) return 0;
+        }
+
+        if (CurrentHealth <= 0) return 0.f;
+        CurrentHealth -= DamageAmount;
+        if (CurrentHealth <= 0) {
+          CurrentHealth = 0;
+          Death();
+        }
+        SetHealthRatio();
+
+        //CameraShake
+        if (PlayerController) PlayerController->PlayerCameraManager->StartCameraShake(CamShake, 1.f);
+        FVector Loc = GetActorForwardVector();
+        Loc.Z = 0;
+        LaunchCharacter(GetActorForwardVector() * -2000.f, true, true);
+        UGameplayStatics::SpawnEmitterAtLocation(GetWorld(), HitParticle, GetActorLocation(), FRotator(0.f));
+
+        return DamageAmount;
+      }
+      bool AMainPlayer::IsBlockingSuccess(AActor* DamageCauser) {
+        FRotator BetweenRot = UKismetMathLibrary::FindLookAtRotation(GetActorLocation(), DamageCauser->GetActorLocation());
+        BetweenRot = UKismetMathLibrary::NormalizedDeltaRotator(GetActorRotation(), BetweenRot);
+        bool isShieldRange = UKismetMathLibrary::InRange_FloatFloat(BetweenRot.Yaw, -40, 40);
+
+        if (isShieldRange && CurrentLeftWeapon->HitedParticle) {
+          FVector Loc = GetActorForwardVector();
+          Loc.Z = 0;
+          LaunchCharacter(Loc * -500.f, true, true);
+          UGameplayStatics::SpawnEmitterAtLocation(GetWorld(), CurrentLeftWeapon->HitedParticle, GetActorLocation(), FRotator(0.f));
+          return true;
+        }
+        return false;
+      }
+      ```
+      ```c++
+      //ShieldWeapon.cpp
+      AShieldWeapon::AShieldWeapon() {
+        WeaponPos = EWeaponPos::EWP_Left;
+        ShiledMinAngle = -40.f;
+        ShiledMaxAngle = 40.f;
+      }
+      ```
+      </details>
+
+      <details><summary>h 코드</summary> 
+
+      ```c++
+      //MainPlayer.h
+      public:
+        UFUNCTION()
+        bool IsBlockingSuccess(AActor* DamageCauser);
+      ```
+      ```c++
+      //ShieldWeapon.h
+      public:
+        UPROPERTY(VisibleAnywhere, BlueprintReadWrite, Category = "Angle")
+        float ShiledMinAngle;
+
+        UPROPERTY(VisibleAnywhere, BlueprintReadWrite, Category = "Angle")
+        float ShiledMaxAngle;
+        
+        UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Paticle")
+        class UParticleSystem* HitedParticle;
+      ```
+      </details>
+
+> **<h3>Realization</h3>** 
+- Layered blend per bone
+  - 스켈레톤의 특정 본 부분집합에만 영향을 끼치는 마스크 블렌딩을 한다. 캐릭터의 상하를 구분하여 적용시 사용.
+
+- Blend Poses by bool
+  - 노드는 부울 값을 키로 사용하여 두 포즈를 시간에 따라 블렌딩하는 노드이며, boolean값이 True인 경우 True입력에 연결된 포즈가, False인 경우 False입력에 연결된 포즈가 사용된다.
+
+- UKismetMathLibrary의 함수들
+  1. FindLockAtRotation() : Location위치 현재위치와 대상을 비교하여 회전값(Rotation)을 구한다. //FRotator 반환
+  2. NormalizedDeltaRotator() : Rotator의 값을 정규화한다. (방향은 유지하며 크기를 1로 만듬) // FRotator 반환
+  3. InRange_FloatFloat() : 특정한 값이 범위내에 있는지 검사. // boolean타입을 반환

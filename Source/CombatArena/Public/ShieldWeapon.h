@@ -20,16 +20,16 @@ public:
 
 	virtual void Equip(class AMainPlayer* Player) override;
 
-#pragma region SHIELDCOMPONENT
-	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Physical")
-	class UBoxComponent* ShieldBox;
-	
-	UFUNCTION()
-	void OnShieldOverlapStart(UPrimitiveComponent* OverlappedComponent, AActor* OtherActor, UPrimitiveComponent* OtherComp, int32 OtherBodyIndex, bool bFromSweep, const FHitResult& SweepResult);
-	
-	UFUNCTION()
-	void OnShieldOverlapEnd(UPrimitiveComponent* OverlappedComponent, AActor* OtherActor, UPrimitiveComponent* OtherComp, int32 OtherBodyIndex);
+#pragma region SHIELDRANGE
+	UPROPERTY(VisibleAnywhere, BlueprintReadWrite, Category = "Angle")
+	float ShiledMinAngle;
 
+	UPROPERTY(VisibleAnywhere, BlueprintReadWrite, Category = "Angle")
+	float ShiledMaxAngle;
+
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Paticle")
+	class UParticleSystem* HitedParticle;
 #pragma endregion
+
 
 };

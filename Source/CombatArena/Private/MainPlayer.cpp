@@ -18,7 +18,6 @@ AMainPlayer::AMainPlayer()
 	AIPerceptionSource = CreateDefaultSubobject<UAIPerceptionStimuliSourceComponent>(TEXT("AIPerceptionSource"));
 #pragma endregion
 
-
 #pragma region CAMERA
 	SpringArm = CreateDefaultSubobject<USpringArmComponent>(TEXT("SringArm"));
 	SpringArm->SetupAttachment(GetRootComponent());
@@ -66,7 +65,7 @@ AMainPlayer::AMainPlayer()
 #pragma region ATTACK
 	AttackFunction = CreateDefaultSubobject<UPlayerAttackFunction>(TEXT("AttackFunction"));
 	SetWeaponStatus(EWeaponStatus::EWS_Normal);
-	//SetWeaponPos(EWeaponPos::EWP_Empty);
+	SetCombatStatus(ECombatStatus::ECS_Normal);
 
 	bLMBDown = false;
 	bAttacking = false;
@@ -159,6 +158,10 @@ void AMainPlayer::SetupPlayerInputComponent(UInputComponent* PlayerInputComponen
 	//attack
 	PlayerInputComponent->BindAction("LMB", EInputEvent::IE_Pressed, this, &AMainPlayer::LMBDown);
 	PlayerInputComponent->BindAction("LMB", EInputEvent::IE_Released, this, &AMainPlayer::LMBUp);
+
+	//테스트 Block
+	PlayerInputComponent->BindAction("Block", EInputEvent::IE_Pressed, this, &AMainPlayer::Blocking);
+	PlayerInputComponent->BindAction("Block", EInputEvent::IE_Released, this, &AMainPlayer::UnBlocking);
 
 	//Kick
 	PlayerInputComponent->BindAction("Kick", EInputEvent::IE_Pressed, this, &AMainPlayer::Kick);
@@ -335,8 +338,12 @@ FName AMainPlayer::GetAttackMontageSection(FString Type, int32 Section) {
 float AMainPlayer::TakeDamage(float DamageAmount, struct FDamageEvent const& DamageEvent, class AController* EventInstigator, AActor* DamageCauser) {
 	Super::TakeDamage(DamageAmount, DamageEvent, EventInstigator, DamageCauser);
 
-	if (CurrentHealth <= 0) return 0.f;
+	// 방어 성공시 
+	if (GetCombatStatus() == ECombatStatus::ECS_Blocking) {
+		if (IsBlockingSuccess(DamageCauser)) return 0;
+	}
 
+	if (CurrentHealth <= 0) return 0.f;
 	CurrentHealth -= DamageAmount;
 	if (CurrentHealth <= 0) {
 		CurrentHealth = 0;
@@ -347,8 +354,14 @@ float AMainPlayer::TakeDamage(float DamageAmount, struct FDamageEvent const& Dam
 	//CameraShake
 	if (PlayerController) PlayerController->PlayerCameraManager->StartCameraShake(CamShake, 1.f);
 
+	FVector Loc = GetActorForwardVector();
+	Loc.Z = 0;
+	LaunchCharacter(GetActorForwardVector() * -2000.f, true, true);
+	UGameplayStatics::SpawnEmitterAtLocation(GetWorld(), HitParticle, GetActorLocation(), FRotator(0.f));
+
 	return DamageAmount;
 }
+
 void AMainPlayer::SetHealthRatio() {
 	HealthRatio = CurrentHealth / MaxHealth;
 	PlayerController->SetPlayerHealth();
@@ -378,6 +391,34 @@ void AMainPlayer::DeathEnd() {
 	GetMesh()->bNoSkeletonUpdate = true;
 	Destroy();
 }
+
+void AMainPlayer::Blocking() {
+	if (CurrentLeftWeapon != nullptr) {
+		SetCombatStatus(ECombatStatus::ECS_Blocking);
+	}
+}
+
+void AMainPlayer::UnBlocking() {
+	if (CurrentLeftWeapon != nullptr) {
+		SetCombatStatus(ECombatStatus::ECS_Normal);
+	}
+}
+
+bool AMainPlayer::IsBlockingSuccess(AActor* DamageCauser) {
+	FRotator BetweenRot = UKismetMathLibrary::FindLookAtRotation(GetActorLocation(), DamageCauser->GetActorLocation());
+	BetweenRot = UKismetMathLibrary::NormalizedDeltaRotator(GetActorRotation(), BetweenRot);
+	bool isShieldRange = UKismetMathLibrary::InRange_FloatFloat(BetweenRot.Yaw, CurrentLeftWeapon->ShiledMinAngle, CurrentLeftWeapon->ShiledMaxAngle);
+
+	if (isShieldRange && CurrentLeftWeapon->HitedParticle) {
+		FVector Loc = GetActorForwardVector();
+		Loc.Z = 0;
+		LaunchCharacter(Loc * -500.f, true, true);
+		UGameplayStatics::SpawnEmitterAtLocation(GetWorld(), CurrentLeftWeapon->HitedParticle, GetActorLocation(), FRotator(0.f));
+		return true;
+	}
+	return false;
+}
+
 #pragma endregion
 
 #pragma region ACTIVE

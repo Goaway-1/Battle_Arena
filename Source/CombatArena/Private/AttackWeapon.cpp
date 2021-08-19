@@ -1,6 +1,7 @@
 #include "AttackWeapon.h"
 
 AAttackWeapon::AAttackWeapon() {
+	WeaponPos = EWeaponPos::EWP_Right;
 	Damage = 10.f;
 	AttackRange = 200.f;
 }

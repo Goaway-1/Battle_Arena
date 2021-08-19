@@ -26,6 +26,16 @@ enum class EWeaponStatus : uint8 {
 	EWS_Default		UMETA(DisplayName = "Default")
 };
 
+/** Shield의 상태 여부 (방어여부) */
+UENUM(BlueprintType)
+enum class ECombatStatus : uint8 {
+	ECS_Normal			UMETA(DisplayName = "Normal"),
+	ECS_Attacking		UMETA(DisplayName = "Attacking"),
+	ECS_Blocking		UMETA(DisplayName = "Blocking"),
+
+	ECS_Default			UMETA(DisplayName = "Default")
+};
+
 UCLASS()
 class COMBATARENA_API AMainPlayer : public ACharacter
 {
@@ -197,13 +207,7 @@ public:
 	UFUNCTION()
 	FORCEINLINE EWeaponStatus GetWeaponStatus() { return WeaponStatus; }
 
-	////부착될 Pos 지정 (Weapon와 동일)
-	//UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Pos")
-	//EWeaponPos WeaponPos;
-
-	//FORCEINLINE void SetWeaponPos(EWeaponPos Pos) { WeaponPos = Pos; }
-
-	//FORCEINLINE EWeaponPos GetWeaponPos() { return WeaponPos; }
+	/** 현재 싸움 상태의 종류  (Attack, Shield,,,)*/
 
 	void Attack();
 
@@ -233,7 +237,7 @@ public:
 	UFUNCTION(BlueprintCallable)
 	void KickStart();
 
-	//Death
+	/** Death */
 	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "Anims")
 	UAnimMontage* DeathMontage;
 
@@ -242,6 +246,22 @@ public:
 
 	UFUNCTION(BlueprintCallable)
 	void DeathEnd();
+
+	/** Shield */
+	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Combat")
+	ECombatStatus CombatStatus;
+
+	FORCEINLINE void SetCombatStatus(ECombatStatus State) { CombatStatus = State; }
+	FORCEINLINE ECombatStatus GetCombatStatus() { return CombatStatus; }
+
+	UFUNCTION()
+	void Blocking();
+
+	UFUNCTION()
+	void UnBlocking();
+
+	UFUNCTION()
+	bool IsBlockingSuccess(AActor* DamageCauser);
 #pragma endregion
 
 #pragma region HEALTH

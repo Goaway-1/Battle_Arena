@@ -124,6 +124,7 @@ float AEnemy::TakeDamage(float DamageAmount, struct FDamageEvent const& DamageEv
 		DeathEnd();
 	}
 	HealthBar->SetOwnerHealth(GetHealthRatio(),MaxHealth, CurrentHealth);
+//	UGameplayStatics::SpawnEmitterAtLocation(GetWorld(), HitParticle, HitResult.GetActor()->GetActorLocation(), FRotator(0.f));
 
 	return DamageAmount;
 }

@@ -1,16 +1,13 @@
 #include "ShieldWeapon.h"
 
 AShieldWeapon::AShieldWeapon() {
-	ShieldBox = CreateDefaultSubobject<UBoxComponent>(TEXT("ShieldBox"));
-
-	ShieldBox->OnComponentBeginOverlap.AddDynamic(this, &AShieldWeapon::OnShieldOverlapStart);
-	ShieldBox->OnComponentEndOverlap.AddDynamic(this, &AShieldWeapon::OnShieldOverlapEnd);
-	ShieldBox->SetCollisionEnabled(ECollisionEnabled::QueryOnly);
-	ShieldBox->SetRelativeLocation(FVector(0.f));
+	WeaponPos = EWeaponPos::EWP_Left;
+	ShiledMinAngle = -40.f;
+	ShiledMaxAngle = 40.f;
 }
+
 void AShieldWeapon::BeginPlay() {
 	Super::BeginPlay();
-
 }
 
 void AShieldWeapon::Equip(class AMainPlayer* Player) {
@@ -33,11 +30,4 @@ void AShieldWeapon::Equip(class AMainPlayer* Player) {
 			CollisionVolume->SetCollisionEnabled(ECollisionEnabled::NoCollision);
 		}
 	}
-}
-
-void AShieldWeapon::OnShieldOverlapStart(UPrimitiveComponent* OverlappedComponent, AActor* OtherActor, UPrimitiveComponent* OtherComp, int32 OtherBodyIndex, bool bFromSweep, const FHitResult& SweepResult){
-	UE_LOG(LogTemp, Warning, TEXT("Overlap"));
-}
-void AShieldWeapon::OnShieldOverlapEnd(UPrimitiveComponent* OverlappedComponent, AActor* OtherActor, UPrimitiveComponent* OtherComp, int32 OtherBodyIndex) {
-	UE_LOG(LogTemp, Warning, TEXT("OverlapEnd"));
 }
