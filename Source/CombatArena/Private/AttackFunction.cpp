@@ -55,7 +55,6 @@ void UAttackFunction::AttackStart(FVector Location, FVector Forward, TSubclassOf
 			else if (Type == "Enemy") Hited = Cast<AMainPlayer>(HitResult.Actor);
 			if (Hited) {
 				UGameplayStatics::ApplyDamage(Hited, 10.f, Controller, Owner, DamageType);
-				//UGameplayStatics::SpawnEmitterAtLocation(GetWorld(), HitParticle, HitResult.GetActor()->GetActorLocation(), FRotator(0.f));
 			}
 		}
 	}

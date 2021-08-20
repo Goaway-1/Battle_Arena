@@ -13,6 +13,8 @@
 AMainPlayer::AMainPlayer()
 {
  	PrimaryActorTick.bCanEverTick = true;
+	//테스트
+	bFlyAttack = false;
 
 #pragma region AIPERCETION
 	AIPerceptionSource = CreateDefaultSubobject<UAIPerceptionStimuliSourceComponent>(TEXT("AIPerceptionSource"));
@@ -53,7 +55,7 @@ AMainPlayer::AMainPlayer()
 	SprintingSpeed = 750.f;
 
 	//Dodge
-	DodgeSpeed = 4000.f;
+	DodgeSpeed = 5000.f;
 	bCanDodge = true;
 	DodgeCoolDownTime = 1.f;
 	DodgeStopTime = 0.1f;
@@ -127,6 +129,26 @@ void AMainPlayer::Tick(float DeltaTime)
 
 	/** Targeting Check */
 	Targeting();
+
+	//테스트
+	if (bFlyAttack) {
+		FHitResult* hitResult = new FHitResult();
+		FVector hmdLocation = GetActorLocation();
+		FVector endTrace = hmdLocation + (FVector(0.0f, 0.0f, -90.0f) * 50.0f);
+		FCollisionQueryParams traceHmdDistanceParams = FCollisionQueryParams(FName("DownRaycast"), true, this);
+		traceHmdDistanceParams.AddIgnoredActor(this);     
+		GetWorld()->LineTraceSingleByChannel(*hitResult, hmdLocation, endTrace, ECC_WorldStatic, traceHmdDistanceParams); 
+
+		// Show HMD raycasts in the world
+		DrawDebugLine(GetWorld(), hmdLocation, endTrace, FColor::Red, true);
+
+		if (hitResult->Distance <= 200.f)
+		{
+			bFlyAttack = false;
+			AnimInstance->Montage_Play(SpecialAttackMontage);
+			AnimInstance->Montage_JumpToSection(TEXT("JumpAttack_2"),SpecialAttackMontage);
+		}
+	}
 }
 
 void AMainPlayer::SetupPlayerInputComponent(UInputComponent* PlayerInputComponent)
@@ -152,8 +174,8 @@ void AMainPlayer::SetupPlayerInputComponent(UInputComponent* PlayerInputComponen
 	PlayerInputComponent->BindAction("Tab", EInputEvent::IE_Pressed, this, &AMainPlayer::SetTargeting);
 
 	//sprinting
-	PlayerInputComponent->BindAction("Shift", EInputEvent::IE_Pressed, this, &AMainPlayer::Switch_Sprinting);
-	PlayerInputComponent->BindAction("Shift", EInputEvent::IE_Released, this, &AMainPlayer::Switch_Sprinting);
+	PlayerInputComponent->BindAction("Shift", EInputEvent::IE_Pressed, this, &AMainPlayer::OnSprinting);
+	PlayerInputComponent->BindAction("Shift", EInputEvent::IE_Released, this, &AMainPlayer::OffSprinting);
 
 	//attack
 	PlayerInputComponent->BindAction("LMB", EInputEvent::IE_Pressed, this, &AMainPlayer::LMBDown);
@@ -207,11 +229,14 @@ void  AMainPlayer::SetMovementStatus(EMovementStatus Status) {
 	}
 	else GetCharacterMovement()->MaxWalkSpeed = MoveSpeed;
 }
-void AMainPlayer::Switch_Sprinting() {
+void AMainPlayer::OnSprinting() {
 	if (!IsCanMove()) return;
 	if (MovementStatus != EMovementStatus::EMS_Sprinting) SetMovementStatus(EMovementStatus::EMS_Sprinting);
-	else {
-		if(GetVelocity().Size() == 0) SetMovementStatus(EMovementStatus::EMS_Normal);
+}
+void AMainPlayer::OffSprinting() {
+	if (!IsCanMove()) return;
+	if (MovementStatus != EMovementStatus::EMS_Walk){
+		if (GetVelocity().Size() == 0) SetMovementStatus(EMovementStatus::EMS_Normal);
 		else  SetMovementStatus(EMovementStatus::EMS_Walk);
 	}
 }
@@ -228,21 +253,20 @@ void AMainPlayer::CheckIdle() {
 		bUseControllerRotationYaw = true;
 	}
 }
-
 void AMainPlayer::Dodge() {
 	if (!IsCanMove()) return;
 	if (bCanDodge && DirX !=0 || DirY != 0) {
-		//GetCharacterMovement()->BrakingFrictionFactor = 0.f;	//마찰계수
+		GetCharacterMovement()->BrakingFrictionFactor = 0.f;	//마찰계수
 		AnimDodge();
-	//	LaunchCharacter(FVector(GetLastMovementInputVector().X , GetLastMovementInputVector().Y, 0.f) * DodgeSpeed, true, true);	//입력 방향대로
+		LaunchCharacter(FVector(GetLastMovementInputVector().X , GetLastMovementInputVector().Y, 0.f) * DodgeSpeed, true, true);	//입력 방향대로
 		GetWorldTimerManager().SetTimer(DodgeHandle, this, &AMainPlayer::DodgeEnd, DodgeStopTime,false);
 		bCanDodge = false;
 	}
 }
 void AMainPlayer::DodgeEnd() {
-	//GetCharacterMovement()->StopMovementImmediately();	//움직임을 정지시킨다.
+	GetCharacterMovement()->StopMovementImmediately();	//움직임을 정지시킨다.
 	GetWorldTimerManager().SetTimer(DodgeHandle, this, &AMainPlayer::ResetDodge, DodgeCoolDownTime, false);
-	//GetCharacterMovement()->BrakingFrictionFactor = 2.f;
+	GetCharacterMovement()->BrakingFrictionFactor = 2.f;
 }
 void AMainPlayer::ResetDodge() {
 	bCanDodge = true;
@@ -261,14 +285,10 @@ void AMainPlayer::AnimDodge() {
 		AnimInstance->Montage_JumpToSection(GetAttackMontageSection("Dodge", Value), DodgeMontage);
 	}
 }
-
 bool AMainPlayer::IsCanMove() {
-	//if (AttackFunction->bKicking || bAttacking || GetMovementStatus() == EMovementStatus::EMS_Death) return false;
-	if (!bCanDodge || bAttacking || GetMovementStatus() == EMovementStatus::EMS_Death) return false;
+	if (AttackFunction->bKicking || bAttacking || GetMovementStatus() == EMovementStatus::EMS_Death) return false;
 	else return true;
 }
-
-
 void AMainPlayer::Targeting() {
 	if (bTargeting && CombatTarget != nullptr) {
 		FRotator AA = UKismetMathLibrary::FindLookAtRotation(GetActorLocation(), CombatTarget->GetActorLocation());
@@ -293,14 +313,35 @@ void AMainPlayer::LMBDown() {
 
 void AMainPlayer::Attack() {
 	UAnimMontage* PlayMontage = nullptr;
-
-	if (GetRightCurrentWeapon() == nullptr) PlayMontage = AttackMontage;
+	
+	if (GetCharacterMovement()->IsFalling()) PlayMontage = SpecialAttackMontage;
+	else if (GetRightCurrentWeapon() == nullptr) PlayMontage = AttackMontage;
 	else PlayMontage = WeaponAttackMontage;
 
 	bAttacking = true;
 	if (!AnimInstance) AnimInstance = GetMesh()->GetAnimInstance();
 	if (AnimInstance && PlayMontage) {
-		if (!AnimInstance->Montage_IsPlaying(PlayMontage)) {	//공격중이 아닐때 (처음 공격)
+		//공중공격
+		if (GetCharacterMovement()->IsFalling()) {
+			//테스트
+			FHitResult* hitResult = new FHitResult();
+			FVector hmdLocation = GetActorLocation();
+			FVector endTrace = hmdLocation + (FVector(0.0f, 0.0f, -90.0f) * 50.0f);
+			FCollisionQueryParams traceHmdDistanceParams = FCollisionQueryParams(FName("HMD Duck Raycast"), true, this);
+			traceHmdDistanceParams.AddIgnoredActor(this);     // Ignore ourselves in the collision detection
+			GetWorld()->LineTraceSingleByChannel(*hitResult, hmdLocation, endTrace, ECC_WorldStatic, traceHmdDistanceParams); // Start Raycast
+
+			// Show HMD raycasts in the world
+			DrawDebugLine(GetWorld(), hmdLocation, endTrace, FColor::Red, true);
+			if (hitResult->Distance >= 250.f)
+			{
+				bFlyAttack = true;
+				AnimInstance->Montage_Play(PlayMontage);
+				LaunchCharacter(FVector(0.f, 0.f, 1.f) * -1000.f, false, false);
+			}
+			EndAttack();
+		}
+		else if (!AnimInstance->Montage_IsPlaying(PlayMontage)) {	//공격중이 아닐때 (처음 공격)
 			ComboCnt = 0;
 			AnimInstance->Montage_Play(PlayMontage);
 		}
@@ -393,6 +434,7 @@ void AMainPlayer::DeathEnd() {
 }
 
 void AMainPlayer::Blocking() {
+	if (!IsCanMove()) return;
 	if (CurrentLeftWeapon != nullptr) {
 		SetCombatStatus(ECombatStatus::ECS_Blocking);
 	}

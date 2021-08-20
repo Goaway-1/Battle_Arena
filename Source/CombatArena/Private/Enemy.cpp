@@ -7,7 +7,8 @@
 #include "HealthWidget.h"
 #include "Engine/SkeletalMeshSocket.h"
 #include "EnemyAttackFunction.h"
-#include "CollisionQueryParams.h"
+#include "CollisionQueryParams.h"	
+#include "TimerManager.h"
 
 AEnemy::AEnemy()
 {
@@ -53,6 +54,7 @@ void AEnemy::BeginPlay()
 #pragma region ATTACK
 
 	//KnockBack
+	IsAttacking = false;
 	AttackRange = 100.f;
 	KnockBackPower = 1000.f;
 
@@ -97,6 +99,7 @@ void AEnemy::Attack() {
 	if(!Anim) Anim = Cast<UEnemyAnim>(GetMesh()->GetAnimInstance());
 
 	if (AttackMontage && Anim) {
+		IsAttacking = true;
 		Anim->Montage_Play(AttackMontage);
 		Anim->Montage_JumpToSection("Attack1", AttackMontage);
 	}
@@ -109,7 +112,7 @@ void AEnemy::AttackStart() {
 
 void AEnemy::OnAttackMontageEnded(UAnimMontage* Montage, bool bInterrupted)
 {
-	if (IsAttacking) return;
+	if (!IsAttacking) return;
 	IsAttacking = false;
 	OnAttackEnd.Broadcast();
 }
@@ -147,6 +150,8 @@ void AEnemy::DestroyEnemy() {
 }
 
 void AEnemy::KnockBack(FVector Backward) {
+	//일단 하나의 Montage만 실행
+	if (HitedMontage != nullptr) Anim->Montage_Play(HitedMontage);
 	LaunchCharacter(Backward * KnockBackPower, true, true);	//입력 방향대로
 }
 

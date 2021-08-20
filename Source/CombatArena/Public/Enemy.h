@@ -48,7 +48,7 @@ public:
 
 	FOnAttackEndDelegate OnAttackEnd;
 
-	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "Attack")
+	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "Montage")
 	class UAnimMontage* AttackMontage;
 
 	UFUNCTION()
@@ -71,6 +71,10 @@ public:
 
 	UFUNCTION()
 	void KnockBack(FVector Backward);
+	
+	/** Hited AnimMontage */
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Montage")
+	UAnimMontage* HitedMontage;
 #pragma endregion
 
 #pragma region HEALTH

@@ -33,7 +33,6 @@
   1. Infinity Blade : fire Lands 를 사용하여 꾸미기
   2. 로마 관련 에셋
   3. 카오스 디스트럭션 툴을 사용하여 무너짐 표현
-  5. 막기
   6. 보스 패턴
   7. 던지기, 파쿠르
 
@@ -3337,3 +3336,20 @@
   1. FindLockAtRotation() : Location위치 현재위치와 대상을 비교하여 회전값(Rotation)을 구한다. //FRotator 반환
   2. NormalizedDeltaRotator() : Rotator의 값을 정규화한다. (방향은 유지하며 크기를 1로 만듬) // FRotator 반환
   3. InRange_FloatFloat() : 특정한 값이 범위내에 있는지 검사. // boolean타입을 반환
+
+## **08.20**
+> **<h3>Today Dev Story</h3>**
+- ## <span style = "color:yellow;">잡다한 것</span>
+  1. 적이 뒤로 밀려날때 애니메이션 추가.
+    - 단순하게 HitedMontage를 추가 후 플레이어의 Kick이 닿을때 몽타주를 실행하며 처리.
+    - 적의 공격이 종료되며, 가끔 오류로 멀리 날라감. (추후 수정 필요.)
+  2. 구르기 Root Motion방식을 사용하지 않고 기존 방식으로 이어서 진행.
+  3. 기존 Sprinting방식 수정.
+    - 기존에는 하나의 메서드를 통해서 Sprinting과 idle, walking을 구분했는데 가끔 중첩으로 인한 오류로 메서드를 2개로 나눔(OnSprinting/OffSprinting)
+
+> **<h3>Realization</h3>** 
+
+## **08.21**
+> **<h3>Today Dev Story</h3>**
+- ## <span style = "color:yellow;">점프 공격</span>
+  - 점프하면 바닦으로 Raycast를 쏴서 일정 거리 되면 공격하도록 설계하도록 설계
