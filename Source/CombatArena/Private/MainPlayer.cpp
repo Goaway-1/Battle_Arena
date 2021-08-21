@@ -13,8 +13,6 @@
 AMainPlayer::AMainPlayer()
 {
  	PrimaryActorTick.bCanEverTick = true;
-	//테스트
-	bFlyAttack = false;
 
 #pragma region AIPERCETION
 	AIPerceptionSource = CreateDefaultSubobject<UAIPerceptionStimuliSourceComponent>(TEXT("AIPerceptionSource"));
@@ -24,7 +22,13 @@ AMainPlayer::AMainPlayer()
 	SpringArm = CreateDefaultSubobject<USpringArmComponent>(TEXT("SringArm"));
 	SpringArm->SetupAttachment(GetRootComponent());
 	SpringArm->bUsePawnControlRotation = true;	//플레이어가 컨트롤 할 수 있게 만들어줌
-	SpringArm->SocketOffset = FVector(0.f, 35.f, 0.f);
+	SpringArm->SocketOffset = FVector(0.f, 0.f, 0.f);
+
+	//LagSpeed
+	SpringArm->bEnableCameraLag = true;
+	SpringArm->bEnableCameraRotationLag = true;
+	SpringArm->CameraLagSpeed = 7.0f;				//이동
+	SpringArm->CameraRotationLagSpeed = 7.0f;		//회전
 	
 	//카메라 회전 On
 	SpringArm->bInheritPitch = true;
@@ -38,7 +42,7 @@ AMainPlayer::AMainPlayer()
 	Camera->bUsePawnControlRotation = false;
 
 	//회전해도 플레이어에게 영향 X
-	bUseControllerRotationYaw = true; 
+	bUseControllerRotationYaw = false; 
 	bUseControllerRotationRoll = false;
 	bUseControllerRotationPitch = false;
 
@@ -119,36 +123,19 @@ void AMainPlayer::PossessedBy(AController* NewController) {
 
 	PlayerController = Cast<AMainController>(GetController());
 	AttackFunction->SetOwner(GetMesh(),PlayerController);
+	CameraManager = PlayerController->PlayerCameraManager;	
+
+	//카메라 각도 조정.
+	CameraManager->ViewPitchMax = 50.f;
+	CameraManager->ViewPitchMin = -70.f;
 }
 
 void AMainPlayer::Tick(float DeltaTime)
 {
 	Super::Tick(DeltaTime);
 
-	CheckIdle();
-
 	/** Targeting Check */
 	Targeting();
-
-	//테스트
-	if (bFlyAttack) {
-		FHitResult* hitResult = new FHitResult();
-		FVector hmdLocation = GetActorLocation();
-		FVector endTrace = hmdLocation + (FVector(0.0f, 0.0f, -90.0f) * 50.0f);
-		FCollisionQueryParams traceHmdDistanceParams = FCollisionQueryParams(FName("DownRaycast"), true, this);
-		traceHmdDistanceParams.AddIgnoredActor(this);     
-		GetWorld()->LineTraceSingleByChannel(*hitResult, hmdLocation, endTrace, ECC_WorldStatic, traceHmdDistanceParams); 
-
-		// Show HMD raycasts in the world
-		DrawDebugLine(GetWorld(), hmdLocation, endTrace, FColor::Red, true);
-
-		if (hitResult->Distance <= 200.f)
-		{
-			bFlyAttack = false;
-			AnimInstance->Montage_Play(SpecialAttackMontage);
-			AnimInstance->Montage_JumpToSection(TEXT("JumpAttack_2"),SpecialAttackMontage);
-		}
-	}
 }
 
 void AMainPlayer::SetupPlayerInputComponent(UInputComponent* PlayerInputComponent)
@@ -240,19 +227,6 @@ void AMainPlayer::OffSprinting() {
 		else  SetMovementStatus(EMovementStatus::EMS_Walk);
 	}
 }
-void AMainPlayer::CheckIdle() {
-	float CurrentVelocity = GetVelocity().Size();
-	if (!IsCanMove()) return;
-
-	if (CurrentVelocity == 0) {
-		SetMovementStatus(EMovementStatus::EMS_Normal);
-		bUseControllerRotationYaw = false;
-	}
-	else if (MovementStatus != EMovementStatus::EMS_Sprinting) {
-		SetMovementStatus(EMovementStatus::EMS_Walk);
-		bUseControllerRotationYaw = true;
-	}
-}
 void AMainPlayer::Dodge() {
 	if (!IsCanMove()) return;
 	if (bCanDodge && DirX !=0 || DirY != 0) {
@@ -282,7 +256,7 @@ void AMainPlayer::AnimDodge() {
 	if(!AnimInstance) AnimInstance = GetMesh()->GetAnimInstance();
 	if (AnimInstance && DodgeMontage) {
 		AnimInstance->Montage_Play(DodgeMontage);
-		AnimInstance->Montage_JumpToSection(GetAttackMontageSection("Dodge", Value), DodgeMontage);
+		if(bTargeting)AnimInstance->Montage_JumpToSection(GetAttackMontageSection("Dodge", Value), DodgeMontage);
 	}
 }
 bool AMainPlayer::IsCanMove() {
@@ -291,14 +265,23 @@ bool AMainPlayer::IsCanMove() {
 }
 void AMainPlayer::Targeting() {
 	if (bTargeting && CombatTarget != nullptr) {
-		FRotator AA = UKismetMathLibrary::FindLookAtRotation(GetActorLocation(), CombatTarget->GetActorLocation());
-		AA.Pitch -= 30.f;
+		FRotator TargetRot = UKismetMathLibrary::FindLookAtRotation(GetActorLocation(), CombatTarget->GetActorLocation());
+		TargetRot.Pitch -= 30.f;
 
-		Controller->SetControlRotation(AA);
+		Controller->SetControlRotation(FMath::RInterpTo(GetControlRotation(), TargetRot, GetWorld()->GetDeltaSeconds(), 5.0f));
 	}
 }
 void AMainPlayer::SetTargeting() {
-	bTargeting = (!bTargeting) ? true : false; 
+	if (bTargeting) OffTargeting();
+	else OnTargeting();
+}
+void AMainPlayer::OnTargeting() {
+	bTargeting = true;
+	bUseControllerRotationYaw = true;
+}
+void AMainPlayer::OffTargeting() {
+	bTargeting = false;
+	bUseControllerRotationYaw = false;
 }
 #pragma endregion
 
@@ -310,38 +293,16 @@ void AMainPlayer::LMBDown() {
 	if (!bAttacking) Attack();
 	else bIsAttackCheck = true;
 }
-
 void AMainPlayer::Attack() {
 	UAnimMontage* PlayMontage = nullptr;
 	
-	if (GetCharacterMovement()->IsFalling()) PlayMontage = SpecialAttackMontage;
-	else if (GetRightCurrentWeapon() == nullptr) PlayMontage = AttackMontage;
+	if (GetRightCurrentWeapon() == nullptr) PlayMontage = AttackMontage;
 	else PlayMontage = WeaponAttackMontage;
 
 	bAttacking = true;
 	if (!AnimInstance) AnimInstance = GetMesh()->GetAnimInstance();
 	if (AnimInstance && PlayMontage) {
-		//공중공격
-		if (GetCharacterMovement()->IsFalling()) {
-			//테스트
-			FHitResult* hitResult = new FHitResult();
-			FVector hmdLocation = GetActorLocation();
-			FVector endTrace = hmdLocation + (FVector(0.0f, 0.0f, -90.0f) * 50.0f);
-			FCollisionQueryParams traceHmdDistanceParams = FCollisionQueryParams(FName("HMD Duck Raycast"), true, this);
-			traceHmdDistanceParams.AddIgnoredActor(this);     // Ignore ourselves in the collision detection
-			GetWorld()->LineTraceSingleByChannel(*hitResult, hmdLocation, endTrace, ECC_WorldStatic, traceHmdDistanceParams); // Start Raycast
-
-			// Show HMD raycasts in the world
-			DrawDebugLine(GetWorld(), hmdLocation, endTrace, FColor::Red, true);
-			if (hitResult->Distance >= 250.f)
-			{
-				bFlyAttack = true;
-				AnimInstance->Montage_Play(PlayMontage);
-				LaunchCharacter(FVector(0.f, 0.f, 1.f) * -1000.f, false, false);
-			}
-			EndAttack();
-		}
-		else if (!AnimInstance->Montage_IsPlaying(PlayMontage)) {	//공격중이 아닐때 (처음 공격)
+		if (!AnimInstance->Montage_IsPlaying(PlayMontage)) {	//공격중이 아닐때 (처음 공격)
 			ComboCnt = 0;
 			AnimInstance->Montage_Play(PlayMontage);
 		}
@@ -351,16 +312,13 @@ void AMainPlayer::Attack() {
 		}
 	}
 }
-
 void AMainPlayer::StartAttack() {
 	FString Type = "Player";
 	AttackFunction->AttackStart(GetActorLocation(), GetActorForwardVector(), PlayerDamageType, Type, GetHitParticle(), GetAttackRange());
 }
-
 void AMainPlayer::EndAttack() {
 	bAttacking = false;
 }
-
 void AMainPlayer::AttackInputCheck() {
 	if (bIsAttackCheck) {
 		ComboCnt++;
@@ -369,13 +327,11 @@ void AMainPlayer::AttackInputCheck() {
 		Attack();
 	}
 }
-
 FName AMainPlayer::GetAttackMontageSection(FString Type, int32 Section) {
 	if (Type == "Attack") return FName(*FString::Printf(TEXT("Attack%d"), Section));
 	else if (Type == "Dodge") return FName(*FString::Printf(TEXT("Dodge%d"), Section));
 	else return "Error";
 }
-
 float AMainPlayer::TakeDamage(float DamageAmount, struct FDamageEvent const& DamageEvent, class AController* EventInstigator, AActor* DamageCauser) {
 	Super::TakeDamage(DamageAmount, DamageEvent, EventInstigator, DamageCauser);
 
@@ -393,7 +349,7 @@ float AMainPlayer::TakeDamage(float DamageAmount, struct FDamageEvent const& Dam
 	SetHealthRatio();
 
 	//CameraShake
-	if (PlayerController) PlayerController->PlayerCameraManager->StartCameraShake(CamShake, 1.f);
+	if (PlayerController) CameraManager->StartCameraShake(CamShake, 1.f);
 
 	FVector Loc = GetActorForwardVector();
 	Loc.Z = 0;
@@ -402,20 +358,16 @@ float AMainPlayer::TakeDamage(float DamageAmount, struct FDamageEvent const& Dam
 
 	return DamageAmount;
 }
-
 void AMainPlayer::SetHealthRatio() {
 	HealthRatio = CurrentHealth / MaxHealth;
 	PlayerController->SetPlayerHealth();
 }
-
 void AMainPlayer::Kick() {
 	AttackFunction->Kick(AnimInstance, AttackMontage);
 }
-
 void AMainPlayer::KickStart() {
 	AttackFunction->KickStart(GetActorLocation(),GetActorForwardVector());
 }
-
 void AMainPlayer::Death() {
 	SetMovementStatus(EMovementStatus::EMS_Death);
 
@@ -426,26 +378,22 @@ void AMainPlayer::Death() {
 
 	GetCapsuleComponent()->SetCollisionEnabled(ECollisionEnabled::NoCollision);
 }
-
 void AMainPlayer::DeathEnd() {
 	GetMesh()->bPauseAnims = true;
 	GetMesh()->bNoSkeletonUpdate = true;
 	Destroy();
 }
-
 void AMainPlayer::Blocking() {
 	if (!IsCanMove()) return;
 	if (CurrentLeftWeapon != nullptr) {
 		SetCombatStatus(ECombatStatus::ECS_Blocking);
 	}
 }
-
 void AMainPlayer::UnBlocking() {
 	if (CurrentLeftWeapon != nullptr) {
 		SetCombatStatus(ECombatStatus::ECS_Normal);
 	}
 }
-
 bool AMainPlayer::IsBlockingSuccess(AActor* DamageCauser) {
 	FRotator BetweenRot = UKismetMathLibrary::FindLookAtRotation(GetActorLocation(), DamageCauser->GetActorLocation());
 	BetweenRot = UKismetMathLibrary::NormalizedDeltaRotator(GetActorRotation(), BetweenRot);
@@ -487,11 +435,9 @@ void AMainPlayer::ItemDrop() {
 		}
 	}
 }
-
 void AMainPlayer::SetLeftCurrentWeapon(AShieldWeapon* Weapon) {
 	CurrentLeftWeapon = Weapon;
 }
-
 void AMainPlayer::SetRightCurrentWeapon(AAttackWeapon* Weapon) {
 	CurrentRightWeapon = Weapon;
 }
@@ -507,7 +453,6 @@ void AMainPlayer::OnEnemyHUD_OverlapBegin(UPrimitiveComponent* OverlappedCompone
 		}
 	}
 }
-
 void AMainPlayer::OnEnemyHUD_OverlapEnd(UPrimitiveComponent* OverlappedComponent, AActor* OtherActor, UPrimitiveComponent* OtherComp, int32 OtherBodyIndex) {
 	if (OtherActor) {
 		CombatTarget = Cast<AEnemy>(OtherActor);
@@ -515,7 +460,7 @@ void AMainPlayer::OnEnemyHUD_OverlapEnd(UPrimitiveComponent* OverlappedComponent
 			CombatTarget->HideEnemyHealth();
 			CombatTarget = nullptr;
 			
-			bTargeting = false;
+			OffTargeting();
 		}
 	}
 }

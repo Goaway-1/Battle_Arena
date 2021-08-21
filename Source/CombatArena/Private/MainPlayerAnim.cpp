@@ -19,6 +19,6 @@ void UMainPlayerAnim::NativeUpdateAnimation(float DeltaSeconds){
 		DirectionSpeed = CalculateDirection(Speed, Rotator);
 
 		bIsInAir = MainPlayer->GetMovementComponent()->IsFalling();
+		bTargetOn = MainPlayer->GetTargeting();		
 	}
-
 }

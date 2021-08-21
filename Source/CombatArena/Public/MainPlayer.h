@@ -72,6 +72,9 @@ public:
 	//Camera Shake
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Camera")
 	TSubclassOf<UMatineeCameraShake> CamShake;
+
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Camera")
+	class APlayerCameraManager* CameraManager;
 private:
 
 	UPROPERTY(EditDefaultsOnly, Category = "Camera", Meta = (AllowPrivateAccess = true))
@@ -109,9 +112,6 @@ private:
 	void SetMovementStatus(EMovementStatus Status);
 
 	FORCEINLINE EMovementStatus GetMovementStatus() { return MovementStatus; }
-
-	//현재 속도를 측정하여 Idle과 walk를 구분 (카메라의 회전 변경)
-	void CheckIdle();
 
 	/** Dodge */
 public:
@@ -156,7 +156,7 @@ public:
 	bool IsCanMove();
 
 	/** Target 관련 */
-	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Tageting")
+	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Targeting")
 	bool bTargeting;
 
 	UFUNCTION()
@@ -164,6 +164,15 @@ public:
 
 	UFUNCTION()
 	void SetTargeting();
+
+	UFUNCTION()
+	void OnTargeting();
+
+	UFUNCTION()
+	void OffTargeting();
+
+	UFUNCTION()
+	bool GetTargeting() { return bTargeting; }
 #pragma endregion
 
 #pragma region ATTACK
@@ -182,12 +191,6 @@ public:
 
 	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "Anims")
 	class UAnimMontage* WeaponAttackMontage;
-
-	//테스트
-	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "Anims")
-	class UAnimMontage* SpecialAttackMontage;
-
-	bool bFlyAttack;
 
 	bool bLMBDown;			//공격 키가 눌렸는지 여부
 	bool bAttacking;		//공격중인지 여부

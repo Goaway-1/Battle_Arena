@@ -26,4 +26,6 @@ public:
 	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Movement")
 	float DirectionSpeed;
 
+	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Movement")
+	bool bTargetOn;
 };

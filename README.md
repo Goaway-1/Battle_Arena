@@ -29,6 +29,8 @@
  [무료 소리](https://freesound.org/)
  [오디오 증폭기](https://www.mp3louder.com/ko/)
  [오디오 자르기](https://mp3cut.net/ko/)
+ [카메라관련 유튜브](https://www.youtube.com/watch?v=u0MfT5BsH7Q)
+
 > **추후 할일**
   1. Infinity Blade : fire Lands 를 사용하여 꾸미기
   2. 로마 관련 에셋
@@ -3351,5 +3353,147 @@
 
 ## **08.21**
 > **<h3>Today Dev Story</h3>**
-- ## <span style = "color:yellow;">점프 공격</span>
-  - 점프하면 바닦으로 Raycast를 쏴서 일정 거리 되면 공격하도록 설계하도록 설계
+- ## <span style = "color:yellow;">카메라 변동</span>
+  - <img src="Image/Camera_View&Movement_System.gif" height="300" title="Camera_View&Movement_System">
+  - <img src="Image/Camera_MovementSystem.png" height="300" title="Camera_MovementSystem">
+  - 기존 이동시 카메라의 회전방향에 따라 캐릭터를 회전했지만, 수정하여 타겟을 고정했을때만 적용되며 평상시에는 어떤 방향이든 직접회전하여 이동.
+  - MainPlayerAnim클래스에 조건 bTargetOn을 추가하고 이를 GetTargeting()메서드와 연결. 이 조건에 따라 애니메이션과 카메라&캐릭터 관계 수정.
+  - 새로운 애니메이션 블랜드 스페이스 1D 2개를 생성하며 Speed에만 영향을 받으며 타겟팅이 되어있지 않을때 활성화
+    - 기존 MainPlayer클래스에 존재하던 CheckIdle()메서드 삭제, 카메라 매니저 생성하여 PossessedBy에서 연결하고 최대 각도 지정.
+    - SetTargeting()메서드를 수정하며 MainPlayerAnim클래스에서 호출하여 사용할 GetTargeting()메서드 생성.
+
+      <details><summary>cpp 코드</summary> 
+
+      ```c++
+      //MainPlayer.cpp
+      AMainPlayer::AMainPlayer()
+      { 
+        ...
+        bUseControllerRotationYaw = false; 
+        bUseControllerRotationRoll = false;
+        bUseControllerRotationPitch = false;
+      }
+      void AMainPlayer::PossessedBy(AController* NewController) {
+        Super::PossessedBy(NewController);
+
+        ...
+        CameraManager = PlayerController->PlayerCameraManager;	//카메라 매니저 호출
+        
+        //카메라 각도 조정.
+        CameraManager->ViewPitchMax = 50.f;
+        CameraManager->ViewPitchMin = -70.f;
+      }
+      void AMainPlayer::Targeting() {
+        if (bTargeting && CombatTarget != nullptr) {
+          FRotator AA = UKismetMathLibrary::FindLookAtRotation(GetActorLocation(), CombatTarget->GetActorLocation());
+          AA.Pitch -= 30.f;
+
+          Controller->SetControlRotation(AA);
+
+          //회전 정의
+          bUseControllerRotationYaw = true;   
+        }
+      }
+      void AMainPlayer::SetTargeting() {
+        if (bTargeting) OffTargeting();
+        else OnTargeting();
+      }
+      void AMainPlayer::OnTargeting() {
+        bTargeting = true;
+        bUseControllerRotationYaw = true;
+      }
+      void AMainPlayer::OffTargeting() {
+        bTargeting = false;
+        bUseControllerRotationYaw = false;
+      }
+      void AMainPlayer::OnEnemyHUD_OverlapEnd(UPrimitiveComponent* OverlappedComponent, AActor* OtherActor, UPrimitiveComponent* OtherComp, int32 OtherBodyIndex) {
+        if (OtherActor) {
+          CombatTarget = Cast<AEnemy>(OtherActor);
+          if (CombatTarget) {
+            CombatTarget->HideEnemyHealth();
+            CombatTarget = nullptr;
+            
+            OffTargeting();
+          }
+        }
+      }
+      ```
+      ```c++
+      //MainPlayerAnim.cpp
+      void UMainPlayerAnim::NativeUpdateAnimation(float DeltaSeconds){
+        Super::NativeUpdateAnimation(DeltaSeconds);
+        ...
+        bTargetOn = MainPlayer->GetTargeting();		
+      }
+      ```
+      </details>
+
+      <details><summary>h 코드</summary> 
+
+      ```c++
+      //MainPlayer.cpp
+      public:
+        UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Camera")
+        class APlayerCameraManager* CameraManager;
+
+        UFUNCTION()
+        void OnTargeting();
+
+        UFUNCTION()
+        void OffTargeting();
+
+        UFUNCTION()
+        bool GetTargeting() { return bTargeting; }
+      ```
+      ```c++
+      //MainPlayerAnim.h
+      public:
+        UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Movement")
+        bool bTargetOn;
+      ```
+      </details>
+
+- ## <span style = "color:yellow;">Targeting 방법 전환</span>
+  - <img src="Image/NewTargetingSystem.gif" height="300" title="NewTargetingSystem"> 
+  - 기존 방식은 직접 Controller의 Rotation을 설정했으나 이번 방식은 바로 적용하는 것이 아닌 RInterpTo()메서드를 사용
+  - 이 메서드는 __회전보간메서드이며__ 사용하면 자연스러운 회전이 가능하며, Tick()메서드에서 호출해야 한다.
+    
+    <details><summary>cpp 코드</summary> 
+
+    ```c++
+    //MainPlayer.cpp
+    void AMainPlayer::Targeting() {
+      if (bTargeting && CombatTarget != nullptr) {
+        FRotator TargetRot = UKismetMathLibrary::FindLookAtRotation(GetActorLocation(), CombatTarget->GetActorLocation());
+        TargetRot.Pitch -= 30.f;
+        Controller->SetControlRotation(FMath::RInterpTo(GetControlRotation(), TargetRot, GetWorld()->GetDeltaSeconds(), 5.0f));
+      }
+    }
+    ```
+    </details>
+
+- ## <span style = "color:yellow;">카메라의 랙</span>
+  - <img src="Image/Camera_Lags.gif" height="300" title="Camera_Lags"> 
+  - SpringArm의 __Lag 기능을__ 사용하면 카메라가 시간차를 두고 따를 수 있도록 한다.
+  - 하드코딩을 위해서 BP에서 수정이 아닌 c++에서 수정을 진행.
+    
+    <details><summary>cpp 코드</summary> 
+
+    ```c++
+    AMainPlayer::AMainPlayer()
+    {
+      ...
+    	//LagSpeed
+      SpringArm->bEnableCameraLag = true;
+      SpringArm->bEnableCameraRotationLag = true;
+      SpringArm->CameraLagSpeed = 7.0f;				//이동
+      SpringArm->CameraRotationLagSpeed = 7.0f;		//회전
+    }
+    ```
+    </details>
+
+> **<h3>Realization</h3>** 
+- 점프 공격을 구현하려 했으나 소울게임풍에 맞지 않는다고 생각하여 제거.
+- 무기별 공격 방식에 힘쓰려 생각.
+- 상대방으로 고정시에만 뒤로 갈때의 모션이 실행되도록 수정하고 일반적일때는 뒤로 돌수있게 수정.
+- SpringArm의 Lag 기능을 사용하면 카메라의 지연을 구현 가능.

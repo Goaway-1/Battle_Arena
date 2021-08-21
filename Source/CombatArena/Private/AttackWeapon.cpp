@@ -2,7 +2,7 @@
 
 AAttackWeapon::AAttackWeapon() {
 	WeaponPos = EWeaponPos::EWP_Right;
-	Damage = 10.f;
+	Damage = 20.f;
 	AttackRange = 200.f;
 }
 
