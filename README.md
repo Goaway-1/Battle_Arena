@@ -3497,3 +3497,113 @@
 - 무기별 공격 방식에 힘쓰려 생각.
 - 상대방으로 고정시에만 뒤로 갈때의 모션이 실행되도록 수정하고 일반적일때는 뒤로 돌수있게 수정.
 - SpringArm의 Lag 기능을 사용하면 카메라의 지연을 구현 가능.
+
+## **08.22**
+> **<h3>Today Dev Story</h3>**
+- ## <span style = "color:yellow;">Health Potion</span>
+  - <img src="Image/HealthPotion.gif" height="300" title="HealthPotion">
+  - 기존 Item 클래스를 상속받은 Potion클래스를 제작
+    - Item 클래스는 Waepon클래스와 Potion클래스가 상속하여 사용하고, 아이템 장착이나 상호작용의 키는 E로 지정되어 있기에 Item클래스의 Enum을 사용하여 타입을 지정.
+    - EItemType으로 지정하고 타입은 GetItemType()메서드를 사용하여 반환.
+    - MainPlayer클래스의 ItemEquip()메서드에서 GetItemType() 메서드를 사용하여 Item의 타입을 측정한뒤, 포션인경우 Potion클래스의 UseItem을 사용한다.
+    - UseItem()메서드에서 체력을 감소한다.
+
+      <details><summary>cpp 코드</summary> 
+
+      ```c++
+      //MainPlayer.cpp
+      #include "Potion.h"
+      ...
+      void AMainPlayer::ItemEquip() {	
+        if (ActiveOverlappingItem != nullptr) {
+          if (ActiveOverlappingItem->GetItemType() == EItemType::EIT_Weapon) {
+            AWeapon* CurWeapon = Cast<AWeapon>(ActiveOverlappingItem);
+            CurWeapon->Equip(this);
+          }
+          else if(ActiveOverlappingItem->GetItemType() == EItemType::EIT_Item) {
+            APotion* Potion = Cast<APotion>(ActiveOverlappingItem);
+            CurrentHealth = Potion->UseItem(CurrentHealth);
+            SetHealthRatio();
+          }
+          SetActiveOverlappingItem(nullptr);
+        }
+      }
+      ```
+      ```c++
+      //Potion.cpp
+      float APotion::UseItem(float Health) {
+        Health += 10.f;
+        if (Health >= 100.f) Health = 100.f;
+        if (OverlapParticle) UGameplayStatics::SpawnEmitterAtLocation(GetWorld(), OverlapParticle, GetActorLocation(), FRotator(0.f), true);
+        Destroy();
+        return Health;
+      }
+      ```
+      </details>
+
+      <details><summary>h 코드</summary> 
+
+      ```c++
+      //Potion.h
+      public:
+        UFUNCTION()
+        float UseItem(float Health);
+      ```
+      ```c++
+      //Item.h
+      UENUM(BlueprintType)
+      enum class EItemType : uint8 {
+        EIT_Normal		UMETA(DisplayName = "Normal"),
+        EIT_Weapon		UMETA(DisplayName = "Weapon"),
+        EIT_Item		UMETA(DisplayName = "Item"),
+
+        EIT_Default		UMETA(DisplayName = "Default")
+      };
+      ...
+
+      public:
+        UFUNCTION()
+        FORCEINLINE EItemType GetItemType() { return ItemType; }
+      ```
+      </details>
+
+- ## <span style = "color:yellow;">잡다한 것</span>
+  1. 무기에 따른 데미지 연동. 
+    - 기존 AttackFunction클래스의 AttackStart()메서드에서는 고정된 값으로 데미지를 입혔지만 매개변수값으로 Damage를 받아 처리.
+    - 캐릭터의 기본 공격력(DefaultDamage)은 5로 지정, 무기를 장착할때 Weapon클래스의 Damage 변수의 값을 MainPlayer 클래스의 SetAttackDamage()메서드를 사용하여 적용.
+    - 무기를 해제할때는 다시 기본 DefaultDamage로 변경. // ItemEquip, ItemDrop 메서드를 활용.
+
+
+> **<h3>Realization</h3>** 
+  - null
+  
+## **08.23**
+> **<h3>Today Dev Story</h3>**
+- ## <span style = "color:yellow;">Health Potion</span>
+Decal 사용
+https://www.youtube.com/watch?v=tQgcj-ETjE4&t=862s
+
+
+> **<h3>Realization</h3>** 
+    <details><summary>cpp 코드</summary> 
+
+    ```c++
+    //AEnemy.cpp
+    AEnemy::AEnemy()
+    {
+      ...
+    	//Targeting 
+    	TargetingDecal = CreateDefaultSubobject<UDecalComponent>(TEXT("TargetingDecal"));
+    }
+    ```
+    </details>
+
+    <details><summary>h 코드</summary> 
+
+    ```c++
+    //AEnemy.h
+    public:
+    	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Widget | TargetWidget")
+	    class UDecalComponent* TargetingDecal;
+    ```
+    </details>

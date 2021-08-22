@@ -224,6 +224,14 @@ public:
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Combat")
 	TSubclassOf<UDamageType> PlayerDamageType;
 
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Combat")
+	float DefaultDamage;
+
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Combat")
+	float AttackDamage;
+
+	FORCEINLINE void SetAttackDamage(float Value) { AttackDamage = Value; }
+
 	/** 노티파이를 통하여 호출 되며 Sweep 구체 생성 */
 	UFUNCTION(BlueprintCallable)
 	void StartAttack();

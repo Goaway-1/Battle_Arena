@@ -46,8 +46,4 @@ public:
 	FORCEINLINE void SetWeaponPosLoc(EWeaponPos Pos) { WeaponPos = Pos; }
 
 	FORCEINLINE EWeaponPos GetWeaponPos() { return WeaponPos; }
-
-	//SkeletalmeshCompoentn
-	//UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category="Socket")
-	//const USkeletalMeshSocket* HandSocket;
 };

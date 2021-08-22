@@ -22,7 +22,7 @@ void UAttackFunction::SetOwner(USkeletalMeshComponent* TakeMesh,AController* Tak
 	Controller = TakeController;
 }
 
-void UAttackFunction::AttackStart(FVector Location, FVector Forward, TSubclassOf<UDamageType> DamageType,FString Type, UParticleSystem* HitParticle,float AttackRange)
+void UAttackFunction::AttackStart(FVector Location, FVector Forward, TSubclassOf<UDamageType> DamageType,FString Type, UParticleSystem* HitParticle,float AttackRange,float Damage)
 {
 	ECollisionChannel AttackChanel = ECollisionChannel::ECC_Visibility;
 	FHitResult HitResult; //맞은 정보를 저장
@@ -54,7 +54,7 @@ void UAttackFunction::AttackStart(FVector Location, FVector Forward, TSubclassOf
 			if (Type == "Player") Hited = Cast<AEnemy>(HitResult.Actor);
 			else if (Type == "Enemy") Hited = Cast<AMainPlayer>(HitResult.Actor);
 			if (Hited) {
-				UGameplayStatics::ApplyDamage(Hited, 10.f, Controller, Owner, DamageType);
+				UGameplayStatics::ApplyDamage(Hited, Damage, Controller, Owner, DamageType);
 			}
 		}
 	}

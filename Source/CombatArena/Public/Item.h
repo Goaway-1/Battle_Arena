@@ -4,19 +4,30 @@
 #include "GameFramework/Actor.h"
 #include "Item.generated.h"
 
+UENUM(BlueprintType)
+enum class EItemType : uint8 {
+	EIT_Normal		UMETA(DisplayName = "Normal"),
+	EIT_Weapon		UMETA(DisplayName = "Weapon"),
+	EIT_Item		UMETA(DisplayName = "Item"),
+
+	EIT_Default		UMETA(DisplayName = "Default")
+};
+
 UCLASS()
 class COMBATARENA_API AItem : public AActor
 {
 	GENERATED_BODY()
-	
-public:	
-	AItem();
-
 protected:
 	virtual void BeginPlay() override;
 
 public:	
 	virtual void Tick(float DeltaTime) override;
+
+protected:
+	AItem();
+
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Item", Meta = (AllowPrivateAccess = true))
+	EItemType ItemType;
 
 	UPROPERTY(VisibleAnywhere, BlueprintReadWrite, Category = "Item | Collision")
 	class USphereComponent* CollisionVolume;
@@ -36,4 +47,9 @@ public:
 	UFUNCTION()
 	virtual void OnOverlapEnd(UPrimitiveComponent* OverlappedComponent, AActor* OtherActor, UPrimitiveComponent* OtherComp, int32 OtherBodyIndex);
 
+
+public:
+	//test
+	UFUNCTION()
+	FORCEINLINE EItemType GetItemType() { return ItemType; }
 };

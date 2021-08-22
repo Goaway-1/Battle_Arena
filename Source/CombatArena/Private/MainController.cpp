@@ -8,7 +8,7 @@
 #include "MainPlayer.h"
 
 AMainController::AMainController() {
-
+	
 }
 
 void AMainController::BeginPlay() {

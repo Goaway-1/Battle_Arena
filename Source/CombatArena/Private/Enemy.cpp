@@ -9,6 +9,7 @@
 #include "EnemyAttackFunction.h"
 #include "CollisionQueryParams.h"	
 #include "TimerManager.h"
+#include "Components/DecalComponent.h"
 
 AEnemy::AEnemy()
 {
@@ -31,9 +32,15 @@ AEnemy::AEnemy()
 	HealthWidget->AttachToComponent(GetMesh(), FAttachmentTransformRules::KeepRelativeTransform);	//위치 고정
 	HealthWidget->SetRelativeLocation(FVector(0.f, 0.f, 200.f));
 	HealthWidget->SetWidgetSpace(EWidgetSpace::Screen);
+
+	//Targeting 
+	TargetingDecal = CreateDefaultSubobject<UDecalComponent>(TEXT("TargetingDecal"));
 #pragma endregion
 
+#pragma region ATTCK
 	AttackFunction = CreateDefaultSubobject<UEnemyAttackFunction>(TEXT("AttackFunction"));
+	AttackDamage = 10.f;
+#pragma endregion
 }
 
 void AEnemy::PossessedBy(AController* NewController) {
@@ -107,7 +114,7 @@ void AEnemy::Attack() {
 
 void AEnemy::AttackStart() {
 	FString Type = "Enemy";
-	AttackFunction->AttackStart(GetActorLocation(),GetActorForwardVector(),EnemyDamageType, Type, GetHitParticle(),GetAttackRange());
+	AttackFunction->AttackStart(GetActorLocation(),GetActorForwardVector(),EnemyDamageType, Type, GetHitParticle(),GetAttackRange(), AttackDamage);
 }
 
 void AEnemy::OnAttackMontageEnded(UAnimMontage* Montage, bool bInterrupted)

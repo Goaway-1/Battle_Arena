@@ -8,6 +8,8 @@
 #include "HealthWidget.h"
 #include "Camera/PlayerCameraManager.h"
 #include "PlayerAttackFunction.h"
+#include "Potion.h"
+#include "Components/WidgetComponent.h"
 
 
 AMainPlayer::AMainPlayer()
@@ -27,8 +29,8 @@ AMainPlayer::AMainPlayer()
 	//LagSpeed
 	SpringArm->bEnableCameraLag = true;
 	SpringArm->bEnableCameraRotationLag = true;
-	SpringArm->CameraLagSpeed = 7.0f;				//이동
-	SpringArm->CameraRotationLagSpeed = 7.0f;		//회전
+	SpringArm->CameraLagSpeed = 9.0f;				//이동
+	SpringArm->CameraRotationLagSpeed = 9.5f;		//회전
 	
 	//카메라 회전 On
 	SpringArm->bInheritPitch = true;
@@ -81,6 +83,8 @@ AMainPlayer::AMainPlayer()
 	DefaultAttackRange = 50.f;
 	AttackRange = DefaultAttackRange;
 	bTargeting = false;
+	DefaultDamage = 5.0f;
+	AttackDamage = DefaultDamage;
 
 #pragma endregion
 
@@ -168,7 +172,7 @@ void AMainPlayer::SetupPlayerInputComponent(UInputComponent* PlayerInputComponen
 	PlayerInputComponent->BindAction("LMB", EInputEvent::IE_Pressed, this, &AMainPlayer::LMBDown);
 	PlayerInputComponent->BindAction("LMB", EInputEvent::IE_Released, this, &AMainPlayer::LMBUp);
 
-	//테스트 Block
+	//Block
 	PlayerInputComponent->BindAction("Block", EInputEvent::IE_Pressed, this, &AMainPlayer::Blocking);
 	PlayerInputComponent->BindAction("Block", EInputEvent::IE_Released, this, &AMainPlayer::UnBlocking);
 
@@ -314,7 +318,7 @@ void AMainPlayer::Attack() {
 }
 void AMainPlayer::StartAttack() {
 	FString Type = "Player";
-	AttackFunction->AttackStart(GetActorLocation(), GetActorForwardVector(), PlayerDamageType, Type, GetHitParticle(), GetAttackRange());
+	AttackFunction->AttackStart(GetActorLocation(), GetActorForwardVector(), PlayerDamageType, Type, GetHitParticle(), GetAttackRange(), AttackDamage);
 }
 void AMainPlayer::EndAttack() {
 	bAttacking = false;
@@ -412,11 +416,17 @@ bool AMainPlayer::IsBlockingSuccess(AActor* DamageCauser) {
 #pragma endregion
 
 #pragma region ACTIVE
-void AMainPlayer::ItemEquip() {
+void AMainPlayer::ItemEquip() {	
 	if (ActiveOverlappingItem != nullptr) {
-		AWeapon* CurWeapon = Cast<AWeapon>(ActiveOverlappingItem);
-
-		CurWeapon->Equip(this);
+		if (ActiveOverlappingItem->GetItemType() == EItemType::EIT_Weapon) {
+			AWeapon* CurWeapon = Cast<AWeapon>(ActiveOverlappingItem);
+			CurWeapon->Equip(this);
+		}
+		else if(ActiveOverlappingItem->GetItemType() == EItemType::EIT_Item) {
+			APotion* Potion = Cast<APotion>(ActiveOverlappingItem);
+			CurrentHealth = Potion->UseItem(CurrentHealth);
+			SetHealthRatio();
+		}
 		SetActiveOverlappingItem(nullptr);
 	}
 }
@@ -425,6 +435,7 @@ void AMainPlayer::ItemDrop() {
 		if (CurrentRightWeapon != nullptr) {
 			CurrentRightWeapon->UnEquip();
 			CurrentRightWeapon = nullptr;		
+			AttackDamage = DefaultDamage;	
 			AttackRange = DefaultAttackRange;				//공격 범위 조절
 			if (CurrentLeftWeapon == nullptr) SetWeaponStatus(EWeaponStatus::EWS_Normal);
 		}

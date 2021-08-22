@@ -45,6 +45,6 @@ public:
 	void SetOwner(USkeletalMeshComponent* TakeMesh, AController* TakeController);
 
 	UFUNCTION(BlueprintCallable)
-	virtual void AttackStart(FVector Location, FVector Forward, TSubclassOf<UDamageType> DamageType, FString Type, UParticleSystem* HitParticle,float AttackRange);
+	virtual void AttackStart(FVector Location, FVector Forward, TSubclassOf<UDamageType> DamageType, FString Type, UParticleSystem* HitParticle,float AttackRange, float Damage);
 
 };

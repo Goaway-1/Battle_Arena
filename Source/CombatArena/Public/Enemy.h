@@ -65,6 +65,9 @@ public:
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Attack")
 	TSubclassOf<UDamageType> EnemyDamageType;
 
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Attack")
+	float AttackDamage;
+
 	//knockback
 	UPROPERTY()
 	float KnockBackPower;
@@ -125,5 +128,9 @@ public:
 
 	UFUNCTION(BlueprintCallable)
 	FORCEINLINE float GetHealthRatio() { return HealthRatio; }
+
+	//Targeting
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Widget | TargetWidget")
+	class UDecalComponent* TargetingDecal;
 #pragma endregion
 };

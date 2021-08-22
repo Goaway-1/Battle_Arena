@@ -26,6 +26,7 @@ void AAttackWeapon::Equip(class AMainPlayer* Player) {
 			Player->AttackRange = GetAttackRange();		//오른쪽 무기만 거리 지정
 			Player->SetRightCurrentWeapon(this);
 
+			Player->SetAttackDamage(Damage);	
 			CollisionVolume->SetCollisionEnabled(ECollisionEnabled::NoCollision);
 		}
 	}
