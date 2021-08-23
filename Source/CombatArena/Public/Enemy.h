@@ -111,10 +111,10 @@ public:
 
 	//Call at MainPlayer
 	UFUNCTION()
-	void ShowEnemyHealth();
+	void ShowEnemyHUD();
 	
 	UFUNCTION()
-	void HideEnemyHealth();
+	void HideEnemyHUD();
 
 	//HealthBar
 	UPROPERTY()

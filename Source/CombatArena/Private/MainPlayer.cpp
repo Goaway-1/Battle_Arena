@@ -280,12 +280,18 @@ void AMainPlayer::SetTargeting() {
 	else OnTargeting();
 }
 void AMainPlayer::OnTargeting() {
-	bTargeting = true;
-	bUseControllerRotationYaw = true;
+	if (CombatTarget != nullptr) {
+		bTargeting = true;
+		bUseControllerRotationYaw = true;
+		CombatTarget->ShowEnemyHUD();
+	}
 }
 void AMainPlayer::OffTargeting() {
-	bTargeting = false;
-	bUseControllerRotationYaw = false;
+	if (CombatTarget != nullptr) {
+		bTargeting = false;
+		bUseControllerRotationYaw = false;
+		CombatTarget->HideEnemyHUD();
+	}
 }
 #pragma endregion
 
@@ -459,19 +465,14 @@ void AMainPlayer::SetRightCurrentWeapon(AAttackWeapon* Weapon) {
 void AMainPlayer::OnEnemyHUD_OverlapBegin(UPrimitiveComponent* OverlappedComponent, AActor* OtherActor, UPrimitiveComponent* OtherComp, int32 OtherBodyIndex, bool bFromSweep, const FHitResult& SweepResult) {
 	if (OtherActor) {
 		CombatTarget = Cast<AEnemy>(OtherActor);
-		if (CombatTarget) {
-			CombatTarget->ShowEnemyHealth();
-		}
 	}
 }
 void AMainPlayer::OnEnemyHUD_OverlapEnd(UPrimitiveComponent* OverlappedComponent, AActor* OtherActor, UPrimitiveComponent* OtherComp, int32 OtherBodyIndex) {
 	if (OtherActor) {
 		CombatTarget = Cast<AEnemy>(OtherActor);
 		if (CombatTarget) {
-			CombatTarget->HideEnemyHealth();
-			CombatTarget = nullptr;
-			
 			OffTargeting();
+			CombatTarget = nullptr;
 		}
 	}
 }

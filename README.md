@@ -3579,31 +3579,86 @@
   
 ## **08.23**
 > **<h3>Today Dev Story</h3>**
-- ## <span style = "color:yellow;">Health Potion</span>
-Decal 사용
-https://www.youtube.com/watch?v=tQgcj-ETjE4&t=862s
+- ## <span style = "color:yellow;">Targeting Widget(Decal)</span>
+  - <img src="Image/TargetDecal.gif" height="300" title="TargetDecal">
+  - 타켓팅된 적을 표시하기 위해서 Widget이 아닌 Decal을 사용해서 적의 하단에 표시.
+  - Enemy클래스의 Show/HideEnemyHealth메서드 이름을 Show/HideEnemyHUD로 변경 후 체력과 타겟위젝을 보여주는 메서드로 확장.
+    - DecalComponent객체를 생성하여 사용하며, SetVisibility을 사용해 HealthWidget과 동시에 컨트롤.
+  - MainPlayer클래스의 On/OffTargeting()메서드를 사용하여 HUD를 관리하며, 전에는 Player의 HUD구에 Enemy가 중첩되면 HUD를 표시. 
+    - 수정 후 범위내에 Enemy가 있을때 플레이어가 Tab키를 눌러야만 HUD가 활성화
 
+      <details><summary>cpp 코드</summary> 
+
+      ```c++
+      //AEnemy.cpp
+      AEnemy::AEnemy()
+      {
+        ...
+        //Targeting 
+        TargetingDecal = CreateDefaultSubobject<UDecalComponent>(TEXT("TargetingDecal"));
+        TargetingDecal->SetRelativeLocation(FVector(0.f, 0.f, -150.f));
+        TargetingDecal->SetRelativeScale3D(FVector(0.6f, 0.6f, 0.05f));
+        TargetingDecal->DecalSize = FVector(128.f, 128.f, 256.f);
+        TargetingDecal->SetVisibility(false); 
+      }  
+      void AEnemy::ShowEnemyHUD() {
+        if (!HealthWidget && !TargetingDecal) return;
+        HealthWidget->SetVisibility(true);
+        TargetingDecal->SetVisibility(true);
+      }
+
+      void AEnemy::HideEnemyHUD() {
+        if (!HealthWidget && !TargetingDecal) return;
+        HealthWidget->SetVisibility(false);
+        TargetingDecal->SetVisibility(false);
+      }
+      ```
+      ```c++
+      //MainPlayer.cpp
+      void AMainPlayer::OnTargeting() {
+        if (CombatTarget != nullptr) {
+          bTargeting = true;
+          bUseControllerRotationYaw = true;
+          CombatTarget->ShowEnemyHUD();
+        }
+      }
+      void AMainPlayer::OffTargeting() {
+        if (CombatTarget != nullptr) {
+          bTargeting = false;
+          bUseControllerRotationYaw = false;
+          CombatTarget->HideEnemyHUD();
+        }
+      }
+      void AMainPlayer::OnEnemyHUD_OverlapBegin(UPrimitiveComponent* OverlappedComponent, AActor* OtherActor, UPrimitiveComponent* OtherComp, int32 OtherBodyIndex, bool bFromSweep, const FHitResult& SweepResult) {
+        if (OtherActor) {
+          CombatTarget = Cast<AEnemy>(OtherActor);
+        }
+      }
+      void AMainPlayer::OnEnemyHUD_OverlapEnd(UPrimitiveComponent* OverlappedComponent, AActor* OtherActor, UPrimitiveComponent* OtherComp, int32 OtherBodyIndex) {
+        if (OtherActor) {
+          CombatTarget = Cast<AEnemy>(OtherActor);
+          if (CombatTarget) {
+            OffTargeting();
+            CombatTarget = nullptr;
+          }
+        }
+      }
+      ```
+      </details>
+
+      <details><summary>h 코드</summary> 
+
+      ```c++
+      //AEnemy.h
+      public:
+        UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Widget | TargetWidget")
+        class UDecalComponent* TargetingDecal;
+      ```
+      </details>
 
 > **<h3>Realization</h3>** 
-    <details><summary>cpp 코드</summary> 
-
-    ```c++
-    //AEnemy.cpp
-    AEnemy::AEnemy()
-    {
-      ...
-    	//Targeting 
-    	TargetingDecal = CreateDefaultSubobject<UDecalComponent>(TEXT("TargetingDecal"));
-    }
-    ```
-    </details>
-
-    <details><summary>h 코드</summary> 
-
-    ```c++
-    //AEnemy.h
-    public:
-    	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Widget | TargetWidget")
-	    class UDecalComponent* TargetingDecal;
-    ```
-    </details>
+- DecalComponent 
+  - 라이팅을 재계산하지 않고 사용할 수 있어 선택된 영역에 박스를 렌더링하는 방식. (메티리얼) 
+  - 다수의 데칼도 큰 퍼포먼스 저하 없이 한번에 렌더링 가능. 
+  - 투영방향이 정해져있으며 (X축 기준) 거리가 멀어질수록 희미해진다.
+  - 지오메트리에 피가 튄 자국, 먼지 또는 총알 구멍을 동적으로 추가하는 데 사용. //젖은 레이어

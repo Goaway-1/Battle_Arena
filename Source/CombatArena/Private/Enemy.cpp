@@ -35,6 +35,10 @@ AEnemy::AEnemy()
 
 	//Targeting 
 	TargetingDecal = CreateDefaultSubobject<UDecalComponent>(TEXT("TargetingDecal"));
+	TargetingDecal->SetRelativeLocation(FVector(0.f, 0.f, -150.f));
+	TargetingDecal->SetRelativeScale3D(FVector(0.6f, 0.6f, 0.05f));
+	TargetingDecal->DecalSize = FVector(128.f, 128.f, 256.f);
+	TargetingDecal->SetVisibility(false);
 #pragma endregion
 
 #pragma region ATTCK
@@ -166,13 +170,16 @@ void AEnemy::KnockBack(FVector Backward) {
 
 #pragma region HUD
 
-void AEnemy::ShowEnemyHealth() {
+void AEnemy::ShowEnemyHUD() {
+	if (!HealthWidget && !TargetingDecal) return;
 	HealthWidget->SetVisibility(true);
+	TargetingDecal->SetVisibility(true);
 }
 
-void AEnemy::HideEnemyHealth() {
-
+void AEnemy::HideEnemyHUD() {
+	if (!HealthWidget && !TargetingDecal) return;
 	HealthWidget->SetVisibility(false);
+	TargetingDecal->SetVisibility(false);
 }
 
 void AEnemy::SetHealthRatio() {
