@@ -1658,7 +1658,6 @@
         }
       }
       ``` 
-
       ```c++
       //MainController.cpp
       #include "Components/WidgetComponent.h"
@@ -1717,7 +1716,6 @@
       UFUNCTION()
       void OnEnemyHUD_OverlapEnd(UPrimitiveComponent* OverlappedComponent, AActor* OtherActor, UPrimitiveComponent* OtherComp, int32 OtherBodyIndex);
       ```
-
       ```c++
       //MainController.h
       UPROPERTY(VisibleAnywhere, Category = "Widget | EnemyWidget")
@@ -3662,3 +3660,123 @@
   - 다수의 데칼도 큰 퍼포먼스 저하 없이 한번에 렌더링 가능. 
   - 투영방향이 정해져있으며 (X축 기준) 거리가 멀어질수록 희미해진다.
   - 지오메트리에 피가 튄 자국, 먼지 또는 총알 구멍을 동적으로 추가하는 데 사용. //젖은 레이어
+
+
+## **08.26**
+> **<h3>Today Dev Story</h3>**
+- ## <span style = "color:yellow;">달리기 효과</span>
+  - <img src="Image/Sprinting_CamZoom.gif" height="300" title="Sprinting_CamZoom">
+  - 역동감을 주기 위해서 Sprinting시 카메라를 줌인하고 위아래로 흔들리는 효과를 제작. (제작하는데 고생한 부분.)
+  - MainPlayer클래스의 Tick()메서드에서 상태값을 확인하여 Sprinting 상태일때 카메라 쉐이크. (RunCamShake()메서드)
+    - Sprinting 상태시 __UKismetSystemLibrary::MoveComponentTo()메서드를__ 사용하여 카메라의 위치를 이동하는 메서드 생성. (ZoomIn/OutCam() 메서드)
+    - 잠복성의 타겟을 MainPlayer로 설정하여 몇초뒤 돌아옴
+
+      <details><summary>cpp 코드</summary> 
+
+      ```c++
+      //Mainplayer.cpp
+      void AMainPlayer::Tick(float DeltaTime)
+      {
+        Super::Tick(DeltaTime);
+        /** if Run and then Shake Cam*/
+        RunCamShake();
+        /** Targeting Check */
+        Targeting();
+      }
+      void AMainPlayer::OnSprinting() {
+        if (!IsCanMove()) return;
+        if (MovementStatus != EMovementStatus::EMS_Sprinting && DirX != 0 || DirY != 0) {
+          SetMovementStatus(EMovementStatus::EMS_Sprinting);
+          ZoomInCam();
+        }
+      }
+      void AMainPlayer::OffSprinting() {
+        if (!IsCanMove()) return;
+        if (MovementStatus != EMovementStatus::EMS_Walk){
+          if (GetVelocity().Size() == 0) SetMovementStatus(EMovementStatus::EMS_Normal);
+          else  SetMovementStatus(EMovementStatus::EMS_Walk);
+          ZoomOutCam();
+        }
+      }
+      void AMainPlayer::ZoomInCam() {
+        FLatentActionInfo LatentInfo;
+        LatentInfo.CallbackTarget = this;
+        UKismetSystemLibrary::MoveComponentTo(Camera, FVector(150.f,0.f,0.f),FRotator(0.f),false,false,0.3f,false,EMoveComponentAction::Type::Move,LatentInfo);
+      }
+      void AMainPlayer::ZoomOutCam() {
+        FLatentActionInfo LatentInfo;
+        LatentInfo.CallbackTarget = this;
+        UKismetSystemLibrary::MoveComponentTo(Camera, FVector(0.f), FRotator(0.f), false, false, 0.4f, false, EMoveComponentAction::Type::Move, LatentInfo);
+      }
+      void AMainPlayer::RunCamShake() {
+        if (GetMovementStatus() == EMovementStatus::EMS_Sprinting) {
+          CameraManager->StartCameraShake(RunShake, 1.f);
+        }
+      }
+      ```
+      </details>
+
+      <details><summary>h 코드</summary> 
+
+      ```c++
+      //Mainplayer.h
+      public:
+        UFUNCTION()
+        void ZoomInCam();
+
+        UFUNCTION()
+        void ZoomOutCam();
+
+        UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Camera")
+        TSubclassOf<UMatineeCameraShake> RunShake;
+
+        UFUNCTION()
+        void RunCamShake();
+      ```
+      </details>
+
+- ## <span style = "color:yellow;">공격 효과</span>
+  - <img src="Image/LastAttack_CameraMove.gif" height="300" title="LastAttack_CameraMove">
+  - 공격중 마지막 피격시 몰입감을 위해 이벤트로 카메라의 시점이 변경.
+  - 기존 ZoomInCam()메서드에 매개변수값 추가하여 진행.
+  - 위의 구현 방식과 비슷하게 MoveComponentTo()메서드를 사용하며, SetInitialLocationAndRotation()메서드를 통해 컨트롤러의 위치를 초기화 한 후 사용.
+    
+    <details><summary>cpp 코드</summary> 
+
+    ```c++
+    //Mainplayer.cpp
+    void AMainPlayer::Attack() {
+      ...
+      if (AnimInstance && PlayMontage) {
+        ...
+        else {													
+          ...
+          /** Combo Event */
+          if (ComboCnt == 2) {
+            GetController()->SetInitialLocationAndRotation(FVector(0.f),GetActorRotation());
+            ZoomInCam(FVector(300.f, 120.f, -30.f), FRotator(0.f, -40.f, 0.f));
+          }
+        }
+      }
+    }
+    void AMainPlayer::ZoomInCam(FVector Pos,FRotator Rot) {
+      FLatentActionInfo LatentInfo;
+      LatentInfo.CallbackTarget = this;
+      UKismetSystemLibrary::MoveComponentTo(Camera, Pos, Rot,false,false,0.3f, true,EMoveComponentAction::Type::Move,LatentInfo);
+    }
+    ```
+    </details>
+
+    <details><summary>h 코드</summary> 
+
+    ```c++
+    //MainPlayer.h
+    public:
+    	UFUNCTION()
+	    void ZoomInCam(FVector Pos, FRotator Rot = FRotator(0.f));
+    ```
+    </details>
+
+> **<h3>Realization</h3>**
+- Latent (잠복성)
+  - 네트워크 호출과 같은 비동기 작동에 적합하다.

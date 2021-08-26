@@ -69,7 +69,7 @@ public:
 	UPROPERTY(VisibleAnywhere, BlueprintReadWrite, Category = "Camera")
 	class UCameraComponent* Camera;
 
-	//Camera Shake
+	//Hited Camera Shake
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Camera")
 	TSubclassOf<UMatineeCameraShake> CamShake;
 
@@ -84,6 +84,19 @@ public:
 	void Lookup(float value);
 
 	void Turn(float value);
+
+	/** If Sprinting end then Zoom the camera and shaking */
+	UFUNCTION()
+	void ZoomInCam(FVector Pos, FRotator Rot = FRotator(0.f));
+
+	UFUNCTION()
+	void ZoomOutCam();
+
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Camera")
+	TSubclassOf<UMatineeCameraShake> RunShake;
+
+	UFUNCTION()
+	void RunCamShake();
 
 #pragma endregion
 

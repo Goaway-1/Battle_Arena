@@ -1,14 +1,15 @@
 #include "MainPlayer.h"
-#include "Kismet/KismetMathLibrary.h"
-#include "Perception/AIPerceptionStimuliSourceComponent.h"
 #include "AttackWeapon.h"
 #include "ShieldWeapon.h"
 #include "Enemy.h"
 #include "MainController.h"
 #include "HealthWidget.h"
-#include "Camera/PlayerCameraManager.h"
 #include "PlayerAttackFunction.h"
 #include "Potion.h"
+#include "Kismet/KismetSystemLibrary.h"
+#include "Kismet/KismetMathLibrary.h"
+#include "Perception/AIPerceptionStimuliSourceComponent.h"
+#include "Camera/PlayerCameraManager.h"
 #include "Components/WidgetComponent.h"
 
 
@@ -138,6 +139,9 @@ void AMainPlayer::Tick(float DeltaTime)
 {
 	Super::Tick(DeltaTime);
 
+	/** if Run and then Shake Cam*/
+	RunCamShake();
+
 	/** Targeting Check */
 	Targeting();
 }
@@ -198,7 +202,6 @@ void AMainPlayer::Turn(float value) {
 #pragma region MOVEMENT
 void AMainPlayer::MoveForward(float Value) {
 	if (!IsCanMove()) return;
-
 	AddMovementInput(Camera->GetForwardVector(), Value);
 	DirX = Value;
 }
@@ -222,17 +225,21 @@ void  AMainPlayer::SetMovementStatus(EMovementStatus Status) {
 }
 void AMainPlayer::OnSprinting() {
 	if (!IsCanMove()) return;
-	if (MovementStatus != EMovementStatus::EMS_Sprinting) SetMovementStatus(EMovementStatus::EMS_Sprinting);
+	if (MovementStatus != EMovementStatus::EMS_Sprinting && DirX != 0 || DirY != 0) {
+		SetMovementStatus(EMovementStatus::EMS_Sprinting);
+		ZoomInCam(FVector(150.f, 0.f, 0.f));
+	}
 }
 void AMainPlayer::OffSprinting() {
 	if (!IsCanMove()) return;
 	if (MovementStatus != EMovementStatus::EMS_Walk){
 		if (GetVelocity().Size() == 0) SetMovementStatus(EMovementStatus::EMS_Normal);
 		else  SetMovementStatus(EMovementStatus::EMS_Walk);
+		ZoomOutCam();
 	}
 }
 void AMainPlayer::Dodge() {
-	if (!IsCanMove()) return;
+	if (!bCanDodge) return;
 	if (bCanDodge && DirX !=0 || DirY != 0) {
 		GetCharacterMovement()->BrakingFrictionFactor = 0.f;	//마찰계수
 		AnimDodge();
@@ -293,6 +300,24 @@ void AMainPlayer::OffTargeting() {
 		CombatTarget->HideEnemyHUD();
 	}
 }
+
+void AMainPlayer::ZoomInCam(FVector Pos,FRotator Rot) {
+	FLatentActionInfo LatentInfo;
+	LatentInfo.CallbackTarget = this;
+	UKismetSystemLibrary::MoveComponentTo(Camera, Pos, Rot,false,false,0.3f, true,EMoveComponentAction::Type::Move,LatentInfo);
+}
+
+void AMainPlayer::ZoomOutCam() {
+	FLatentActionInfo LatentInfo;
+	LatentInfo.CallbackTarget = this;
+	UKismetSystemLibrary::MoveComponentTo(Camera, FVector(0.f), FRotator(0.f), false, false, 0.4f, true, EMoveComponentAction::Type::Move, LatentInfo);
+}
+
+void AMainPlayer::RunCamShake() {
+	if (GetMovementStatus() == EMovementStatus::EMS_Sprinting) {
+		CameraManager->StartCameraShake(RunShake, 1.f);
+	}
+}
 #pragma endregion
 
 #pragma region ATTACK
@@ -319,6 +344,12 @@ void AMainPlayer::Attack() {
 		else {													//공격중일때 2타 3타
 			AnimInstance->Montage_Play(PlayMontage);
 			AnimInstance->Montage_JumpToSection(GetAttackMontageSection("Attack", ComboCnt), PlayMontage);
+
+			/** Combo Event */
+			if (ComboCnt == 2) {
+				GetController()->SetInitialLocationAndRotation(FVector(0.f),GetActorRotation());
+				ZoomInCam(FVector(300.f, 120.f, -30.f), FRotator(0.f, -40.f, 0.f));
+			}
 		}
 	}
 }
@@ -328,6 +359,7 @@ void AMainPlayer::StartAttack() {
 }
 void AMainPlayer::EndAttack() {
 	bAttacking = false;
+	ZoomOutCam();
 }
 void AMainPlayer::AttackInputCheck() {
 	if (bIsAttackCheck) {
