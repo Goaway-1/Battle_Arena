@@ -24,40 +24,38 @@ void UPlayerAttackFunction::Kick(UAnimInstance* Anim, UAnimMontage* Montage) {
 }
 
 void UPlayerAttackFunction::KickStart(FVector Location, FVector Forward) {
-	FHitResult HitResult; //맞은 정보를 저장
+	//찾아낼 액터의 트레이스 채널
+	TArray<TEnumAsByte<EObjectTypeQuery>> TraceObjectTypes;		
+	TraceObjectTypes.Add(UEngineTypes::ConvertToObjectType(ECollisionChannel::ECC_GameTraceChannel2));
 
-	//탐색방법에 대한 설정 값을 모은 구조체
-	//이름, 추적 복잡성 여부,
-	FCollisionQueryParams Params(NAME_None, false, Owner);
-	bool bReslut = GetWorld()->SweepSingleByChannel(
-		HitResult,
-		Location,
-		Location + Forward * KickRange,
-		FQuat::Identity,		//회전없음.
-		ECollisionChannel::ECC_GameTraceChannel5,	//Kick의 채널 번호
-		FCollisionShape::MakeSphere(KickRadius),
-		Params);
+	//찾아낼 액터의 타입
+	UClass* SeekClass = AEnemy::StaticClass();
 
-	//구의 정보 (생략가능)
-	FVector TraceVec = Forward * KickRange;
-	FVector Center = Location + TraceVec * 0.5f;
-	float HalfHeight = KickRange * 0.5f + KickRadius;
-	FQuat CapsuleRot = FRotationMatrix::MakeFromZ(TraceVec).ToQuat();
-	FColor DrawColor = bReslut ? FColor::Green : FColor::Red;
-	float DebugLifeTime = 0.5f;
+	//찾아낸 액터를 저장할 배열
+	TArray<AActor*> OutActors;
 
-	DrawDebugCapsule(GetWorld(), Center, HalfHeight, KickRadius, CapsuleRot, DrawColor, false, DebugLifeTime);
+	//무시될 액터의 배열
+	TArray<AActor*> IgnoreActors;	
+	IgnoreActors.Init(Owner, 1);	
 
-	/// <summary>
-	/// 넉백을 시키는 실질적인 부분.
-	/// Player의 시점으로 넉백.
-	/// </summary>
-	if (bReslut) {
-		if (HitResult.Actor.IsValid()) {
-			AEnemy* KnockBackEnemy = Cast<AEnemy>(HitResult.Actor);
-			if (KnockBackEnemy) {
-				FVector VectorToBack = FVector(Forward.X, Forward.Y, 0);
-				KnockBackEnemy->KnockBack(VectorToBack);
+	bool bResult= UKismetSystemLibrary::SphereOverlapActors(GetWorld(), Owner->GetActorLocation(), 200.f, TraceObjectTypes, SeekClass, IgnoreActors, OutActors);
+
+	/** Draw Image */
+	FColor DrawColor = bResult ? FColor::Green : FColor::Red;
+	DrawDebugSphere(GetWorld(), Owner->GetActorLocation(), 200.f, 12, DrawColor, false, 0.5f);
+
+	/** 실질적인 알고리즘 */
+	if (bResult) {
+		for (auto& HitActor : OutActors)
+		{
+			// 내적의 크기
+			float Inner = Owner->GetDotProductTo(HitActor);
+			if (Inner > 0.5f) {
+				AEnemy* KnockBackEnemy = Cast<AEnemy>(HitActor);
+				if (KnockBackEnemy) {
+					FVector VectorToBack = FVector(Forward.X, Forward.Y, 0);
+					KnockBackEnemy->KnockBack(VectorToBack);
+				}
 			}
 		}
 	}

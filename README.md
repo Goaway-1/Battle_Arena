@@ -3661,7 +3661,6 @@
   - 투영방향이 정해져있으며 (X축 기준) 거리가 멀어질수록 희미해진다.
   - 지오메트리에 피가 튄 자국, 먼지 또는 총알 구멍을 동적으로 추가하는 데 사용. //젖은 레이어
 
-
 ## **08.26**
 > **<h3>Today Dev Story</h3>**
 - ## <span style = "color:yellow;">달리기 효과</span>
@@ -3780,3 +3779,136 @@
 > **<h3>Realization</h3>**
 - Latent (잠복성)
   - 네트워크 호출과 같은 비동기 작동에 적합하다.
+
+## **08.27**
+> **<h3>Today Dev Story</h3>**
+- ## <span style = "color:yellow;">발차기 수정</span>
+  - <img src="Image/Enemy_KnockBack_3.gif" height="300" title="Enemy_KnockBack_3"> <img src="Image/Inner_Attack.png" height="300" title="Inner_Attack">
+  - 기존 발차기는 SweepSingleByChannel()메서드를 사용하여 처음으로 닿는 액터에게 KnockBack() 효과를 주었지만 내적을 사용한 방식으로 변경.
+  - __UKismetSystemLibrary::SphereOverlapActors()메서드를__ 사용하여 플레이어 주변의 모든 액터를 받아 그 액터와 플레이어의 내적의 크기가 일정 범위내라면 KnockBack()메서드가 실행되는 방식.
+    - 찾아낼 액터를 저장할 배열(OutActors), 트레이스 채널번호(TraceObjectTypes), 타입(SeekClass)이 필요하고 무시할 액터를 저장한 배열(IgnoreActors)이 필요하다. 
+    - 메서드를 사용하여 액터들을 모두 OutActors의 배열에 담고 for구문을 통해서 모두 확인하는데 플레이어와 액터의 내적 크기를 GetDotProductTo()메서드를 사용하여 도출. (단위는 1)
+    - 위의 그림처럼 내적의 크기를 기준으로 피격을 판단하며 __장점은 공격타입에 따라 범위를 지정할 수 있다.__
+    
+      <details><summary>cpp 코드</summary> 
+
+      ```c++
+      //PlayerAttackFunction.cpp
+      void UPlayerAttackFunction::KickStart(FVector Location, FVector Forward) {
+        //찾아낼 액터의 트레이스 채널
+        TArray<TEnumAsByte<EObjectTypeQuery>> TraceObjectTypes;		
+        TraceObjectTypes.Add(UEngineTypes::ConvertToObjectType(ECollisionChannel::ECC_GameTraceChannel2));
+
+        //찾아낼 액터의 타입
+        UClass* SeekClass = AEnemy::StaticClass();
+
+        //무시될 액터의 배열
+        TArray<AActor*> IgnoreActors;	
+        IgnoreActors.Init(Owner, 1);	
+
+        //찾아낸 액터를 저장할 배열
+        TArray<AActor*> OutActors;		
+
+        bool bResult= UKismetSystemLibrary::SphereOverlapActors(GetWorld(), Owner->GetActorLocation(), 200.f, TraceObjectTypes, SeekClass, IgnoreActors, OutActors);
+
+        /** Draw Image */
+        FColor DrawColor = bResult ? FColor::Green : FColor::Red;
+        DrawDebugSphere(GetWorld(), Owner->GetActorLocation(), 200.f, 12, DrawColor, true, -0.5f);
+
+        /** 실질적인 알고리즘 */
+        if (bResult) {
+          for (auto& HitActor : OutActors)
+          {
+            // 내적의 크기
+            float Inner = Owner->GetDotProductTo(HitActor);
+            if (Inner > 0.5f) {
+              AEnemy* KnockBackEnemy = Cast<AEnemy>(HitActor);
+              if (KnockBackEnemy) {
+                FVector VectorToBack = FVector(Forward.X, Forward.Y, 0);
+                KnockBackEnemy->KnockBack(VectorToBack);
+              }
+            }
+          }
+        }
+      }
+      ```
+      </details>
+- ## <span style = "color:yellow;">넉백 수정</span>
+  - 기존 LaunchCharacter()메서드를 사용해서 넉백을 지정했지만 이 메서드는 물리적인 요소에 영향을 받기 때문에 AddActorWorldOffset()메서드 사용.
+  - Tick()에서 IsKnockBack()메서드를 실행하여 판단하며, 이 외에는 핸들러을 사용한다. 추가로 0.2초 내에는 다시 밀리지 않는다.
+    - bIsBack변수가 true이면 Tick()에서 Tick만큼 0.2초간 밀린다.
+      <details><summary>cpp 코드</summary> 
+
+      ```c++
+      //Enemy.cpp
+      void AEnemy::Tick(float DeltaTime)
+      {
+        Super::Tick(DeltaTime);
+
+        IsKnockBack();
+      }
+      void AEnemy::KnockBack(FVector Backward) {
+        if (!bIsback) {
+          if (HitedMontage != nullptr) Anim->Montage_Play(HitedMontage);
+          bIsback = true;
+          BackVector = Backward;
+          GetWorldTimerManager().SetTimer(backHandle, this, &AEnemy::knockBackEnd, 0.2f);
+        }
+      }
+
+      void AEnemy::knockBackEnd() {
+        bIsback = false;
+      }
+      void AEnemy::IsKnockBack() {
+        if (bIsback) {
+          AddActorWorldOffset(BackVector * KnockBackPower * GetWorld()->GetDeltaSeconds(), false);
+        }
+      }
+
+      ```
+      </details>
+
+      <details><summary>h 코드</summary> 
+
+      ```c++
+      //Enemy.h
+      public:
+        UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "KnockBack")
+        bool bIsback;
+
+        UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "KnockBack")
+        FVector BackVector;
+
+        UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "KnockBack")
+        FTimerHandle backHandle;
+
+        UFUNCTION()
+        void KnockBack(FVector Backward);
+
+        UFUNCTION()
+        void knockBackEnd();
+
+        UFUNCTION()
+        void IsKnockBack();
+      ```
+      </details>
+
+> **<h3>Realization</h3>**
+- ## 물리적 거리 : 물리적인 계산을 통해서 움직이는 메서드 
+  1. AddForce 
+    - 추가 힘. 지속 기간 내에 호출되어야 함. (매Tick마다)
+    - 모든 프레임이라고 부르기 위해 의도된 대로 현재 fps에 따라 조절.
+  2. AddImpulse
+    - 즉시 물체에 총 1초의 추가 힘 속도를 부여한다. (1tick)
+  
+  - Addforce 60번 == AddImpulse 1번 (fps에 따라 다름)
+
+- ## 일정거리 : 물리적인 계산은 하지 않고 움직이는 메서드 (고정된 거리)
+  1. SetActorLocation 
+  2. AddActorWorldOffset
+
+- ## 포스트 프로세스 
+  - 전체 화면 필터 및 효과를 화면에 표시하기 전에 카메라의 이미지 버퍼에 적용하는 프로세스.
+  - 렌즈 플레어, 화면 색조 및 블러링같은 효과를 낼 수도 있고, 볼륨끼리 또는 플레이어와의 상호작용 방식을 정의
+  - 기존에 렌더링 된 씬에 씬에 렌더링 효과를 더하는 작업, 포스트 프로세싱의 효과는 일반적으로 씬 뷰에 따라 달라지거나, 최종 렌더링 결과물을 생성하기 전에 렌더링 되는 씬 위에 겹쳐서 표시.
+  - 카메라의 효과를 정의한다고 생각하면 쉽다.

@@ -21,7 +21,6 @@ AEnemy::AEnemy()
 
 	GetCapsuleComponent()->SetCollisionProfileName(TEXT("Enemy"));	//콜리전 설정
 
-
 #pragma region HUD
 	//Health
 	MaxHealth = 100.f;
@@ -67,10 +66,10 @@ void AEnemy::BeginPlay()
 	//KnockBack
 	IsAttacking = false;
 	AttackRange = 100.f;
-	KnockBackPower = 1000.f;
-
+	KnockBackPower = 800.f;
+	bIsback = false;
 #pragma endregion
-
+	
 #pragma region HUD
 	//HUD
 	if (WEnemyHealth) {
@@ -89,6 +88,9 @@ void AEnemy::BeginPlay()
 void AEnemy::Tick(float DeltaTime)
 {
 	Super::Tick(DeltaTime);
+
+	/** KnockBack의 조건이 만족하면 뒤로 밀림. */
+	IsKnockBack();
 }
 
 void AEnemy::PostInitializeComponents()
@@ -161,11 +163,22 @@ void AEnemy::DestroyEnemy() {
 }
 
 void AEnemy::KnockBack(FVector Backward) {
-	//일단 하나의 Montage만 실행
-	if (HitedMontage != nullptr) Anim->Montage_Play(HitedMontage);
-	LaunchCharacter(Backward * KnockBackPower, true, true);	//입력 방향대로
+	if (!bIsback) {
+		if (HitedMontage != nullptr) Anim->Montage_Play(HitedMontage);
+		bIsback = true;
+		BackVector = Backward;
+		GetWorldTimerManager().SetTimer(backHandle, this, &AEnemy::knockBackEnd, 0.2f);
+	}
 }
 
+void AEnemy::knockBackEnd() {
+	bIsback = false;
+}
+void AEnemy::IsKnockBack() {
+	if (bIsback) {
+		AddActorWorldOffset(BackVector * KnockBackPower * GetWorld()->GetDeltaSeconds(), false);
+	}
+}
 #pragma endregion
 
 #pragma region HUD

@@ -68,12 +68,27 @@ public:
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Attack")
 	float AttackDamage;
 
-	//knockback
+	/** knockback */
 	UPROPERTY()
 	float KnockBackPower;
 
+	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "KnockBack")
+	bool bIsback;
+
+	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "KnockBack")
+	FVector BackVector;
+
+	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "KnockBack")
+	FTimerHandle backHandle;
+
 	UFUNCTION()
 	void KnockBack(FVector Backward);
+
+	UFUNCTION()
+	void knockBackEnd();
+
+	UFUNCTION()
+	void IsKnockBack();
 	
 	/** Hited AnimMontage */
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Montage")
