@@ -13,6 +13,16 @@ enum class EItemType : uint8 {
 	EIT_Default		UMETA(DisplayName = "Default")
 };
 
+UENUM(BlueprintType)
+enum class EItemState : uint8
+{
+	EIS_Normal	UMETA(DisplayName = "Normal"),
+	EIS_Ground  UMETA(DisplayName = "Ground"),
+	EIS_Equip	UMETA(DisplayName = "Equip"),
+
+	EIS_Default	UMETA(DisplayName = "Default")
+};
+
 UCLASS()
 class COMBATARENA_API AItem : public AActor
 {
@@ -28,6 +38,16 @@ protected:
 
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Item", Meta = (AllowPrivateAccess = true))
 	EItemType ItemType;
+
+	/** ItemState */
+	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Item", Meta = (AllowPrivateAccess = true))
+	EItemState ItemState;
+
+	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Item", Meta = (AllowPrivateAccess = true))
+	float SpinSpeed;
+
+	FORCEINLINE void SetItemState(EItemState State) { ItemState = State; }
+	FORCEINLINE EItemState GetItemState() { return ItemState; }
 
 	UPROPERTY(VisibleAnywhere, BlueprintReadWrite, Category = "Item | Collision")
 	class USphereComponent* CollisionVolume;
@@ -47,9 +67,9 @@ protected:
 	UFUNCTION()
 	virtual void OnOverlapEnd(UPrimitiveComponent* OverlappedComponent, AActor* OtherActor, UPrimitiveComponent* OtherComp, int32 OtherBodyIndex);
 
-
+	UFUNCTION()
+	void SetSpinItem();
 public:
-	//test
 	UFUNCTION()
 	FORCEINLINE EItemType GetItemType() { return ItemType; }
 };

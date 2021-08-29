@@ -18,6 +18,10 @@ AItem::AItem()
 
 	IdleParticleComponent = CreateDefaultSubobject<UParticleSystemComponent>(TEXT("IdleParticleComponent"));
 	IdleParticleComponent->SetupAttachment(GetRootComponent());
+
+	//Spin Item
+	SpinSpeed = 45.f;
+	SetItemState(EItemState::EIS_Ground);
 }
 
 void AItem::BeginPlay()
@@ -30,6 +34,7 @@ void AItem::Tick(float DeltaTime)
 {
 	Super::Tick(DeltaTime);
 
+	SetSpinItem();
 }
 
 void AItem::OnOverlapBegin(UPrimitiveComponent* OverlappedComponent, AActor* OtherActor, UPrimitiveComponent* OtherComp, int32 OtherBodyIndex, bool bFromSweep, const FHitResult& SweepResult) {
@@ -44,5 +49,13 @@ void AItem::OnOverlapEnd(UPrimitiveComponent* OverlappedComponent, AActor* Other
 	if (OtherActor) {
 		AMainPlayer* Player = Cast<AMainPlayer>(OtherActor);
 		if (Player) Player->SetActiveOverlappingItem(nullptr);
+	}
+}
+
+void AItem::SetSpinItem() {
+	if (GetItemState() == EItemState::EIS_Ground) {
+		FRotator Rot = GetActorRotation();
+		Rot.Yaw += GetWorld()->GetDeltaSeconds() * SpinSpeed;
+		SetActorRotation(Rot);
 	}
 }

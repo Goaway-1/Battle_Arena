@@ -24,37 +24,46 @@ void UAttackFunction::SetOwner(USkeletalMeshComponent* TakeMesh,AController* Tak
 
 void UAttackFunction::AttackStart(FVector Location, FVector Forward, TSubclassOf<UDamageType> DamageType,FString Type, UParticleSystem* HitParticle,float AttackRange,float Damage)
 {
-	ECollisionChannel AttackChanel = ECollisionChannel::ECC_Visibility;
-	FHitResult HitResult; //맞은 정보를 저장
-	FCollisionQueryParams Params(NAME_None, false, Owner);
+	//찾아낼 액터의 트레이스 채널
+	TArray<TEnumAsByte<EObjectTypeQuery>> TraceObjectTypes;
+
+	//찾아낼 액터의 타입
+	UClass* SeekClass = nullptr;
+
+	//찾아낸 액터를 저장할 배열
+	TArray<AActor*> OutActors;
+
+	//무시될 액터의 배열
+	TArray<AActor*> IgnoreActors;
+	IgnoreActors.Init(Owner, 1);
 
 	if (Type == "Player") {
-		AttackChanel = ECollisionChannel::ECC_GameTraceChannel5;
+		TraceObjectTypes.Add(UEngineTypes::ConvertToObjectType(ECollisionChannel::ECC_GameTraceChannel2));
+		SeekClass = AEnemy::StaticClass();
 	}
 	else if (Type == "Enemy") {
-		AttackChanel = ECollisionChannel::ECC_GameTraceChannel4;
+		TraceObjectTypes.Add(UEngineTypes::ConvertToObjectType(ECollisionChannel::ECC_GameTraceChannel1));
+		SeekClass = AMainPlayer::StaticClass();
 	}
 
-	bool bResult = GetWorld()->SweepSingleByChannel(HitResult, Location, Location + Forward * AttackRange,
-		FQuat::Identity, AttackChanel, FCollisionShape::MakeSphere(AttackRange), Params);
-	
+	bool bResult = UKismetSystemLibrary::SphereOverlapActors(GetWorld(), Owner->GetActorLocation(), AttackRange, TraceObjectTypes, SeekClass, IgnoreActors, OutActors);
 
-	//구의 정보 (생략가능)
-	FVector TraceVec = Forward * AttackRange;
-	FVector Center = Location + TraceVec * 0.5f;
-	float HalfHeight = AttackRange * 0.5f + 30.f;
-	FQuat CapsuleRot = FRotationMatrix::MakeFromZ(TraceVec).ToQuat();
+	/** Draw Image */
 	FColor DrawColor = bResult ? FColor::Green : FColor::Red;
-	float DebugLifeTime = 0.5f;
+	DrawDebugSphere(GetWorld(), Owner->GetActorLocation(), AttackRange, 12, DrawColor, false, 0.5f);
 
-	DrawDebugCapsule(GetWorld(), Center, HalfHeight, 30.f, CapsuleRot, DrawColor, false, DebugLifeTime);
-
+	/** 실질적인 알고리즘 */
 	if (bResult) {
-		if (HitResult.Actor.IsValid()) {
-			if (Type == "Player") Hited = Cast<AEnemy>(HitResult.Actor);
-			else if (Type == "Enemy") Hited = Cast<AMainPlayer>(HitResult.Actor);
-			if (Hited) {
-				UGameplayStatics::ApplyDamage(Hited, Damage, Controller, Owner, DamageType);
+		for (auto& HitActor : OutActors)
+		{
+			// 내적의 크기
+			float Inner = Owner->GetDotProductTo(HitActor);
+			if (Inner > 0.3f) {
+				if (Type == "Player") Hited = Cast<AEnemy>(HitActor);
+				else if (Type == "Enemy") Hited = Cast<AMainPlayer>(HitActor);
+				if (Hited) {
+					UGameplayStatics::ApplyDamage(Hited, Damage, Controller, Owner, DamageType);
+				}
 			}
 		}
 	}

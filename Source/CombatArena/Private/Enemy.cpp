@@ -65,7 +65,7 @@ void AEnemy::BeginPlay()
 
 	//KnockBack
 	IsAttacking = false;
-	AttackRange = 100.f;
+	AttackRange = 200.f;
 	KnockBackPower = 800.f;
 	bIsback = false;
 #pragma endregion
@@ -183,16 +183,24 @@ void AEnemy::IsKnockBack() {
 
 #pragma region HUD
 
-void AEnemy::ShowEnemyHUD() {
-	if (!HealthWidget && !TargetingDecal) return;
-	HealthWidget->SetVisibility(true);
+void AEnemy::ShowEnemyTarget() {
+	if (!TargetingDecal) return;
 	TargetingDecal->SetVisibility(true);
 }
 
-void AEnemy::HideEnemyHUD() {
-	if (!HealthWidget && !TargetingDecal) return;
-	HealthWidget->SetVisibility(false);
+void AEnemy::HideEnemyTarget() {
+	if (!TargetingDecal) return;
 	TargetingDecal->SetVisibility(false);
+}
+
+void AEnemy::ShowEnemyHUD() {
+	if (!HealthWidget) return;
+	HealthWidget->SetVisibility(true);
+}
+
+void AEnemy::HideEnemyHUD() {
+	if (!HealthWidget) return;
+	HealthWidget->SetVisibility(false);
 }
 
 void AEnemy::SetHealthRatio() {

@@ -3912,3 +3912,95 @@
   - 렌즈 플레어, 화면 색조 및 블러링같은 효과를 낼 수도 있고, 볼륨끼리 또는 플레이어와의 상호작용 방식을 정의
   - 기존에 렌더링 된 씬에 씬에 렌더링 효과를 더하는 작업, 포스트 프로세싱의 효과는 일반적으로 씬 뷰에 따라 달라지거나, 최종 렌더링 결과물을 생성하기 전에 렌더링 되는 씬 위에 겹쳐서 표시.
   - 카메라의 효과를 정의한다고 생각하면 쉽다.
+
+## **08.29**
+> **<h3>Today Dev Story</h3>**
+- ## <span style = "color:yellow;">아이템의 회전</span>
+  - <img src="Image/ItemRotation.gif" height="300" title="ItemRotation"> 
+  - Item클래스에 새로운 상태인 EItemState를 제작하여 상태가 Ground일때 Item이 회전하는 기능을 추가.
+  - 상태의 변화는 Weapon의 Un/Equip()메서드에서 구성했으며, 실제 회전의 구현은 Item클래스의 Tick()에서 SetSpinItem()메서드를 호출하여 사용.
+    <details><summary>cpp 코드</summary> 
+
+    ```c++
+    //Item.cpp
+    AItem::AItem()
+    {
+      //Spin Item
+      SpinSpeed = 45.f;
+      SetItemState(EItemState::EIS_Ground);
+    } 
+    void AItem::Tick(float DeltaTime)
+    {
+      Super::Tick(DeltaTime);
+      SetSpinItem();
+    }
+    void AItem::SetSpinItem() {
+      if (GetItemState() == EItemState::EIS_Ground) {
+        FRotator Rot = GetActorRotation();
+        Rot.Yaw += GetWorld()->GetDeltaSeconds() * SpinSpeed;
+        SetActorRotation(Rot);
+      }
+    }
+    ```
+    ```c++
+    //Weapon.cpp
+    void AWeapon::Equip(class AMainPlayer* Player) {
+      SetItemState(EItemState::EIS_Equip);      //상태지정.
+      SetActorRotation(FRotator(0.f));
+    }
+    void AWeapon::UnEquip() {
+      SetItemState(EItemState::EIS_Ground);     //상태지정.
+      DetachFromActor(FDetachmentTransformRules::KeepWorldTransform);
+      CollisionVolume->SetCollisionEnabled(ECollisionEnabled::QueryOnly);
+      SetActorLocationAndRotation(GetActorLocation(), FRotator(180.f,0.f, 0.f));
+    }
+    ```
+    </details>
+
+    <details><summary>h 코드</summary> 
+
+    ```c++
+    //Item.h
+    UENUM(BlueprintType)
+    enum class EItemState : uint8
+    {
+      EIS_Normal	UMETA(DisplayName = "Normal"),
+      EIS_Ground  UMETA(DisplayName = "Ground"),
+      EIS_Equip	UMETA(DisplayName = "Equip"),
+
+      EIS_Default	UMETA(DisplayName = "Default")
+    };
+    protected:
+      /** ItemState */
+      UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Item", Meta = (AllowPrivateAccess = true))
+      EItemState ItemState;
+
+      UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Item", Meta = (AllowPrivateAccess = true))
+      float SpinSpeed;
+
+      FORCEINLINE void SetItemState(EItemState State) { ItemState = State; }
+      FORCEINLINE EItemState GetItemState() { return ItemState; }
+
+      UFUNCTION()
+	    void SetSpinItem();
+    ```
+    </details>
+
+- ## <span style = "color:yellow;">잡다한 것</span>
+  1. 공격방식을 발차기와 같은 방식으로 수정.
+  2. 적의 체력바는 플레이어의 구와 적이 Overlap되면 표시하도록 수정.
+
+> **<h3>Realization</h3>**
+    <details><summary>cpp 코드</summary> 
+
+    ```c++
+    
+    ```
+    </details>
+
+    <details><summary>h 코드</summary> 
+
+    ```c++
+    
+    ```
+    </details>

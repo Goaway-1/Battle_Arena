@@ -6,6 +6,7 @@
 AWeapon::AWeapon() {
 	SkeletalMesh = CreateDefaultSubobject<USkeletalMeshComponent>(TEXT("SkeletalMesh"));
 	SkeletalMesh->SetupAttachment(GetRootComponent());
+	SetActorRotation(FRotator(180.f, 0.f, 0.f));
 }
 
 void AWeapon::BeginPlay() {
@@ -23,12 +24,14 @@ void AWeapon::OnOverlapEnd(UPrimitiveComponent* OverlappedComponent, AActor* Oth
 }
 
 void AWeapon::Equip(class AMainPlayer* Player) {
-
+	SetItemState(EItemState::EIS_Equip);
+	SetActorRotation(FRotator(0.f));
 }
 void AWeapon::UnEquip() {
-	/** 秦力 肺流 */
+	/** 秦力 肺流 */ 
+	SetItemState(EItemState::EIS_Ground);
 	DetachFromActor(FDetachmentTransformRules::KeepWorldTransform);
 	CollisionVolume->SetCollisionEnabled(ECollisionEnabled::QueryOnly);
-	SetActorLocation(GetActorLocation());
+	SetActorLocationAndRotation(GetActorLocation(), FRotator(180.f,0.f, 0.f));
 }
 #pragma endregion

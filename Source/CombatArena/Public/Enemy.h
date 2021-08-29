@@ -126,8 +126,14 @@ public:
 
 	//Call at MainPlayer
 	UFUNCTION()
-	void ShowEnemyHUD();
+	void ShowEnemyTarget();
 	
+	UFUNCTION()
+	void HideEnemyTarget();
+
+	UFUNCTION()
+	void ShowEnemyHUD();
+
 	UFUNCTION()
 	void HideEnemyHUD();
 

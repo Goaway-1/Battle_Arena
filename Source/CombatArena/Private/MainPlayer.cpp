@@ -81,7 +81,7 @@ AMainPlayer::AMainPlayer()
 	bIsAttackCheck = false;
 	ComboCnt = 0;
 	ComboMaxCnt = 0;	
-	DefaultAttackRange = 50.f;
+	DefaultAttackRange = 80.f;
 	AttackRange = DefaultAttackRange;
 	bTargeting = false;
 	DefaultDamage = 5.0f;
@@ -241,7 +241,7 @@ void AMainPlayer::OffSprinting() {
 void AMainPlayer::Dodge() {
 	if (!bCanDodge) return;
 	if (bCanDodge && DirX !=0 || DirY != 0) {
-		GetCharacterMovement()->BrakingFrictionFactor = 0.f;	//마찰계수
+		//GetCharacterMovement()->BrakingFrictionFactor = 0.f;	//마찰계수
 		AnimDodge();
 		LaunchCharacter(FVector(GetLastMovementInputVector().X , GetLastMovementInputVector().Y, 0.f) * DodgeSpeed, true, true);	//입력 방향대로
 		GetWorldTimerManager().SetTimer(DodgeHandle, this, &AMainPlayer::DodgeEnd, DodgeStopTime,false);
@@ -290,29 +290,26 @@ void AMainPlayer::OnTargeting() {
 	if (CombatTarget != nullptr) {
 		bTargeting = true;
 		bUseControllerRotationYaw = true;
-		CombatTarget->ShowEnemyHUD();
+		CombatTarget->ShowEnemyTarget();
 	}
 }
 void AMainPlayer::OffTargeting() {
 	if (CombatTarget != nullptr) {
 		bTargeting = false;
 		bUseControllerRotationYaw = false;
-		CombatTarget->HideEnemyHUD();
+		CombatTarget->HideEnemyTarget();
 	}
 }
-
 void AMainPlayer::ZoomInCam(FVector Pos,FRotator Rot) {
 	FLatentActionInfo LatentInfo;
 	LatentInfo.CallbackTarget = this;
 	UKismetSystemLibrary::MoveComponentTo(Camera, Pos, Rot,false,false,0.3f, true,EMoveComponentAction::Type::Move,LatentInfo);
 }
-
 void AMainPlayer::ZoomOutCam() {
 	FLatentActionInfo LatentInfo;
 	LatentInfo.CallbackTarget = this;
 	UKismetSystemLibrary::MoveComponentTo(Camera, FVector(0.f), FRotator(0.f), false, false, 0.4f, true, EMoveComponentAction::Type::Move, LatentInfo);
 }
-
 void AMainPlayer::RunCamShake() {
 	if (GetMovementStatus() == EMovementStatus::EMS_Sprinting) {
 		CameraManager->StartCameraShake(RunShake, 1.f);
@@ -497,12 +494,14 @@ void AMainPlayer::SetRightCurrentWeapon(AAttackWeapon* Weapon) {
 void AMainPlayer::OnEnemyHUD_OverlapBegin(UPrimitiveComponent* OverlappedComponent, AActor* OtherActor, UPrimitiveComponent* OtherComp, int32 OtherBodyIndex, bool bFromSweep, const FHitResult& SweepResult) {
 	if (OtherActor) {
 		CombatTarget = Cast<AEnemy>(OtherActor);
+		if(CombatTarget) CombatTarget->ShowEnemyHUD();
 	}
 }
 void AMainPlayer::OnEnemyHUD_OverlapEnd(UPrimitiveComponent* OverlappedComponent, AActor* OtherActor, UPrimitiveComponent* OtherComp, int32 OtherBodyIndex) {
 	if (OtherActor) {
 		CombatTarget = Cast<AEnemy>(OtherActor);
 		if (CombatTarget) {
+			CombatTarget->HideEnemyHUD();
 			OffTargeting();
 			CombatTarget = nullptr;
 		}
