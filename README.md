@@ -3991,16 +3991,114 @@
   2. 적의 체력바는 플레이어의 구와 적이 Overlap되면 표시하도록 수정.
 
 > **<h3>Realization</h3>**
-    <details><summary>cpp 코드</summary> 
+- GroundFriction : 땅과의 마찰력. 
 
-    ```c++
+## **08.30**
+> **<h3>Today Dev Story</h3>**
+- ## <span style = "color:yellow;">Damage Log(Widget)</span>
+  - <img src="Image/Damage_Log_Text.gif" height="300" title="Damage_Log_Text"> 
+  - UUserWidget클래스를 상속받은 DamageTextWidget클래스 생성후 Text와 SizeBox생성 후 지정하고 애니메이션(Fade)를 생성.
+    - 가상함수로 제작하여 Text와 Animation을 꼭 만들도록 만듦. 이때 Animation은 직렬화하고 이외에도 자연스럽게 움직이도록 FVector2D 타입의 Location 변수 지정.
+    - 생성시 종료지점 FinalScreenLocation을 랜덤으로 지정하고 Fade Animation을 실행. (점점 Opercity를 줄여서 불투명하게된다.)
+    - 매 Tick에서는 Vector2DInterpTo()메서드와 SetPositionInViewport()메서드를 사용하여 목표지점으로 프레임당 이동.
+  - MainPlayer클래스에서는 TakeDamge()메서드, 즉 데미지를 받을때 SpawnDamageText()메서드를 실행.
+    - 해당 메서드에서는 DamageTextWidget클래스를 CreateWidget으로 생성하고 초기값 설정 후 AddToViewport()메서드를 통해 화면에 생성.
+    - ProjectWorldToScreen()메서드는 월드의 3DVector 값을 2DVector값으로 전환해준다.
+      <details><summary>cpp 코드</summary> 
+
+      ```c++
+      //DamageTextWidget.cpp
+      #include "Kismet/KismetMathLibrary.h"
+      #include "Kismet/KismetTextLibrary.h"
+      #include "Components/TextBlock.h"
+
+      void UDamageTextWidget::NativeConstruct() {
+        Super::NativeConstruct();
+
+        SetPositionInViewport(InintialScreenLocation);
+
+        FinalScreenLocation.X = InintialScreenLocation.X + UKismetMathLibrary::RandomFloatInRange(-150.f,150.f);
+        FinalScreenLocation.Y = InintialScreenLocation.Y + UKismetMathLibrary::RandomFloatInRange(-300.f,-150.f);
+        
+        TEnumAsByte<ERoundingMode> Mode;
+
+        DamageText->SetText(UKismetTextLibrary::Conv_FloatToText(DamageToDisplay, Mode));
+        PlayAnimation(Fade);
+      }
+
+      void UDamageTextWidget::NativeTick(const FGeometry& MyGeometry, float InDeltaTime){
+        Super::NativeTick(MyGeometry, InDeltaTime);
+
+        InintialScreenLocation = UKismetMathLibrary::Vector2DInterpTo(InintialScreenLocation,FinalScreenLocation,InDeltaTime,1.0f);
+        SetPositionInViewport(InintialScreenLocation);
+      }
+      ```
+      ```c++
+      //MainPlayer.cpp
+      float AMainPlayer::TakeDamage(float DamageAmount, struct FDamageEvent const& DamageEvent, class AController* EventInstigator, AActor* DamageCauser) {
+        /** ShowDamageText */
+        SpawnDamageText(GetActorLocation(), DamageAmount);
+      }
+
+      void AMainPlayer::SpawnDamageText(FVector WorldLocation, float Damage) {
+        WorldLocation.X += UKismetMathLibrary::RandomFloatInRange(-50.f,50.f);
+        WorldLocation.Y += UKismetMathLibrary::RandomFloatInRange(-50.f,50.f);
+        UGameplayStatics::ProjectWorldToScreen(PlayerController, WorldLocation, DamageTextVec);
+        DamageWidget = CreateWidget<UDamageTextWidget>(PlayerController, DamageTextWidget);
+        DamageWidget->InintialScreenLocation = DamageTextVec;
+        DamageWidget->DamageToDisplay = Damage;
+        DamageWidget->AddToViewport();
+      }
+      ```
+      </details>
+
+      <details><summary>h 코드</summary> 
+
+      ```c++
+      //DamageTextWidget.h
+      UCLASS(Abstract)
+      class COMBATARENA_API UDamageTextWidget : public UUserWidget
+      {
+        GENERATED_BODY()
+
+      public:
+        virtual void NativeConstruct() override;
+
+        virtual void NativeTick(const FGeometry& MyGeometry, float InDeltaTime);
+      private:
+        UPROPERTY(Meta = (BindWidget), Meta = (AllowPrivateAccess = true))
+        class UTextBlock* DamageText;
+
+        UPROPERTY(Meta = (BindWidgetAnim), Meta = (AllowPrivateAccess = true), Transient)	//직렬화
+        class UWidgetAnimation* Fade;
+
+      public:
+        UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Variables")
+        FVector2D InintialScreenLocation;
+        
+        UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Variables")
+        FVector2D FinalScreenLocation;
+
+        UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Variables")
+        float DamageToDisplay;
+      };
+      ```
+      ```c++
+      //MainPlayer.h
+      public:
+        UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "HUD")
+        FVector2D DamageTextVec;
+
+        UPROPERTY(EditAnywhere, BlueprintReadWrite,Category="HUD")
+        TSubclassOf<class UDamageTextWidget> DamageTextWidget;
+
+        UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "HUD")
+        class UDamageTextWidget* DamageWidget;
+
+        UFUNCTION()
+        void SpawnDamageText(FVector WorldLocation, float Damage);
+      ```
+      </details>
+
+> **<h3>Realization</h3>**
     
-    ```
-    </details>
-
-    <details><summary>h 코드</summary> 
-
-    ```c++
-    
-    ```
-    </details>

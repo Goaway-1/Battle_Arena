@@ -24,7 +24,7 @@ void AMainController::BeginPlay() {
 			if (!HealthBarOutLine) return;
 
 			HealthBarOutLine->SetPlayerOwner(this);
-			SetPlayerHealth();
+			SetPlayerHealth();\
 		}
 	}
 }

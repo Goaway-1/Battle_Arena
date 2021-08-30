@@ -11,6 +11,9 @@
 #include "Perception/AIPerceptionStimuliSourceComponent.h"
 #include "Camera/PlayerCameraManager.h"
 #include "Components/WidgetComponent.h"
+#include "Blueprint/UserWidget.h"	//test
+#include "DamageTextWidget.h"
+#include "Kismet/GameplayStatics.h"
 
 
 AMainPlayer::AMainPlayer()
@@ -387,13 +390,17 @@ float AMainPlayer::TakeDamage(float DamageAmount, struct FDamageEvent const& Dam
 	}
 	SetHealthRatio();
 
-	//CameraShake
-	if (PlayerController) CameraManager->StartCameraShake(CamShake, 1.f);
-
+	/** KnockBack */
 	FVector Loc = GetActorForwardVector();
 	Loc.Z = 0;
 	LaunchCharacter(GetActorForwardVector() * -2000.f, true, true);
 	UGameplayStatics::SpawnEmitterAtLocation(GetWorld(), HitParticle, GetActorLocation(), FRotator(0.f));
+
+	/** CameraShake */
+	if (PlayerController) CameraManager->StartCameraShake(CamShake, 1.f);
+
+	/** ShowDamageText */
+	SpawnDamageText(GetActorLocation(), DamageAmount);
 
 	return DamageAmount;
 }
@@ -490,7 +497,6 @@ void AMainPlayer::SetRightCurrentWeapon(AAttackWeapon* Weapon) {
 #pragma endregion
 
 #pragma region HUD
-
 void AMainPlayer::OnEnemyHUD_OverlapBegin(UPrimitiveComponent* OverlappedComponent, AActor* OtherActor, UPrimitiveComponent* OtherComp, int32 OtherBodyIndex, bool bFromSweep, const FHitResult& SweepResult) {
 	if (OtherActor) {
 		CombatTarget = Cast<AEnemy>(OtherActor);
@@ -506,5 +512,14 @@ void AMainPlayer::OnEnemyHUD_OverlapEnd(UPrimitiveComponent* OverlappedComponent
 			CombatTarget = nullptr;
 		}
 	}
+}
+void AMainPlayer::SpawnDamageText(FVector WorldLocation, float Damage) {
+	WorldLocation.X += UKismetMathLibrary::RandomFloatInRange(-50.f,50.f);
+	WorldLocation.Y += UKismetMathLibrary::RandomFloatInRange(-50.f,50.f);
+	UGameplayStatics::ProjectWorldToScreen(PlayerController, WorldLocation, DamageTextVec);
+	DamageWidget = CreateWidget<UDamageTextWidget>(PlayerController, DamageTextWidget);
+	DamageWidget->InintialScreenLocation = DamageTextVec;
+	DamageWidget->DamageToDisplay = Damage;
+	DamageWidget->AddToViewport();
 }
 #pragma endregion

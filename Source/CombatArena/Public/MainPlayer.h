@@ -360,6 +360,20 @@ public:
 
 	UFUNCTION()
 	void OnEnemyHUD_OverlapEnd(UPrimitiveComponent* OverlappedComponent, AActor* OtherActor, UPrimitiveComponent* OtherComp, int32 OtherBodyIndex);
+
+	/** DamageText */
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "HUD")
+	FVector2D DamageTextVec;
+
+	UPROPERTY(EditAnywhere, BlueprintReadWrite,Category="HUD")
+	TSubclassOf<class UDamageTextWidget> DamageTextWidget;
+
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "HUD")
+	class UDamageTextWidget* DamageWidget;
+
+	UFUNCTION()
+	void SpawnDamageText(FVector WorldLocation, float Damage);
+
 #pragma endregion
 
 };

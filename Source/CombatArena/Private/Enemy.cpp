@@ -34,7 +34,8 @@ AEnemy::AEnemy()
 
 	//Targeting 
 	TargetingDecal = CreateDefaultSubobject<UDecalComponent>(TEXT("TargetingDecal"));
-	TargetingDecal->SetRelativeLocation(FVector(0.f, 0.f, -150.f));
+	TargetingDecal->SetupAttachment(GetMesh());
+	TargetingDecal->SetRelativeLocation(FVector(0.f, 0.f, 0.f));
 	TargetingDecal->SetRelativeScale3D(FVector(0.6f, 0.6f, 0.05f));
 	TargetingDecal->DecalSize = FVector(128.f, 128.f, 256.f);
 	TargetingDecal->SetVisibility(false);
@@ -140,7 +141,6 @@ float AEnemy::TakeDamage(float DamageAmount, struct FDamageEvent const& DamageEv
 		DeathEnd();
 	}
 	HealthBar->SetOwnerHealth(GetHealthRatio(),MaxHealth, CurrentHealth);
-//	UGameplayStatics::SpawnEmitterAtLocation(GetWorld(), HitParticle, HitResult.GetActor()->GetActorLocation(), FRotator(0.f));
 
 	return DamageAmount;
 }
