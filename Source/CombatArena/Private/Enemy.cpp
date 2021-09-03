@@ -10,6 +10,7 @@
 #include "CollisionQueryParams.h"	
 #include "TimerManager.h"
 #include "Components/DecalComponent.h"
+#include "DamageTextWidget.h"	
 
 AEnemy::AEnemy()
 {
@@ -141,6 +142,9 @@ float AEnemy::TakeDamage(float DamageAmount, struct FDamageEvent const& DamageEv
 		DeathEnd();
 	}
 	HealthBar->SetOwnerHealth(GetHealthRatio(),MaxHealth, CurrentHealth);
+
+	/** ShowDamageText */
+	AttackFunction->SpawnDamageText(GetActorLocation(), DamageAmount, DamageTextWidget, EventInstigator);
 
 	return DamageAmount;
 }

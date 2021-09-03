@@ -1,5 +1,10 @@
 #include "AttackFunction.h"
 #include "CollisionQueryParams.h"
+#include "DamageTextWidget.h"	
+#include "MainController.h"	
+#include "Blueprint/UserWidget.h"
+#include "Kismet/GameplayStatics.h"
+#include "Kismet/KismetMathLibrary.h"
 
 UAttackFunction::UAttackFunction()
 {
@@ -50,7 +55,7 @@ void UAttackFunction::AttackStart(FVector Location, FVector Forward, TSubclassOf
 
 	/** Draw Image */
 	FColor DrawColor = bResult ? FColor::Green : FColor::Red;
-	DrawDebugSphere(GetWorld(), Owner->GetActorLocation(), AttackRange, 12, DrawColor, false, 0.5f);
+	//DrawDebugSphere(GetWorld(), Owner->GetActorLocation(), AttackRange, 12, DrawColor, false, 0.5f);
 
 	/** 실질적인 알고리즘 */
 	if (bResult) {
@@ -67,4 +72,16 @@ void UAttackFunction::AttackStart(FVector Location, FVector Forward, TSubclassOf
 			}
 		}
 	}
+}
+void UAttackFunction::SpawnDamageText(FVector WorldLocation, float Damage, TSubclassOf<class UDamageTextWidget> DamageTextWidget, AController* DisplayController) {
+	if(DamageTextWidget == nullptr) return;
+
+	const APlayerController* DamageController = Cast<APlayerController>(DisplayController);
+	WorldLocation.X += UKismetMathLibrary::RandomFloatInRange(-50.f, 50.f);
+	WorldLocation.Y += UKismetMathLibrary::RandomFloatInRange(-50.f, 50.f);
+	UGameplayStatics::ProjectWorldToScreen(DamageController, WorldLocation, DamageTextVec);
+	DamageWidget = CreateWidget<UDamageTextWidget>(GetWorld(), DamageTextWidget);
+	DamageWidget->InintialScreenLocation = DamageTextVec;
+	DamageWidget->DamageToDisplay = Damage;
+	DamageWidget->AddToViewport();
 }

@@ -47,4 +47,13 @@ public:
 	UFUNCTION(BlueprintCallable)
 	virtual void AttackStart(FVector Location, FVector Forward, TSubclassOf<UDamageType> DamageType, FString Type, UParticleSystem* HitParticle,float AttackRange, float Damage);
 
+	/** DamageText */
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "HUD")
+	FVector2D DamageTextVec;
+
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "HUD")
+	class UDamageTextWidget* DamageWidget;
+
+	UFUNCTION()
+	void SpawnDamageText(FVector WorldLocation, float Damage, TSubclassOf<UDamageTextWidget> DamageTextWidget, AController* DisplayController);
 };

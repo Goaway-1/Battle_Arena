@@ -1,10 +1,13 @@
 #pragma once
 
 #include "EngineMinimal.h"
+#include "MainController.h"
 #include "GameFramework/Character.h"
 #include "Enemy.generated.h"
 
 DECLARE_MULTICAST_DELEGATE(FOnAttackEndDelegate);
+
+class AMainController;
 
 UCLASS()
 class COMBATARENA_API AEnemy : public ACharacter
@@ -153,5 +156,9 @@ public:
 	//Targeting
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Widget | TargetWidget")
 	class UDecalComponent* TargetingDecal;
+
+	/** DamageText */
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "HUD")
+	TSubclassOf<class UDamageTextWidget> DamageTextWidget;
 #pragma endregion
 };

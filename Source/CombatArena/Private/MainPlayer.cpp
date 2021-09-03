@@ -11,9 +11,7 @@
 #include "Perception/AIPerceptionStimuliSourceComponent.h"
 #include "Camera/PlayerCameraManager.h"
 #include "Components/WidgetComponent.h"
-#include "Blueprint/UserWidget.h"	//test
-#include "DamageTextWidget.h"
-#include "Kismet/GameplayStatics.h"
+#include "Blueprint/UserWidget.h"	
 
 
 AMainPlayer::AMainPlayer()
@@ -400,7 +398,7 @@ float AMainPlayer::TakeDamage(float DamageAmount, struct FDamageEvent const& Dam
 	if (PlayerController) CameraManager->StartCameraShake(CamShake, 1.f);
 
 	/** ShowDamageText */
-	SpawnDamageText(GetActorLocation(), DamageAmount);
+	AttackFunction->SpawnDamageText(GetActorLocation(), DamageAmount, DamageTextWidget,GetController());
 
 	return DamageAmount;
 }
@@ -513,13 +511,13 @@ void AMainPlayer::OnEnemyHUD_OverlapEnd(UPrimitiveComponent* OverlappedComponent
 		}
 	}
 }
-void AMainPlayer::SpawnDamageText(FVector WorldLocation, float Damage) {
-	WorldLocation.X += UKismetMathLibrary::RandomFloatInRange(-50.f,50.f);
-	WorldLocation.Y += UKismetMathLibrary::RandomFloatInRange(-50.f,50.f);
-	UGameplayStatics::ProjectWorldToScreen(PlayerController, WorldLocation, DamageTextVec);
-	DamageWidget = CreateWidget<UDamageTextWidget>(PlayerController, DamageTextWidget);
-	DamageWidget->InintialScreenLocation = DamageTextVec;
-	DamageWidget->DamageToDisplay = Damage;
-	DamageWidget->AddToViewport();
-}
+//void AMainPlayer::SpawnDamageText(FVector WorldLocation, float Damage) {
+//	WorldLocation.X += UKismetMathLibrary::RandomFloatInRange(-50.f,50.f);
+//	WorldLocation.Y += UKismetMathLibrary::RandomFloatInRange(-50.f,50.f);
+//	UGameplayStatics::ProjectWorldToScreen(PlayerController, WorldLocation, DamageTextVec);
+//	DamageWidget = CreateWidget<UDamageTextWidget>(PlayerController, DamageTextWidget);
+//	DamageWidget->InintialScreenLocation = DamageTextVec;
+//	DamageWidget->DamageToDisplay = Damage;
+//	DamageWidget->AddToViewport();
+//}
 #pragma endregion

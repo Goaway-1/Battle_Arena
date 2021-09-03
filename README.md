@@ -4101,4 +4101,85 @@
       </details>
 
 > **<h3>Realization</h3>**
+
+## **09.03**
+> **<h3>Today Dev Story</h3>**
+- ## <span style = "color:yellow;">Damage Log_2</span>
+  - <img src="Image/Damage_Log_Text2.gif" height="300" title="Damage_Log_Text2">
+  - 기존 데미지 위젯을 AttackFunction클래스로 이동하여 Enemy클래스와 Player클래스 모두에서 사용가능 하도록 구현.
+  - 구현 방식은 이전 방식과 동일하게 구현하였고, Player와 Enemy에서 호출 시 넘기는 Controller의 값은 항상 Player의 Controller 값으로 지정.
+  - 그렇게 해야만 Player의 HUD 상에 표시.
+    <details><summary>cpp 코드</summary> 
+
+    ```c++
+    //AttackFunction.cpp
+    #include "DamageTextWidget.h"	
+    #include "MainController.h"	
+    #include "Blueprint/UserWidget.h"
+    #include "Kismet/GameplayStatics.h"
+    #include "Kismet/KismetMathLibrary.h"
+
+    void UAttackFunction::SpawnDamageText(FVector WorldLocation, float Damage, TSubclassOf<class UDamageTextWidget> DamageTextWidget, AController* DisplayController) {
+      if(DamageTextWidget == nullptr) return;
+
+      const APlayerController* DamageController = Cast<APlayerController>(DisplayController);
+      WorldLocation.X += UKismetMathLibrary::RandomFloatInRange(-50.f, 50.f);
+      WorldLocation.Y += UKismetMathLibrary::RandomFloatInRange(-50.f, 50.f);
+      UGameplayStatics::ProjectWorldToScreen(DamageController, WorldLocation, DamageTextVec);
+      DamageWidget = CreateWidget<UDamageTextWidget>(GetWorld(), DamageTextWidget);
+      DamageWidget->InintialScreenLocation = DamageTextVec;
+      DamageWidget->DamageToDisplay = Damage;
+      DamageWidget->AddToViewport();
+    }
+    ```
+    ```c++
+    //MainPlayer.cpp
+    float AMainPlayer::TakeDamage(float DamageAmount, struct FDamageEvent const& DamageEvent, class AController* EventInstigator, AActor* DamageCauser) {
+      /** ShowDamageText */
+      AttackFunction->SpawnDamageText(GetActorLocation(), DamageAmount, DamageTextWidget,GetController());
+
+      return DamageAmount;
+    }
+    //Enemy.cpp
+    float AEnemy::TakeDamage(float DamageAmount, struct FDamageEvent const& DamageEvent, class AController* EventInstigator, AActor* DamageCauser) {
+      /** ShowDamageText */
+      AttackFunction->SpawnDamageText(GetActorLocation(), DamageAmount, DamageTextWidget, EventInstigator);
+
+      return DamageAmount;
+    }
+    ```
+    </details>
+
+    <details><summary>h 코드</summary> 
+
+    ```c++
+    //AttackFunction.h
+    public:
+      UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "HUD")
+      FVector2D DamageTextVec;
+
+      UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "HUD")
+      class UDamageTextWidget* DamageWidget;
+
+      UFUNCTION()
+      void SpawnDamageText(FVector WorldLocation, float Damage, TSubclassOf<UDamageTextWidget> DamageTextWidget, AController* DisplayController);
+    ```
+    </details>
+
+
+- ## <span style = "color:yellow;">Damage Log_2</span>
+  - <img src="Image/Damage_Log_Text2.gif" height="300" title="Damage_Log_Text2">
+> **<h3>Realization</h3>**
+    <details><summary>cpp 코드</summary> 
+
+    ```c++
     
+    ```
+    </details>
+
+    <details><summary>h 코드</summary> 
+
+    ```c++
+    
+    ```
+    </details>
