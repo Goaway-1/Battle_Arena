@@ -91,8 +91,15 @@ AMainPlayer::AMainPlayer()
 #pragma endregion
 
 #pragma region HEALTH
+	//Health
 	MaxHealth = 100.f;
 	CurrentHealth = MaxHealth;
+
+	//Stamina
+	MaxStamina = 100.f;
+	CurrentStamina = MaxStamina;
+	CoolDownStamina = 30.f;
+	CoolUpStamina = 10.f;
 #pragma endregion
 
 #pragma region ACTIVE
@@ -145,6 +152,9 @@ void AMainPlayer::Tick(float DeltaTime)
 
 	/** Targeting Check */
 	Targeting();
+
+	/** Set StaminaRatio Widget */
+	SetStaminaRatio();
 }
 
 void AMainPlayer::SetupPlayerInputComponent(UInputComponent* PlayerInputComponent)
@@ -225,7 +235,7 @@ void  AMainPlayer::SetMovementStatus(EMovementStatus Status) {
 	else GetCharacterMovement()->MaxWalkSpeed = MoveSpeed;
 }
 void AMainPlayer::OnSprinting() {
-	if (!IsCanMove()) return;
+	if (!IsCanMove() || GetStaminaRatio() <= 0.3f) return;
 	if (MovementStatus != EMovementStatus::EMS_Sprinting && DirX != 0 || DirY != 0) {
 		SetMovementStatus(EMovementStatus::EMS_Sprinting);
 		ZoomInCam(FVector(150.f, 0.f, 0.f));
@@ -389,9 +399,9 @@ float AMainPlayer::TakeDamage(float DamageAmount, struct FDamageEvent const& Dam
 	SetHealthRatio();
 
 	/** KnockBack */
-	FVector Loc = GetActorForwardVector();
+	FVector Loc = DamageCauser->GetActorForwardVector();
 	Loc.Z = 0;
-	LaunchCharacter(GetActorForwardVector() * -2000.f, true, true);
+	LaunchCharacter(Loc * 2000.f, true, true);
 	UGameplayStatics::SpawnEmitterAtLocation(GetWorld(), HitParticle, GetActorLocation(), FRotator(0.f));
 
 	/** CameraShake */
@@ -405,6 +415,21 @@ float AMainPlayer::TakeDamage(float DamageAmount, struct FDamageEvent const& Dam
 void AMainPlayer::SetHealthRatio() {
 	HealthRatio = CurrentHealth / MaxHealth;
 	PlayerController->SetPlayerHealth();
+}
+void AMainPlayer::SetStaminaRatio() {
+	if (GetMovementStatus() == EMovementStatus::EMS_Sprinting) {
+		CurrentStamina -= GetWorld()->GetDeltaSeconds() * CoolDownStamina;
+		if (CurrentStamina <= 0.f) {
+			CurrentStamina = 0;
+			OffSprinting();
+		}
+	}
+	else {
+		if (CurrentStamina >= MaxStamina) CurrentStamina = MaxStamina;
+		else CurrentStamina += GetWorld()->GetDeltaSeconds() * CoolUpStamina;
+	}
+	StaminaRatio = CurrentStamina / MaxStamina;
+	PlayerController->SetPlayerStamina();
 }
 void AMainPlayer::Kick() {
 	AttackFunction->Kick(AnimInstance, AttackMontage);
@@ -446,7 +471,7 @@ bool AMainPlayer::IsBlockingSuccess(AActor* DamageCauser) {
 	if (isShieldRange && CurrentLeftWeapon->HitedParticle) {
 		FVector Loc = GetActorForwardVector();
 		Loc.Z = 0;
-		LaunchCharacter(Loc * -500.f, true, true);
+		LaunchCharacter(DamageCauser->GetActorForwardVector() * 500.f, true, true);
 		UGameplayStatics::SpawnEmitterAtLocation(GetWorld(), CurrentLeftWeapon->HitedParticle, GetActorLocation(), FRotator(0.f));
 		return true;
 	}
@@ -511,13 +536,4 @@ void AMainPlayer::OnEnemyHUD_OverlapEnd(UPrimitiveComponent* OverlappedComponent
 		}
 	}
 }
-//void AMainPlayer::SpawnDamageText(FVector WorldLocation, float Damage) {
-//	WorldLocation.X += UKismetMathLibrary::RandomFloatInRange(-50.f,50.f);
-//	WorldLocation.Y += UKismetMathLibrary::RandomFloatInRange(-50.f,50.f);
-//	UGameplayStatics::ProjectWorldToScreen(PlayerController, WorldLocation, DamageTextVec);
-//	DamageWidget = CreateWidget<UDamageTextWidget>(PlayerController, DamageTextWidget);
-//	DamageWidget->InintialScreenLocation = DamageTextVec;
-//	DamageWidget->DamageToDisplay = Damage;
-//	DamageWidget->AddToViewport();
-//}
 #pragma endregion

@@ -15,20 +15,27 @@ public:
 	virtual void BeginPlay() override;
 
 #pragma region WIDGET
-	UPROPERTY(VisibleAnywhere, Category = "Widget | EnemyWidget")
+	UPROPERTY(VisibleAnywhere, Category = "Widget | PlayerWidget")
 	class UHealthWidget* HealthBarOutLine;
 
-	UPROPERTY(VisibleAnywhere, Category = "Widget | EnemyWidget")
+	UPROPERTY(VisibleAnywhere, Category = "Widget | PlayerWidget")
 	class AMainPlayer* MainPlayer;
 
 	//Health Bar
-	UPROPERTY(VisibleAnywhere, Category = "Widget | EnemyWidget")
+	UPROPERTY(VisibleAnywhere, Category = "Widget | PlayerWidget")
 	class UUserWidget* PlayerWidget;
 
-	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Widget | EnemyWidget")
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Widget | PlayerWidget")
 	TSubclassOf<class UUserWidget> WPlayerMainHealth;
 
 	UFUNCTION()
 	void SetPlayerHealth();		//Player의 체력 UI 지정. MainPlayer에서 호출
+
+	//Stamina
+	UPROPERTY(VisibleAnywhere, Category = "Widget | PlayerWidget")
+	class UStaminaWidget* StaminaBarOutLine;
+
+	UFUNCTION()
+	void SetPlayerStamina();
 #pragma endregion
 };

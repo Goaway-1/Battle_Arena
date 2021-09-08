@@ -312,6 +312,29 @@ public:
 	FORCEINLINE float GetHealthRatio() { return HealthRatio; }
 
 	virtual float TakeDamage(float DamageAmount, struct FDamageEvent const& DamageEvent, class AController* EventInstigator, AActor* DamageCauser) override;
+
+	/** Stamina */
+	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Stamina")
+	float MaxStamina;
+
+	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Stamina")
+	float CurrentStamina;
+
+	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Stamina")
+	float CoolUpStamina; 
+	
+	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Stamina")
+	float CoolDownStamina;
+
+	UPROPERTY()		
+	float StaminaRatio = 0.f;
+
+	UFUNCTION()
+	void SetStaminaRatio();
+
+	UFUNCTION()
+	FORCEINLINE float GetStaminaRatio() { return StaminaRatio; }
+
 #pragma endregion
 
 #pragma region ACTIVE

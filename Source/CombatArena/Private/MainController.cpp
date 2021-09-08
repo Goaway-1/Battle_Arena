@@ -4,8 +4,9 @@
 #include "MainPlayer.h"
 #include "Components/ProgressBar.h"
 #include "Blueprint/WidgetTree.h"
-#include "HealthWidget.h"
 #include "MainPlayer.h"
+#include "HealthWidget.h"
+#include "StaminaWidget.h"
 
 AMainController::AMainController() {
 	
@@ -19,16 +20,23 @@ void AMainController::BeginPlay() {
 			PlayerWidget->AddToViewport();
 			PlayerWidget->SetVisibility(ESlateVisibility::Visible);	
 
-			//Progress를 찾는 부분
+			//Health,Stamina의 Progress를 찾는 부분
 			HealthBarOutLine = PlayerWidget->WidgetTree->FindWidget<UHealthWidget>("PlayerHealth_BP");
-			if (!HealthBarOutLine) return;
+			StaminaBarOutLine = PlayerWidget->WidgetTree->FindWidget<UStaminaWidget>("PlayerStanima_BP");
 
 			HealthBarOutLine->SetPlayerOwner(this);
-			SetPlayerHealth();\
+			StaminaBarOutLine->SetOwner(this);
+
+			SetPlayerHealth();
+			SetPlayerStamina();
 		}
 	}
 }
 
 void AMainController::SetPlayerHealth() {
 	HealthBarOutLine->SetOwnerHealth(MainPlayer->GetHealthRatio(), MainPlayer->MaxHealth, MainPlayer->CurrentHealth);
+}
+
+void AMainController::SetPlayerStamina() {
+	StaminaBarOutLine->SetOwnerStamina(MainPlayer->GetStaminaRatio(), MainPlayer->MaxStamina, MainPlayer->CurrentStamina);
 }

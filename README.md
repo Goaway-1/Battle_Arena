@@ -1628,6 +1628,7 @@
   - MainPlayerController의 Beginplay에서 UUserWidget을 CreateWidget(), AddToViewport() 메서드를 사용하여 생성 후 화면에 배치
     - Tick에서 Widget이 존재한다면 적의 위치를 화면상의 위치로 전환하여 postionInViewport()를 수정.
     - ShowEnemyHUD(), HideEnemyHUD() 메서드를 사용하여 SetVisiblility()를 Visible과 Hidden으로 전환. 이는 MainPlayer의 오버랩되면 호출.
+    - #### Stamina도 동일하게 구현
     
       <details><summary>c++ 코드</summary> 
 
@@ -4166,20 +4167,186 @@
     ```
     </details>
 
+## **09.08**
+> **<h3>Today Dev Story</h3>**
+- ## <span style = "color:yellow;">Stamia Bar</span>
+  - <img src="Image/Player_StaminaBar.gif" height="300" title="Player_StaminaBar">
+  - 이전에 [HealthWidget 구현방식](#Stamina도-동일하게-구현)과 동일하게 구현.
+  - 추상클래스로 UUserWidget상속받은 StaminaWidget클래스를 생성하고 SetOwnerStamina()를 MainPlayer클래스에서 매 Tick마다 호출하여 사용.
+    - 또한 Ratio가 0.3보다 작아지면 ProgressBar의 Color를 변경.
+    - 이 클래스 또한 MainController클래스의 PlayerWidget의 패널에 넣어서 사용.
+  - MainPlayer클래스의 Tick메서드에서 SetStaminaRatio()메서드를 실행하여 현재의 상태 (GetMovementStatus())에 따라서 CurrentStamina의 값을 증감.
+    - Stamina가 없다면 더 이상 뛸 수 없으며, 0.3f 값보다 아래에 있을때는 뛰는 것이 불가능하도록 설정.
+      <details><summary>cpp 코드</summary> 
 
-- ## <span style = "color:yellow;">Damage Log_2</span>
-  - <img src="Image/Damage_Log_Text2.gif" height="300" title="Damage_Log_Text2">
+      ```c++
+      //StaminaWidget.cpp
+      #include "StaminaWidget.h"
+      #include "MainPlayer.h"
+      #include "Components/ProgressBar.h"
+      #include "Components/TextBlock.h"
+
+      void UStaminaWidget::SetOwnerStamina(float Ratio, float Max, float Current) {
+        if (!PlayerController.IsValid()) return;
+
+        FLinearColor BarColor;
+        FNumberFormattingOptions Opts;
+        Opts.SetMaximumFractionalDigits(0);
+
+        StaminaBar->SetPercent(Ratio);
+        CurrentStaminaLabel->SetText(FText::AsNumber(Current, &Opts));
+        MaxStaminaLabel->SetText(FText::AsNumber(Max, &Opts));
+
+        /** Set StaminaBar Color */
+        if (Ratio <= 0.3f) BarColor = FLinearColor::Green;
+        else BarColor = FLinearColor(1.0f, 1.0f, 1.0f, 0.25f);
+
+        StaminaBar->SetFillColorAndOpacity(BarColor);
+      }
+
+      void UStaminaWidget::SetOwner(AController* OtherActor) {
+        PlayerController = Cast<APlayerController>(OtherActor);
+      }
+      ```
+      ```c++
+      //MainPlayer.cpp
+      //Stamina
+      AMainPlayer::AMainPlayer()
+      {
+        MaxStamina = 100.f;
+        CurrentStamina = MaxStamina;
+        CoolDownStamina = 30.f;
+        CoolUpStamina = 10.f;
+      }
+      void AMainPlayer::Tick(float DeltaTime)
+      {
+        /** Set StaminaRatio Widget */
+        SetStaminaRatio();
+      }
+      void AMainPlayer::OnSprinting() {
+        if (!IsCanMove() || GetStaminaRatio() <= 0.3f) return;
+        if (MovementStatus != EMovementStatus::EMS_Sprinting && DirX != 0 || DirY != 0) {
+          SetMovementStatus(EMovementStatus::EMS_Sprinting);
+          ZoomInCam(FVector(150.f, 0.f, 0.f));
+        }
+      }
+      void AMainPlayer::SetStaminaRatio() {
+        if (GetMovementStatus() == EMovementStatus::EMS_Sprinting) {
+          CurrentStamina -= GetWorld()->GetDeltaSeconds() * CoolDownStamina;
+          if (CurrentStamina <= 0.f) {
+            CurrentStamina = 0;
+            OffSprinting();
+          }
+        }
+        else {
+          if (CurrentStamina >= MaxStamina) CurrentStamina = MaxStamina;
+          else CurrentStamina += GetWorld()->GetDeltaSeconds() * CoolUpStamina;
+        }
+        StaminaRatio = CurrentStamina / MaxStamina;
+        PlayerController->SetPlayerStamina();
+      }
+      ```
+      ```c++
+      //MainController.cpp
+      #include "StaminaWidget.h"
+      void AMainController::BeginPlay() {
+        if (WPlayerMainHealth) {
+          ...
+          if (PlayerWidget) {
+            ...
+            //Health,Stamina의 Progress를 찾는 부분
+            HealthBarOutLine = PlayerWidget->WidgetTree->FindWidget<UHealthWidget>("PlayerHealth_BP");
+            StaminaBarOutLine = PlayerWidget->WidgetTree->FindWidget<UStaminaWidget>("PlayerStanima_BP");
+
+            HealthBarOutLine->SetPlayerOwner(this);
+            StaminaBarOutLine->SetOwner(this);
+
+            SetPlayerHealth();
+            SetPlayerStamina();
+          }
+        }
+      }
+      void AMainController::SetPlayerStamina() {
+        StaminaBarOutLine->SetOwnerStamina(MainPlayer->GetStaminaRatio(), MainPlayer->MaxStamina, MainPlayer->CurrentStamina);
+      }
+      ```
+      </details>
+
+      <details><summary>h 코드</summary> 
+
+      ```c++
+      //StaminaWidget.h
+      UCLASS(Abstract)
+      class COMBATARENA_API UStaminaWidget : public UUserWidget
+      {
+        GENERATED_BODY()
+
+      public:
+        UFUNCTION()
+        void SetOwner(AController* OtherActor);
+
+        UFUNCTION()
+        void SetOwnerStamina(float Ratio, float Max, float Current);
+
+      protected:
+        UPROPERTY()
+        TWeakObjectPtr<APlayerController> PlayerController;
+
+        UPROPERTY(meta = (BindWidget))
+        class UProgressBar* StaminaBar;
+
+        UPROPERTY(meta = (BindWidget))
+        class UTextBlock* CurrentStaminaLabel;
+
+        UPROPERTY(meta = (BindWidget))
+        class UTextBlock* MaxStaminaLabel;
+      };
+      ```
+      ```c++
+      //MainPlayer.h
+      public:
+        UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Stamina")
+        float MaxStamina;
+
+        UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Stamina")
+        float CurrentStamina;
+
+        UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Stamina")
+        float CoolUpStamina; 
+        
+        UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Stamina")
+        float CoolDownStamina;
+
+        UPROPERTY()		
+        float StaminaRatio = 0.f;
+
+        UFUNCTION()
+        void SetStaminaRatio();
+
+        UFUNCTION()
+        FORCEINLINE float GetStaminaRatio() { return StaminaRatio; }
+      ```
+      ```c++
+      //MainController.h
+      public:
+        UPROPERTY(VisibleAnywhere, Category = "Widget | PlayerWidget")
+        class UStaminaWidget* StaminaBarOutLine;
+
+        UFUNCTION()
+        void SetPlayerStamina();	
+      ```
+      </details>
+- ## <span style = "color:yellow;">잡다한 것들</span>
+  1. KnockBack시 플레이어의 뒤방향으로 밀리는 것을 적의 공격 방향으로 밀리도록 수정.
+
 > **<h3>Realization</h3>**
     <details><summary>cpp 코드</summary> 
-
-    ```c++
     
+    ```c++
     ```
     </details>
-
     <details><summary>h 코드</summary> 
-
-    ```c++
     
+    ```c++
     ```
     </details>
