@@ -9,7 +9,7 @@
 #include "StaminaWidget.h"
 
 AMainController::AMainController() {
-	
+	bPauseMenuVisible = false;
 }
 
 void AMainController::BeginPlay() {
@@ -31,6 +31,13 @@ void AMainController::BeginPlay() {
 			SetPlayerStamina();
 		}
 	}
+	if (WPauseMenu) {	
+		PauseMenu = CreateWidget<UUserWidget>(this, WPauseMenu);
+		if (PauseMenu) {
+			PauseMenu->AddToViewport();
+			PauseMenu->SetVisibility(ESlateVisibility::Hidden);
+		}
+	}
 }
 
 void AMainController::SetPlayerHealth() {
@@ -39,4 +46,19 @@ void AMainController::SetPlayerHealth() {
 
 void AMainController::SetPlayerStamina() {
 	StaminaBarOutLine->SetOwnerStamina(MainPlayer->GetStaminaRatio(), MainPlayer->MaxStamina, MainPlayer->CurrentStamina);
+}
+void AMainController::DisplayPauseMenu() {
+	if (PauseMenu) {
+		bPauseMenuVisible = true;
+		PauseMenu->SetVisibility(ESlateVisibility::Visible);
+	}
+}
+void AMainController::RemovePauseMenu() {
+	if (PauseMenu) {
+		bPauseMenuVisible = false;
+		PauseMenu->SetVisibility(ESlateVisibility::Hidden);
+	}
+}
+void AMainController::TogglePauseMenu() {
+	return bPauseMenuVisible ? RemovePauseMenu() : DisplayPauseMenu();
 }

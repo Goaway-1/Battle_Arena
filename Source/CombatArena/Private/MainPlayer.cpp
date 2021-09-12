@@ -12,6 +12,7 @@
 #include "Camera/PlayerCameraManager.h"
 #include "Components/WidgetComponent.h"
 #include "Blueprint/UserWidget.h"	
+#include "PlayerSaveGame.h"	
 
 
 AMainPlayer::AMainPlayer()
@@ -119,6 +120,8 @@ AMainPlayer::AMainPlayer()
 	EnemyHUDOverlap->OnComponentEndOverlap.AddDynamic(this, &AMainPlayer::OnEnemyHUD_OverlapEnd);
 
 	CombatTarget = nullptr;
+
+	bESCDown = false;
 #pragma endregion
 }
 
@@ -198,6 +201,13 @@ void AMainPlayer::SetupPlayerInputComponent(UInputComponent* PlayerInputComponen
 	PlayerInputComponent->BindAction("Equip", EInputEvent::IE_Pressed, this, &AMainPlayer::ItemEquip);
 	PlayerInputComponent->BindAction("Drop", EInputEvent::IE_Pressed, this, &AMainPlayer::ItemDrop);
 
+	//lazer
+	PlayerInputComponent->BindAction("Lazer",EInputEvent::IE_Pressed,this,&AMainPlayer::LazerAttack);
+	PlayerInputComponent->BindAction("Lazer",EInputEvent::IE_Released,this,&AMainPlayer::LazerEnd);
+
+	/** Pause Menu */
+	PlayerInputComponent->BindAction("Quit", EInputEvent::IE_Pressed, this, &AMainPlayer::ESCDown);
+	PlayerInputComponent->BindAction("Quit", EInputEvent::IE_Released, this, &AMainPlayer::ESCUp);
 }
 
 #pragma region CAMERA
@@ -478,6 +488,22 @@ bool AMainPlayer::IsBlockingSuccess(AActor* DamageCauser) {
 	return false;
 }
 
+//Lazer
+void AMainPlayer::LazerAttack() {
+	FActorSpawnParameters SpawnParams; 
+	SpawnParams.Owner = this; 
+	SpawnParams.Instigator = GetInstigator();
+	Lazer = GetWorld()->SpawnActor<AActor>(LazerClass,FVector(0.f),FRotator(0.f),SpawnParams);
+
+	Lazer->AttachToComponent(GetMesh(), FAttachmentTransformRules(EAttachmentRule::SnapToTarget,false), FName("LazerPos"));
+}
+
+void AMainPlayer::LazerEnd() {
+	if (Lazer) {
+		Lazer->Destroy();
+	}
+}
+
 #pragma endregion
 
 #pragma region ACTIVE
@@ -535,5 +561,41 @@ void AMainPlayer::OnEnemyHUD_OverlapEnd(UPrimitiveComponent* OverlappedComponent
 			CombatTarget = nullptr;
 		}
 	}
+}
+void AMainPlayer::ESCUp() {
+	bESCDown = false;
+}
+
+void AMainPlayer::ESCDown(){
+	bESCDown = true;
+	if (PlayerController) {
+		PlayerController->TogglePauseMenu();
+	}
+}
+#pragma endregion
+
+#pragma region SAVE&LOAD
+void AMainPlayer::SaveData() {
+	UPlayerSaveGame* SaveGameInstance = Cast<UPlayerSaveGame>(UGameplayStatics::CreateSaveGameObject(UPlayerSaveGame::StaticClass()));
+
+	SaveGameInstance->CharacterStats.Health = CurrentHealth;
+	SaveGameInstance->CharacterStats.MaxHealth = MaxHealth;
+	SaveGameInstance->CharacterStats.Stamina	= CurrentStamina;
+	SaveGameInstance->CharacterStats.MaxStamina = MaxStamina;
+	SaveGameInstance->CharacterStats.Location = GetActorLocation();
+
+	UGameplayStatics::SaveGameToSlot(SaveGameInstance,SaveGameInstance->PlayerName,SaveGameInstance->UserIndex);
+}
+
+void AMainPlayer::LoadData() {
+	UPlayerSaveGame* LoadGameInstance = Cast<UPlayerSaveGame>(UGameplayStatics::CreateSaveGameObject(UPlayerSaveGame::StaticClass()));
+
+	LoadGameInstance = Cast<UPlayerSaveGame>(UGameplayStatics::LoadGameFromSlot(LoadGameInstance->PlayerName,LoadGameInstance->UserIndex));
+	
+	CurrentHealth = LoadGameInstance->CharacterStats.Health;
+	MaxHealth = LoadGameInstance->CharacterStats.MaxHealth;
+	CurrentStamina = LoadGameInstance->CharacterStats.Stamina;
+	MaxStamina = LoadGameInstance->CharacterStats.MaxStamina;
+	SetActorLocation(LoadGameInstance->CharacterStats.Location);
 }
 #pragma endregion

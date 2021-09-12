@@ -191,7 +191,7 @@ public:
 #pragma region ATTACK
 public:
 	UPROPERTY()
-	class UPlayerAttackFunction* AttackFunction;
+		class UPlayerAttackFunction* AttackFunction;
 
 	UFUNCTION(BlueprintCallable)
 	FORCEINLINE UPlayerAttackFunction* GetAttackFunction() { return AttackFunction; }
@@ -293,6 +293,19 @@ public:
 
 	UFUNCTION()
 	bool IsBlockingSuccess(AActor* DamageCauser);
+
+	//Lazer
+	UPROPERTY(VisibleAnywhere,BlueprintReadOnly, Category = "Skill | Lazer")
+	AActor* Lazer;
+
+	UPROPERTY(EditDefaultsOnly, Category = "Skill | Lazer")
+	TSubclassOf<class AActor> LazerClass;
+
+	UFUNCTION()
+	void LazerAttack();
+
+	UFUNCTION()
+	void LazerEnd();
 #pragma endregion
 
 #pragma region HEALTH
@@ -388,6 +401,24 @@ public:
 	UPROPERTY(EditAnywhere, BlueprintReadWrite,Category="HUD")
 	TSubclassOf<class UDamageTextWidget> DamageTextWidget;
 
+	/** Pause Menu */
+	UPROPERTY(VisibleAnywhere,BlueprintReadOnly,Category = "HUD")
+	bool bESCDown;
+
+	UFUNCTION()
+	void ESCUp();
+	
+	UFUNCTION()
+	void ESCDown();
 #pragma endregion
 
+#pragma region SAVE&LOAD
+public:
+	UFUNCTION(BlueprintCallable)
+	void SaveData();
+
+	UFUNCTION(BlueprintCallable)
+	void LoadData();
+
+#pragma endregion
 };

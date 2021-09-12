@@ -37,5 +37,18 @@ public:
 
 	UFUNCTION()
 	void SetPlayerStamina();
+
+	/** Pause Menu */
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "HUD")
+	TSubclassOf<UUserWidget> WPauseMenu;
+
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "HUD")
+	UUserWidget* PauseMenu;
+
+	bool bPauseMenuVisible;
+
+	void DisplayPauseMenu();
+	void RemovePauseMenu();
+	void TogglePauseMenu();
 #pragma endregion
 };

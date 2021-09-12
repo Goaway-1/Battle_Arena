@@ -4340,13 +4340,391 @@
   1. KnockBack시 플레이어의 뒤방향으로 밀리는 것을 적의 공격 방향으로 밀리도록 수정.
 
 > **<h3>Realization</h3>**
+  - null
+
+## **09.12**
+> **<h3>Today Dev Story</h3>**
+- ## <span style = "color:yellow;">Lazer Length</span>
+  - <img src="Image/Lazer_Length.gif" height="300" title="Lazer_Length"> <img src="Image/HowLazerLength.png" height="300" title="HowLazerLength">
+  - 벽이나 물체에 닿으면 길이가 조절되는 레이저 액터를 생성. 스켈레탈의 End위치를 조정하는 방식.
+    - Lazer Skeletal Animation을 생성하고, Transform (Modify) Bone을 사용하여 End위치 조정.
+  - Lazer Actor를 생성하고 SpringArm, SphereComponent를 생성하고 Sphere는 SpringArm에 어태치.
+    - 이때 SphereComponent는 물체의 충돌을 감지하며 레이저의 길이와 중첩을 관리.
+    - SpringArm의 길이를 4500.f로 길게 늘리고, Sphere의 크기도 키운다. 그냥 카메라의 원리라고 생각하면 편리하다. 
+    - 벽이나 물체에 닿으면 카메라의 길이가 짧아지는 것을 상상하면된다.
+  - 초기 Lazer의 길이는 "Bone중 End의 위치 - 액터의 위치"이고, 추후의 길이는 "구의 위치 - 액터의 위치"이다. 
+    - 이 추후의 길이에서 원래의 길이를 빼서 End Bone의 X길이를 지정
+    - AnimInstance의 변수를 가져오는 방법을 몰라서 블루프린트로 구현.
+  
+      <details><summary>cpp 코드</summary> 
+      
+      ```c++
+      //Lazer.cpp
+      ALazer::ALazer()
+      {
+        PrimaryActorTick.bCanEverTick = true;
+
+        DefaultSceneRoot = CreateDefaultSubobject<USceneComponent>(TEXT("DefaultSceneRoot"));
+        LazerMesh = CreateDefaultSubobject<USkeletalMeshComponent>(TEXT("LazerMesh"));
+        LazerArm = CreateDefaultSubobject<USpringArmComponent>(TEXT("LazerArm"));
+        LazerEndDetector = CreateDefaultSubobject<USphereComponent>(TEXT("LazerEndDetector"));
+
+        SetRootComponent(DefaultSceneRoot);
+        LazerMesh->SetupAttachment(GetRootComponent());
+        LazerArm->SetupAttachment(GetRootComponent());
+        LazerEndDetector->SetupAttachment(LazerArm);
+
+        LazerArm->TargetArmLength = 4500.f;
+        LazerEndDetector->SetSphereRadius(52.f);
+      }
+      ```
+      ```c++
+      //MainPlayer.cpp
+      void AMainPlayer::SetupPlayerInputComponent(UInputComponent* PlayerInputComponent)
+      {
+        Super::SetupPlayerInputComponent(PlayerInputComponent);
+
+        //lazer
+        PlayerInputComponent->BindAction("Lazer",EInputEvent::IE_Pressed,this,&AMainPlayer::LazerAttack);
+        PlayerInputComponent->BindAction("Lazer",EInputEvent::IE_Released,this,&AMainPlayer::LazerEnd);
+      }
+      void AMainPlayer::LazerAttack() {
+        FActorSpawnParameters SpawnParams; 
+        SpawnParams.Owner = this; 
+        SpawnParams.Instigator = GetInstigator();
+        Lazer = GetWorld()->SpawnActor<AActor>(LazerClass,FVector(0.f),FRotator(0.f),SpawnParams);
+
+        Lazer->AttachToComponent(GetMesh(), FAttachmentTransformRules(EAttachmentRule::SnapToTarget,false), FName("LazerPos"));
+      }
+
+      void AMainPlayer::LazerEnd() {
+        if (Lazer) {
+          Lazer->Destroy();
+        }
+      }
+      ```
+      </details>
+      <details><summary>h 코드</summary> 
+      
+      ```c++
+      //Lazer.h
+      public:
+        UPROPERTY(EditAnywhere, BlueprintReadWrite)
+        USceneComponent* DefaultSceneRoot; 
+        
+        UPROPERTY(EditAnywhere, BlueprintReadWrite)
+        USkeletalMeshComponent* LazerMesh;
+
+        UPROPERTY(EditAnywhere, BlueprintReadWrite)
+        USpringArmComponent* LazerArm;
+        
+        UPROPERTY(EditAnywhere, BlueprintReadWrite)
+        USphereComponent* LazerEndDetector;
+      ```
+      ```c++
+      //MainPlayer.h
+      public:
+        UPROPERTY(VisibleAnywhere,BlueprintReadOnly, Category = "Skill | Lazer")
+        AActor* Lazer;
+
+        UPROPERTY(EditDefaultsOnly, Category = "Skill | Lazer")
+        TSubclassOf<class AActor> LazerClass;
+
+        UFUNCTION()
+        void LazerAttack();
+
+        UFUNCTION()
+        void LazerEnd();
+      ```
+      </details>
+
+- ## <span style = "color:yellow;">Lazer Damage</span>
+  - <img src="Image/Lazer_Damage.gif" height="300" title="Lazer_Damage"> 
+  - SphereComponent와 Player가 부딪히면 Overlap메서드(OverlapBegin/EndActor)를 사용하여 데미지 처리.
+  - Overlap되면 bContinueDealing이 True로 변환되여 ApplyDamage()메서드를 실행하며, 데미지 타입은 기본으로 설정.
+    - TArray로 Overlap된 배열들을 받아 저장하고, FLatentActionInfo의 ExecutionFunction를 Dealing()메서드로 지정하여 지정한 초마다 반복.
+    - UKismetSystemLibrary::Delay()메서드와 FLatentActionInfo를 사용하여, Dealing()메서드를 반복한다.
+      <details><summary>cpp 코드</summary> 
+      
+      ```c++
+      //Lazer.cpp
+      #include "Kismet/KismetSystemLibrary.h"
+      #include "PlayerAttackFunction.h"
+      ALazer::ALazer()
+      {
+        bContinueDealing = false;
+      }
+      void ALazer::BeginPlay()
+      {
+        Super::BeginPlay();
+
+        /** Dealing */
+        LazerEndDetector->OnComponentBeginOverlap.AddDynamic(this, &ALazer::OverlapBeginActor);
+        LazerEndDetector->OnComponentEndOverlap.AddDynamic(this, &ALazer::OverlapEndActor);
+
+        LatentInfo.CallbackTarget = this;
+        LatentInfo.ExecutionFunction = "Dealing";    
+        LatentInfo.UUID = 123;
+        LatentInfo.Linkage = 1;
+      }
+      void ALazer::OverlapBeginActor(UPrimitiveComponent* OverlappedComponent, AActor* OtherActor, UPrimitiveComponent* OtherComp, int32 OtherBodyIndex, bool bFromSweep, const FHitResult& SweepResult) {
+        if (OtherActor) {
+          bContinueDealing = true;
+          AMainPlayer* Player = Cast<AMainPlayer>(OtherActor);
+
+          SpawnController = Player->GetController();
+          OverlapingEnemies.Add(Player);
+          Dealing();
+        }
+      }
+
+      void ALazer::OverlapEndActor(UPrimitiveComponent* OverlappedComponent, AActor* OtherActor, UPrimitiveComponent* OtherComp, int32 OtherBodyIndex) {
+        if (OtherActor) {
+          AMainPlayer* Player = Cast<AMainPlayer>(OtherActor);
+          OverlapingEnemies.Remove(Player);
+
+          bContinueDealing = false;
+        }
+      }
+
+      void ALazer::Dealing() {
+        if (bContinueDealing) {
+          for (auto i : OverlapingEnemies) {
+            AMainPlayer* player = Cast<AMainPlayer>(i);
+            UGameplayStatics::ApplyDamage(player,20.f, SpawnController,this, LazerDamageType);
+          }
+          UKismetSystemLibrary::Delay(this, 1.0f, LatentInfo);
+        }
+      }
+      ```
+      </details>
+      <details><summary>h 코드</summary> 
+      
+      ```c++
+      //Lazer.h
+      public:
+        /** Overlap & Dealing */
+        UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Array | Enemy")
+        TArray<class AMainPlayer*> OverlapingEnemies;
+
+        UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Area")
+        bool bContinueDealing;
+
+        UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Area")
+        FLatentActionInfo LatentInfo;
+
+        UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Combat")
+        TSubclassOf<UDamageType> LazerDamageType;
+
+        UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Combat")
+        AController* SpawnController;
+
+        UFUNCTION()
+        void OverlapBeginActor(UPrimitiveComponent* OverlappedComponent, AActor* OtherActor, UPrimitiveComponent* OtherComp, int32 OtherBodyIndex, bool bFromSweep, const FHitResult& SweepResult);
+        
+        UFUNCTION()
+        void OverlapEndActor(UPrimitiveComponent* OverlappedComponent, AActor* OtherActor, UPrimitiveComponent* OtherComp, int32 OtherBodyIndex);
+
+        UFUNCTION()
+        void Dealing();
+      ```
+      </details>
+
+- ## <span style = "color:yellow;">Save&Load Data</span>
+  - Savegame 클래스를 부모로 하는 PlayerSaveGame클래스 제작
+    - 생성자 클래스와 저장할 변수들을 저장하며 __되도록이면 PlayerName, Index변수를 꼭 선언. (추후 SaveGameToSlot()메서드 사용시 필요.)__
+    - Health와 Stamina와 같은 데이터들은 묶어서 Struct의 형태로 저장.
+  - MainPlayer클래스에 새로운 메서드인 Save/LoadData()를 생성하고 정의.
+    - 해당 메서드는 PlayerSaveGame클래스의 데이터를 저장하고 불러오는 역할. (.sav파일이 Saved폴더에 생성)
+      
+      <details><summary>cpp 코드</summary> 
+    
+      ```c++
+      //PlayerSaveGame.cpp
+      #include "PlayerSaveGame.h"
+
+      UPlayerSaveGame::UPlayerSaveGame() {
+        PlayerName = TEXT("Default");
+        UserIndex = 0;
+      }
+      ```
+      ```c++
+      //Mainplayer.cpp
+      #include "PlayerSaveGame.h"	
+      void AMainPlayer::SaveData() {
+        UPlayerSaveGame* SaveGameInstance = Cast<UPlayerSaveGame>(UGameplayStatics::CreateSaveGameObject(UPlayerSaveGame::StaticClass()));
+
+        SaveGameInstance->CharacterStats.Health = CurrentHealth;
+        SaveGameInstance->CharacterStats.MaxHealth = MaxHealth;
+        SaveGameInstance->CharacterStats.Stamina	= CurrentStamina;
+        SaveGameInstance->CharacterStats.MaxStamina = MaxStamina;
+        SaveGameInstance->CharacterStats.Location = GetActorLocation();
+
+        UGameplayStatics::SaveGameToSlot(SaveGameInstance,SaveGameInstance->PlayerName,SaveGameInstance->UserIndex);
+      }
+
+      void AMainPlayer::LoadData() {
+        UPlayerSaveGame* LoadGameInstance = Cast<UPlayerSaveGame>(UGameplayStatics::CreateSaveGameObject(UPlayerSaveGame::StaticClass()));
+
+        LoadGameInstance = Cast<UPlayerSaveGame>(UGameplayStatics::LoadGameFromSlot(LoadGameInstance->PlayerName,LoadGameInstance->UserIndex));
+        
+        CurrentHealth = LoadGameInstance->CharacterStats.Health;
+        MaxHealth = LoadGameInstance->CharacterStats.MaxHealth;
+        CurrentStamina = LoadGameInstance->CharacterStats.Stamina;
+        MaxStamina = LoadGameInstance->CharacterStats.MaxStamina;
+        SetActorLocation(LoadGameInstance->CharacterStats.Location);
+      }
+      ```
+      </details>
+      <details><summary>h 코드</summary> 
+      
+      ```c++
+      //PlayerSaveGame.h
+      USTRUCT(BlueprintType)
+      struct FCharacterStats
+      {
+        GENERATED_BODY()
+
+        UPROPERTY(VisibleAnywhere, Category = "SaveGameData")
+        float Health;
+
+        UPROPERTY(VisibleAnywhere, Category = "SaveGameData")
+        float MaxHealth;
+
+        UPROPERTY(VisibleAnywhere, Category = "SaveGameData")
+        float MaxStamina;
+
+        UPROPERTY(VisibleAnywhere, Category = "SaveGameData")
+        float Stamina;
+
+        UPROPERTY(VisibleAnywhere, Category = "SaveGameData")
+        FVector Location;
+      };
+
+      UCLASS()
+      class COMBATARENA_API UPlayerSaveGame : public USaveGame
+      {
+        GENERATED_BODY()
+      public:
+        UPlayerSaveGame();
+
+        UPROPERTY(VisibleAnywhere, Category = "DefaultData")
+        FString PlayerName;
+
+        UPROPERTY(VisibleAnywhere, Category = "DefaultData")
+        uint32 UserIndex;
+
+        UPROPERTY(VisibleAnywhere, Category = "DefaultData")
+        FCharacterStats CharacterStats;
+      };
+      ```
+      ```c++
+      //MainPlayer.h
+      public:
+        UFUNCTION(BlueprintCallable)
+        void SaveData();
+
+        UFUNCTION(BlueprintCallable)
+        void LoadData();
+      ```
+      </details>
+
+- ## <span style = "color:yellow;">Save&Load Data</span>
+  - <img src="Image/PauseMenu.png" height="300" title="PauseMenu"> 
+  - 종료 버튼을 위해서 Q와 ESC버튼을 통해서 PauseMenu를 표시. [이전방식](#Stamina도-동일하게-구현)과 동일.
+    
     <details><summary>cpp 코드</summary> 
     
     ```c++
+    //MainController.cpp
+    void AMainController::BeginPlay() {
+      if (WPauseMenu) {	
+        PauseMenu = CreateWidget<UUserWidget>(this, WPauseMenu);
+        if (PauseMenu) {
+          PauseMenu->AddToViewport();
+          PauseMenu->SetVisibility(ESlateVisibility::Hidden);
+        }
+      }
+    }
+    void AMainController::DisplayPauseMenu() {
+      if (PauseMenu) {
+        bPauseMenuVisible = true;
+        PauseMenu->SetVisibility(ESlateVisibility::Visible);
+      }
+    }
+    void AMainController::RemovePauseMenu() {
+      if (PauseMenu) {
+        bPauseMenuVisible = false;
+        PauseMenu->SetVisibility(ESlateVisibility::Hidden);
+      }
+    }
+    void AMainController::TogglePauseMenu() {
+      return bPauseMenuVisible ? RemovePauseMenu() : DisplayPauseMenu();
+    }
+    ```
+    ```c++
+    //MainPlayer.cpp
+    void AMainPlayer::SetupPlayerInputComponent(UInputComponent* PlayerInputComponent)
+    {
+    	/** Pause Menu */
+      PlayerInputComponent->BindAction("Quit", EInputEvent::IE_Pressed, this, &AMainPlayer::ESCDown);
+      PlayerInputComponent->BindAction("Quit", EInputEvent::IE_Released, this, &AMainPlayer::ESCUp);
+    }
+    void AMainPlayer::ESCUp() {
+      bESCDown = false;
+    }
+
+    void AMainPlayer::ESCDown(){
+      bESCDown = true;
+      if (PlayerController) {
+        PlayerController->TogglePauseMenu();
+      }
+    }
     ```
     </details>
     <details><summary>h 코드</summary> 
     
     ```c++
+    //MainController.h
+    public:
+    	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "HUD")
+      TSubclassOf<UUserWidget> WPauseMenu;
+
+      UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "HUD")
+      UUserWidget* PauseMenu;
+
+      bool bPauseMenuVisible;
+
+      void DisplayPauseMenu();
+      void RemovePauseMenu();
+      void TogglePauseMenu();
+    ```
+    ```c++
+    //MainPlayer.h
+    public:
+    	UPROPERTY(VisibleAnywhere,BlueprintReadOnly,Category = "HUD")
+    	bool bESCDown;
+
+      UFUNCTION()
+      void ESCUp();
+      
+      UFUNCTION()
+      void ESCDown();
     ```
     </details>
+
+> **<h3>Realization</h3>**
+- ApplyDamage는 특별한 처리 없이 데미지를 전달
+  - ApplyPointDamage는 어떤 방향에서 Actor의 어디 부분에 맞았더니 데미지를 전달
+  - ApplyRadialDamage는 특정 지역에 발생한 폴발때문에 데미지를 입었다를 전달
+  - c++에서는 TakeDamage의 FDamageEvent의 자식인 FPointDamageEvent, FRadialDamageEvent를 사용하여 파라미터에 넣어준다.
+- UKismetSystemLibrart::Delay()
+  - 다시 실행할 메서드와 시간을 정의하면 반복하는 메서드이며, 반복한 메서드안에 정의하여 사용.
+- SaveGame클래스
+  - 정의된 클래스의 데이터를 저장하고 불러오는 역할. (.sav파일이 Saved폴더에 생성)
+    ```c++
+    UPlayerSaveGame* LoadGameInstance = Cast<UPlayerSaveGame>(UGameplayStatics::CreateSaveGameObject(UPlayerSaveGame::StaticClass()));  //정의
+
+    UGameplayStatics::SaveGameToSlot(SaveGameInstance,SaveGameInstance->PlayerName,SaveGameInstance->UserIndex);      //저장.
+    LoadGameInstance = Cast<UPlayerSaveGame>(UGameplayStatics::LoadGameFromSlot(LoadGameInstance->PlayerName,LoadGameInstance->UserIndex)); //호출
+    ```
