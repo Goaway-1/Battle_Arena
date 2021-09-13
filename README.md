@@ -4728,3 +4728,75 @@
     UGameplayStatics::SaveGameToSlot(SaveGameInstance,SaveGameInstance->PlayerName,SaveGameInstance->UserIndex);      //저장.
     LoadGameInstance = Cast<UPlayerSaveGame>(UGameplayStatics::LoadGameFromSlot(LoadGameInstance->PlayerName,LoadGameInstance->UserIndex)); //호출
     ```
+
+## **09.13**
+> **<h3>Today Dev Story</h3>**
+- ## <span style = "color:yellow;">Pause Menu Animaion</span>
+  - <img src="Image/Pause_Menu_Animation.gif" height="300" title="Pause_Menu_Animation"> 
+  - <img src="Image/Pause_Menu_Animation.png" height="300" title="Pause_Menu_Animation"> 
+  - PauseMenu의 Animation을 진행하기 위해서 기존메서드(Display/RemovePauseMenu)를 Implementation타입으로 변경하여 Blueprint와 혼합하여 사용.
+    - __기존 메서드 선언 시 BlueprintNativeEvent로 처리하고 구현부에도 메서드명 뒤에 _Implementation을 추가로 작성.__
+    - c++내에서 호출시에는 기존 메서드명으로 호출. (위는 Blueprint에서도 구현가능하다는 것을 알림.)
+  - Blueprint에서는 Display할때 기존 메서드 실행 후 Animation을 진행하고, Remove의 경우 Animation을 진행하고 기존 메서드를 수행.
+    <details><summary>cpp 코드</summary> 
+          
+    ```c++
+    //MainController.cpp
+    void AMainController::DisplayPauseMenu_Implementation() {
+      ...
+    }
+    void AMainController::RemovePauseMenu_Implementation() {
+      ...
+    }
+    void AMainController::TogglePauseMenu() {
+      return bPauseMenuVisible ? RemovePauseMenu() : DisplayPauseMenu();
+    }
+    ```
+    </details>
+    <details><summary>h 코드</summary> 
+        
+    ```c++
+    //MainController.h
+    public:
+      UFUNCTION(BlueprintNativeEvent,BlueprintCallable, Category= "HUD")
+      void DisplayPauseMenu();
+      
+      UFUNCTION(BlueprintNativeEvent, BlueprintCallable,Category = "HUD")
+      void RemovePauseMenu();
+    ```
+    </details>
+
+- ## <span style = "color:yellow;">잡다한 것</span> 
+  1. PauseMenu을 호출 시 InputMode 설정하여 마우스 사용가능하도록 전환.
+    - FInputMode~를 선언하고 SetInputMode()메서드를 사용하여 UI 클릭 및 게임진행 상태 가능
+    - bShowMouseCursor의 참/거짓여부를 통해서 마우스를 화면에 보여지도록 설정 가능.
+      <details><summary>cpp 코드</summary> 
+
+      ```c++
+      void AMainController::DisplayPauseMenu_Implementation() {
+        if (PauseMenu) {
+          /** InputMode */
+          FInputModeUIOnly InputModeUIOnly;
+          SetInputMode(InputModeUIOnly);
+          bShowMouseCursor = true;
+        }
+      }
+      void AMainController::RemovePauseMenu_Implementation() {
+        if (PauseMenu) {
+          /** InputMode */
+          FInputModeGameOnly InputModeGame;
+          SetInputMode(InputModeGame);
+          bShowMouseCursor = false;
+        }
+      }
+      ```
+      </details>
+  2. PauseMenu에 있는 각각의 Button 활성화.
+    - <img src="Image/Puase_Menu_Button.png" height="300" title="Puase_Menu_Button"> 
+    - Pause Menu의 Button의 각각에 OnClicked메서드를 처리하여 이벤트 처리.
+
+> **<h3>Realization</h3>**
+- BlueprintNativeEvent타입 
+  - 이 타입을 사용하여 Blueprint와 C++둘 모두 동시에 메서드 구성이 가능.
+  - C++에 있는 정보 호출시 부모를 호출하면되며 약간 부모와 자식개념.
+  - 기존 메서드 선언 시 BlueprintNativeEvent로 처리하고 구현부에도 메서드명 뒤에 _Implementation을 추가로 작성.

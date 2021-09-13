@@ -47,16 +47,27 @@ void AMainController::SetPlayerHealth() {
 void AMainController::SetPlayerStamina() {
 	StaminaBarOutLine->SetOwnerStamina(MainPlayer->GetStaminaRatio(), MainPlayer->MaxStamina, MainPlayer->CurrentStamina);
 }
-void AMainController::DisplayPauseMenu() {
+void AMainController::DisplayPauseMenu_Implementation() {
 	if (PauseMenu) {
+		/** Show Display */
 		bPauseMenuVisible = true;
 		PauseMenu->SetVisibility(ESlateVisibility::Visible);
+
+		/** InputMode */
+		FInputModeUIOnly InputModeUIOnly;
+		SetInputMode(InputModeUIOnly);
+		bShowMouseCursor = true;
 	}
 }
-void AMainController::RemovePauseMenu() {
+void AMainController::RemovePauseMenu_Implementation() {
 	if (PauseMenu) {
+		/** InputMode */
+		FInputModeGameOnly InputModeGame;
+		SetInputMode(InputModeGame);
+		bShowMouseCursor = false;
+
+		/** Remove Display */
 		bPauseMenuVisible = false;
-		PauseMenu->SetVisibility(ESlateVisibility::Hidden);
 	}
 }
 void AMainController::TogglePauseMenu() {
