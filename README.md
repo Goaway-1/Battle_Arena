@@ -16,7 +16,7 @@
 |Axis|Mouse_Y|Camera Turn|  
 |Axis|S & W|Forward Move| 
 |Axis|A & D|Right Move| 
-
+s
 
 |Character|Speed|Sprinting_Speed|AttackRange||
 |:--:|:--:|:--:|:--:|:--:|
