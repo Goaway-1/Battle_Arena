@@ -16,7 +16,7 @@
 |Axis|Mouse_Y|Camera Turn|  
 |Axis|S & W|Forward Move| 
 |Axis|A & D|Right Move| 
-s
+
 
 |Character|Speed|Sprinting_Speed|AttackRange||
 |:--:|:--:|:--:|:--:|:--:|
@@ -4800,3 +4800,106 @@ s
   - 이 타입을 사용하여 Blueprint와 C++둘 모두 동시에 메서드 구성이 가능.
   - C++에 있는 정보 호출시 부모를 호출하면되며 약간 부모와 자식개념.
   - 기존 메서드 선언 시 BlueprintNativeEvent로 처리하고 구현부에도 메서드명 뒤에 _Implementation을 추가로 작성.
+
+## **09.19**
+> **<h3>Today Dev Story</h3>**
+- ## <span style = "color:yellow;">Player View Point</span>
+  - <img src="Image/PlayerViewPoint.gif" height="300" title="PlayerViewPoint"> 
+  - 플레이어가 마법과 같은 스킬을 사용할때 위치를 설정할 수 있어야하는데 그 위치를 설정하기 위한 로직.
+  - MainPlayer클래스에서 작성했으며, 연막물약과 같은 것에 활용할 예정. (Enemy도 사용할 예정)
+    - SetSkillLocation()메서드에서 시점을 정의하며 GetPlayerViewPoint()메서드를 사용하여 시점으로부터 직선으로 맞는 곳에 표시.
+    - QueryParams.AddIgnoredActor()를 사용하여 사용자는 통과하도록 설정.
+
+      <details><summary>cpp 코드</summary> 
+
+      ```c++
+      //AMainPlayer.cpp
+      void AMainPlayer::Tick(float DeltaTime)
+      {
+        /** Targeting On Ground */
+        SetSkillLocation();
+      }
+      void AMainPlayer::SkillBegin() {
+        //LazerAttack();	//Lazer
+        GroundAttack();
+      }
+      void AMainPlayer::SkillEnd() {
+        //LazerEnd();		//Lazer
+        GroundEnd();
+      }
+      void AMainPlayer::SetSkillLocation() {
+        if(!bGround) return;
+
+        FVector ViewPoint;
+        FRotator ViewRotation;
+        PlayerController->GetPlayerViewPoint(ViewPoint, ViewRotation);
+        FHitResult HitResult;
+        FCollisionQueryParams QueryParams(NAME_None, false, this);
+        QueryParams.bTraceComplex = true;
+        APawn* OwnerPawn = Controller->GetPawn();
+
+        if (OwnerPawn) QueryParams.AddIgnoredActor(OwnerPawn->GetUniqueID());	//주인은 무시
+
+        //플레이어의 시점에 있는 곳
+        bool TryTrace = GetWorld()->LineTraceSingleByChannel(HitResult, ViewPoint, ViewPoint + ViewRotation.Vector() * 10000.f, ECC_Visibility, QueryParams);
+        if (TryTrace) {
+          out = HitResult.ImpactPoint;
+          DrawDebugSphere(GetWorld(), out, 200.f, 12, FColor::Red, false, -1, 0, 5.f);
+        }
+        else out = FVector();
+      }
+      ```
+      </details>
+      <details><summary>h 코드</summary> 
+
+      ```c++
+      //AMainPlayer.h
+      public:
+        UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Skill | Ground")
+        bool bGround;
+
+        UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Skill | Ground")
+        FVector out;
+
+        FORCEINLINE void GroundAttack() { bGround = true; }
+
+        FORCEINLINE void GroundEnd() { bGround = false; }
+
+        UFUNCTION()
+        void SetSkillLocation();
+      ```
+      </details>
+
+- ## <span style = "color:yellow;">Player View Point (Camera Pos)</span>
+  - <img src="Image/Player_Skill_Cam_Pos.gif" height="300" title="Player_Skill_Cam_Pos"> 
+  - 기존 사용했던 메서드 ZoomInCam을 사용하여 카메라의 시점 변경.
+    
+    <details><summary>cpp 코드</summary> 
+
+    ```c++
+    void AMainPlayer::GroundAttack() {
+      bGround = true; 
+
+      //Camera Pos (수정 필요.)
+      GetController()->SetInitialLocationAndRotation(FVector(0.f), GetActorRotation());
+      ZoomInCam(FVector(100.f, 0.f, 800.f), FRotator(-70.f, 0.f, 0.f));
+      CameraManager->ViewPitchMax = 90.f;
+      CameraManager->ViewPitchMin = 0.f;
+    }
+
+    void AMainPlayer::GroundEnd() { 
+      bGround = false; 
+
+      //Camera Pos (수정 필요.)
+      ZoomOutCam();
+      CameraManager->ViewPitchMax = 50.f;
+      CameraManager->ViewPitchMin = -70.f;
+    }
+    ```
+    </details>
+
+> **<h3>Realization</h3>**
+- FCollisionQueryParams.AddIgnoredActor
+  - 탐색방법에 대한 설정 값을 모은 구조체이며, 이름, 추적 복잡성, 무시할 액터를 설정가능하다.
+- Controller->GetPlayerViewPoint()
+  - 컨트롤러를 사용하여 Player의 시점과 회전도를 알수있는 메서드.

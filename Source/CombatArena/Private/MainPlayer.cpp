@@ -14,7 +14,6 @@
 #include "Blueprint/UserWidget.h"	
 #include "PlayerSaveGame.h"	
 
-
 AMainPlayer::AMainPlayer()
 {
  	PrimaryActorTick.bCanEverTick = true;
@@ -22,7 +21,6 @@ AMainPlayer::AMainPlayer()
 #pragma region AIPERCETION
 	AIPerceptionSource = CreateDefaultSubobject<UAIPerceptionStimuliSourceComponent>(TEXT("AIPerceptionSource"));
 #pragma endregion
-
 #pragma region CAMERA
 	SpringArm = CreateDefaultSubobject<USpringArmComponent>(TEXT("SringArm"));
 	SpringArm->SetupAttachment(GetRootComponent());
@@ -52,7 +50,6 @@ AMainPlayer::AMainPlayer()
 	bUseControllerRotationPitch = false;
 
 #pragma endregion
-
 #pragma	region	MOVEMENT
 	GetCharacterMovement()->bOrientRotationToMovement = true;	//이동방향 회전
 	GetCharacterMovement()->RotationRate = FRotator(0.f,540.f,0.f);
@@ -72,7 +69,6 @@ AMainPlayer::AMainPlayer()
 	DirY = 0.f;
 
 #pragma endregion
-
 #pragma region ATTACK
 	AttackFunction = CreateDefaultSubobject<UPlayerAttackFunction>(TEXT("AttackFunction"));
 	SetWeaponStatus(EWeaponStatus::EWS_Normal);
@@ -89,6 +85,9 @@ AMainPlayer::AMainPlayer()
 	DefaultDamage = 5.0f;
 	AttackDamage = DefaultDamage;
 
+#pragma endregion
+#pragma region SKILL
+	bGround = false;
 #pragma endregion
 
 #pragma region HEALTH
@@ -158,6 +157,9 @@ void AMainPlayer::Tick(float DeltaTime)
 
 	/** Set StaminaRatio Widget */
 	SetStaminaRatio();
+
+	/** Targeting On Ground */
+	SetSkillLocation(out);
 }
 
 void AMainPlayer::SetupPlayerInputComponent(UInputComponent* PlayerInputComponent)
@@ -201,9 +203,9 @@ void AMainPlayer::SetupPlayerInputComponent(UInputComponent* PlayerInputComponen
 	PlayerInputComponent->BindAction("Equip", EInputEvent::IE_Pressed, this, &AMainPlayer::ItemEquip);
 	PlayerInputComponent->BindAction("Drop", EInputEvent::IE_Pressed, this, &AMainPlayer::ItemDrop);
 
-	//lazer
-	PlayerInputComponent->BindAction("Lazer",EInputEvent::IE_Pressed,this,&AMainPlayer::LazerAttack);
-	PlayerInputComponent->BindAction("Lazer",EInputEvent::IE_Released,this,&AMainPlayer::LazerEnd);
+	/** Skill Test Input */
+	PlayerInputComponent->BindAction("SkillTest", EInputEvent::IE_Pressed, this, &AMainPlayer::SkillBegin);
+	PlayerInputComponent->BindAction("SkillTest", EInputEvent::IE_Released, this, &AMainPlayer::SkillEnd);
 
 	/** Pause Menu */
 	PlayerInputComponent->BindAction("Quit", EInputEvent::IE_Pressed, this, &AMainPlayer::ESCDown);
@@ -487,23 +489,74 @@ bool AMainPlayer::IsBlockingSuccess(AActor* DamageCauser) {
 	}
 	return false;
 }
-
-//Lazer
-void AMainPlayer::LazerAttack() {
-	FActorSpawnParameters SpawnParams; 
-	SpawnParams.Owner = this; 
-	SpawnParams.Instigator = GetInstigator();
-	Lazer = GetWorld()->SpawnActor<AActor>(LazerClass,FVector(0.f),FRotator(0.f),SpawnParams);
-
-	Lazer->AttachToComponent(GetMesh(), FAttachmentTransformRules(EAttachmentRule::SnapToTarget,false), FName("LazerPos"));
+#pragma endregion
+#pragma region SKILL
+void AMainPlayer::SkillBegin() {
+	//LazerAttack();	//Lazer
+	GroundAttack();
 }
 
+void AMainPlayer::SkillEnd() {
+	//LazerEnd();		//Lazer
+	GroundEnd();
+}
+void AMainPlayer::LazerAttack() {
+	FActorSpawnParameters SpawnParams;
+	SpawnParams.Owner = this;
+	SpawnParams.Instigator = GetInstigator();
+	Lazer = GetWorld()->SpawnActor<AActor>(LazerClass, FVector(0.f), FRotator(0.f), SpawnParams);
+
+	Lazer->AttachToComponent(GetMesh(), FAttachmentTransformRules(EAttachmentRule::SnapToTarget, false), FName("LazerPos"));
+}
 void AMainPlayer::LazerEnd() {
 	if (Lazer) {
 		Lazer->Destroy();
 	}
 }
+void AMainPlayer::GroundAttack() {
+	bGround = true; 
 
+	//Camera Pos (수정 필요.)
+	GetController()->SetInitialLocationAndRotation(FVector(0.f), GetActorRotation());
+	ZoomInCam(FVector(100.f, 0.f, 800.f), FRotator(-70.f, 0.f, 0.f));
+	CameraManager->ViewPitchMax = 90.f;
+	CameraManager->ViewPitchMin = 0.f;
+}
+
+void AMainPlayer::GroundEnd() { 
+	bGround = false; 
+
+	//Camera Pos (수정 필요.)
+	ZoomOutCam();
+	CameraManager->ViewPitchMax = 50.f;
+	CameraManager->ViewPitchMin = -70.f;
+}
+void AMainPlayer::SetSkillLocation(FVector& OutViewPoint) {
+	if(!bGround) return;
+
+	FVector ViewPoint;
+	FRotator ViewRotation;
+	PlayerController->GetPlayerViewPoint(ViewPoint, ViewRotation);
+	FHitResult HitResult;
+	FCollisionQueryParams QueryParams(NAME_None, false, this);
+	QueryParams.bTraceComplex = true;
+	APawn* OwnerPawn = Controller->GetPawn();
+
+	if (OwnerPawn) QueryParams.AddIgnoredActor(OwnerPawn->GetUniqueID());	//주인은 무시
+
+	//플레이어의 시점에 있는 곳
+	bool TryTrace = GetWorld()->LineTraceSingleByChannel(HitResult, ViewPoint, ViewPoint + ViewRotation.Vector() * 10000.f, ECC_Visibility, QueryParams);
+	if (TryTrace) {
+		out = HitResult.ImpactPoint;
+		DrawDebugSphere(GetWorld(), out, 200.f, 12, FColor::Red, false, -1, 0, 5.f);
+	}
+	else out = FVector();
+}
+
+void AMainPlayer::ConfirmTargetAndContinue() {
+	FVector ViewLocation;
+	//SetSkillLocation(ViewLocation);
+}
 #pragma endregion
 
 #pragma region ACTIVE

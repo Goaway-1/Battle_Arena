@@ -294,8 +294,17 @@ public:
 	UFUNCTION()
 	bool IsBlockingSuccess(AActor* DamageCauser);
 
+#pragma endregion
+#pragma region SKILL
+	/** Skill Test*/
+	UFUNCTION()
+	void SkillBegin();
+
+	UFUNCTION()
+	void SkillEnd();
+
 	//Lazer
-	UPROPERTY(VisibleAnywhere,BlueprintReadOnly, Category = "Skill | Lazer")
+	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Skill | Lazer")
 	AActor* Lazer;
 
 	UPROPERTY(EditDefaultsOnly, Category = "Skill | Lazer")
@@ -306,6 +315,25 @@ public:
 
 	UFUNCTION()
 	void LazerEnd();
+
+	/** Targeting On Ground */
+	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Skill | Ground")
+	bool bGround;
+
+	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Skill | Ground")
+	FVector out;
+
+	UFUNCTION()
+	void GroundAttack();
+
+	UFUNCTION()
+	void GroundEnd();
+
+	UFUNCTION()
+	void SetSkillLocation(FVector& OutViewPoint);
+
+	UFUNCTION()
+	void ConfirmTargetAndContinue();
 #pragma endregion
 
 #pragma region HEALTH
