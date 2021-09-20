@@ -13,6 +13,7 @@
 #include "Components/WidgetComponent.h"
 #include "Blueprint/UserWidget.h"	
 #include "PlayerSaveGame.h"	
+#include "Components/DecalComponent.h"
 
 AMainPlayer::AMainPlayer()
 {
@@ -87,6 +88,11 @@ AMainPlayer::AMainPlayer()
 
 #pragma endregion
 #pragma region SKILL
+	SkillDecal = CreateDefaultSubobject<UDecalComponent>("SkillDecal");
+	SkillDecal->SetupAttachment(GetRootComponent());
+	SkillDecal->DecalSize = FVector(10.f,200.f,200.f);
+	SkillDecal->SetVisibility(false);
+
 	bGround = false;
 #pragma endregion
 
@@ -101,7 +107,6 @@ AMainPlayer::AMainPlayer()
 	CoolDownStamina = 30.f;
 	CoolUpStamina = 10.f;
 #pragma endregion
-
 #pragma region ACTIVE
 	GetCapsuleComponent()->SetCollisionProfileName(TEXT("Player"));	//콜리전 설정
 
@@ -109,7 +114,6 @@ AMainPlayer::AMainPlayer()
 	CurrentLeftWeapon = nullptr;
 	CurrentRightWeapon = nullptr;
 #pragma endregion
-
 #pragma region HUD
 	EnemyHUDOverlap = CreateDefaultSubobject<USphereComponent>(TEXT("EnemyHUDOverlap"));
 	EnemyHUDOverlap->SetupAttachment(GetRootComponent());
@@ -205,7 +209,6 @@ void AMainPlayer::SetupPlayerInputComponent(UInputComponent* PlayerInputComponen
 
 	/** Skill Test Input */
 	PlayerInputComponent->BindAction("SkillTest", EInputEvent::IE_Pressed, this, &AMainPlayer::SkillBegin);
-	PlayerInputComponent->BindAction("SkillTest", EInputEvent::IE_Released, this, &AMainPlayer::SkillEnd);
 
 	/** Pause Menu */
 	PlayerInputComponent->BindAction("Quit", EInputEvent::IE_Pressed, this, &AMainPlayer::ESCDown);
@@ -345,18 +348,28 @@ void AMainPlayer::RunCamShake() {
 void AMainPlayer::LMBDown() {
 	bLMBDown = true;
 
+	//SKILL
 	if (!bAttacking) Attack();
 	else bIsAttackCheck = true;
 }
 void AMainPlayer::Attack() {
 	UAnimMontage* PlayMontage = nullptr;
 	
-	if (GetRightCurrentWeapon() == nullptr) PlayMontage = AttackMontage;
+	if(bGround) PlayMontage = SkillAttackMontage;
+	else if (GetRightCurrentWeapon() == nullptr) PlayMontage = AttackMontage;
 	else PlayMontage = WeaponAttackMontage;
 
-	bAttacking = true;
 	if (!AnimInstance) AnimInstance = GetMesh()->GetAnimInstance();
-	if (AnimInstance && PlayMontage) {
+
+	/** USEING SKILL */
+	if (AnimInstance && bGround && PlayMontage) {
+		AnimInstance->Montage_Play(PlayMontage);
+		AnimInstance->Montage_JumpToSection("SkillEmpact", PlayMontage);
+		ConfirmTargetAndContinue();
+	}
+	/** NOMAL ATTACK */
+	else if (AnimInstance && PlayMontage) {
+		bAttacking = true;
 		if (!AnimInstance->Montage_IsPlaying(PlayMontage)) {	//공격중이 아닐때 (처음 공격)
 			ComboCnt = 0;
 			AnimInstance->Montage_Play(PlayMontage);
@@ -498,7 +511,7 @@ void AMainPlayer::SkillBegin() {
 
 void AMainPlayer::SkillEnd() {
 	//LazerEnd();		//Lazer
-	GroundEnd();
+	GroundAttack();
 }
 void AMainPlayer::LazerAttack() {
 	FActorSpawnParameters SpawnParams;
@@ -514,22 +527,22 @@ void AMainPlayer::LazerEnd() {
 	}
 }
 void AMainPlayer::GroundAttack() {
-	bGround = true; 
+	if (!bGround) {
+		bGround = true;
 
-	//Camera Pos (수정 필요.)
-	GetController()->SetInitialLocationAndRotation(FVector(0.f), GetActorRotation());
-	ZoomInCam(FVector(100.f, 0.f, 800.f), FRotator(-70.f, 0.f, 0.f));
-	CameraManager->ViewPitchMax = 90.f;
-	CameraManager->ViewPitchMin = 0.f;
-}
+		//Camera Pos (수정 필요.)
+		GetController()->SetInitialLocationAndRotation(FVector(0.f), GetActorRotation());
+		ZoomInCam(FVector(-200.f, 0.f, 400.f), FRotator(-30.f, 0.f, 0.f));
+		SkillDecal->SetVisibility(true);
+	}
+	else {
+		bGround = false;
 
-void AMainPlayer::GroundEnd() { 
-	bGround = false; 
-
-	//Camera Pos (수정 필요.)
-	ZoomOutCam();
-	CameraManager->ViewPitchMax = 50.f;
-	CameraManager->ViewPitchMin = -70.f;
+		//Camera Pos (수정 필요.)
+		GetController()->SetControlRotation(GetActorRotation());
+		ZoomOutCam();
+		SkillDecal->SetVisibility(false);
+	}
 }
 void AMainPlayer::SetSkillLocation(FVector& OutViewPoint) {
 	if(!bGround) return;
@@ -548,14 +561,36 @@ void AMainPlayer::SetSkillLocation(FVector& OutViewPoint) {
 	bool TryTrace = GetWorld()->LineTraceSingleByChannel(HitResult, ViewPoint, ViewPoint + ViewRotation.Vector() * 10000.f, ECC_Visibility, QueryParams);
 	if (TryTrace) {
 		out = HitResult.ImpactPoint;
-		DrawDebugSphere(GetWorld(), out, 200.f, 12, FColor::Red, false, -1, 0, 5.f);
+		SkillDecal->SetWorldLocation(out);	
 	}
 	else out = FVector();
 }
-
 void AMainPlayer::ConfirmTargetAndContinue() {
-	FVector ViewLocation;
-	//SetSkillLocation(ViewLocation);
+	TArray<FOverlapResult> Overlaps;
+	TArray<TWeakObjectPtr<AEnemy>> OverlapedEnemy;
+
+	FCollisionQueryParams CollisionQueryParams;
+	CollisionQueryParams.bTraceComplex = false;
+	CollisionQueryParams.bReturnPhysicalMaterial = false;
+	APawn* OwnerPawn = Controller->GetPawn();
+	if(OwnerPawn) CollisionQueryParams.AddIgnoredActor(OwnerPawn->GetUniqueID());
+
+	bool TryOverlap = GetWorld()->OverlapMultiByObjectType(Overlaps,
+		out, FQuat::Identity, FCollisionObjectQueryParams(ECC_GameTraceChannel2),
+		FCollisionShape::MakeSphere(200.f), CollisionQueryParams);
+	
+	UE_LOG(LogTemp,Warning,TEXT("OUt : %s"),*out.ToString());
+	if (TryOverlap) {
+		for (auto i : Overlaps) {
+			AEnemy* EnemyOverlaped = Cast<AEnemy>(i.GetActor());
+			if(EnemyOverlaped && !OverlapedEnemy.Contains(EnemyOverlaped)) OverlapedEnemy.Add(EnemyOverlaped);
+		}
+		for (auto i : OverlapedEnemy) {
+			AEnemy* EnemyOverlaped = Cast<AEnemy>(i);
+			i->LaunchSky(FVector(0.f,0.f,700.f));
+		}
+	}
+	GroundAttack();
 }
 #pragma endregion
 

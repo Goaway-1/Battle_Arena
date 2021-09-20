@@ -11,6 +11,7 @@
 #include "TimerManager.h"
 #include "Components/DecalComponent.h"
 #include "DamageTextWidget.h"	
+#include "Components/PrimitiveComponent.h"
 
 AEnemy::AEnemy()
 {
@@ -37,8 +38,7 @@ AEnemy::AEnemy()
 	TargetingDecal = CreateDefaultSubobject<UDecalComponent>(TEXT("TargetingDecal"));
 	TargetingDecal->SetupAttachment(GetMesh());
 	TargetingDecal->SetRelativeLocation(FVector(0.f, 0.f, 0.f));
-	TargetingDecal->SetRelativeScale3D(FVector(0.6f, 0.6f, 0.05f));
-	TargetingDecal->DecalSize = FVector(128.f, 128.f, 256.f);
+	TargetingDecal->DecalSize = FVector(10.f, 10.f, 90.f);
 	TargetingDecal->SetVisibility(false);
 #pragma endregion
 
@@ -86,7 +86,6 @@ void AEnemy::BeginPlay()
 	HealthBar->SetOwnerHealth(GetHealthRatio(), MaxHealth, CurrentHealth);
 #pragma endregion
 }
-
 void AEnemy::Tick(float DeltaTime)
 {
 	Super::Tick(DeltaTime);
@@ -94,7 +93,6 @@ void AEnemy::Tick(float DeltaTime)
 	/** KnockBack의 조건이 만족하면 뒤로 밀림. */
 	IsKnockBack();
 }
-
 void AEnemy::PostInitializeComponents()
 {
 	Super::PostInitializeComponents();
@@ -103,7 +101,6 @@ void AEnemy::PostInitializeComponents()
 	//행동이 끝나면 다른 함수에게 알려준다. ->OnMontageEnded는 델리게이트 
 	Anim->OnMontageEnded.AddDynamic(this, &AEnemy::OnAttackMontageEnded);
 }
-
 void AEnemy::SetupPlayerInputComponent(UInputComponent* PlayerInputComponent)
 {
 	Super::SetupPlayerInputComponent(PlayerInputComponent);
@@ -119,19 +116,16 @@ void AEnemy::Attack() {
 		Anim->Montage_JumpToSection("Attack1", AttackMontage);
 	}
 }
-
 void AEnemy::AttackStart() {
 	FString Type = "Enemy";
 	AttackFunction->AttackStart(GetActorLocation(),GetActorForwardVector(),EnemyDamageType, Type, GetHitParticle(),GetAttackRange(), AttackDamage);
 }
-
 void AEnemy::OnAttackMontageEnded(UAnimMontage* Montage, bool bInterrupted)
 {
 	if (!IsAttacking) return;
 	IsAttacking = false;
 	OnAttackEnd.Broadcast();
 }
-
 float AEnemy::TakeDamage(float DamageAmount, struct FDamageEvent const& DamageEvent, class AController* EventInstigator, AActor* DamageCauser) {
 	if (CurrentHealth <= 0) return 0.f;
 
@@ -148,7 +142,6 @@ float AEnemy::TakeDamage(float DamageAmount, struct FDamageEvent const& DamageEv
 
 	return DamageAmount;
 }
-
 void AEnemy::DeathEnd() {
 	if (!Anim) Anim = Cast<UEnemyAnim>(GetMesh()->GetAnimInstance());
 	if (AttackMontage && Anim) {
@@ -159,13 +152,11 @@ void AEnemy::DeathEnd() {
 	Cast<AEnemyController>(GetController())->StopBeTree();	//비헤이비어 트리 정지 (내가 만듬)
 	GetCapsuleComponent()->SetCollisionEnabled(ECollisionEnabled::NoCollision);
 }
-
 void AEnemy::DestroyEnemy() {
 	GetMesh()->bPauseAnims = true;
 	GetMesh()->bNoSkeletonUpdate = true;
 	Destroy();
 }
-
 void AEnemy::KnockBack(FVector Backward) {
 	if (!bIsback) {
 		if (HitedMontage != nullptr) Anim->Montage_Play(HitedMontage);
@@ -174,7 +165,6 @@ void AEnemy::KnockBack(FVector Backward) {
 		GetWorldTimerManager().SetTimer(backHandle, this, &AEnemy::knockBackEnd, 0.2f);
 	}
 }
-
 void AEnemy::knockBackEnd() {
 	bIsback = false;
 }
@@ -183,30 +173,28 @@ void AEnemy::IsKnockBack() {
 		AddActorWorldOffset(BackVector * KnockBackPower * GetWorld()->GetDeltaSeconds(), false);
 	}
 }
+void AEnemy::LaunchSky(FVector Pos) {
+	LaunchCharacter(Pos,false,false);
+}
 #pragma endregion
 
 #pragma region HUD
-
 void AEnemy::ShowEnemyTarget() {
 	if (!TargetingDecal) return;
 	TargetingDecal->SetVisibility(true);
 }
-
 void AEnemy::HideEnemyTarget() {
 	if (!TargetingDecal) return;
 	TargetingDecal->SetVisibility(false);
 }
-
 void AEnemy::ShowEnemyHUD() {
 	if (!HealthWidget) return;
 	HealthWidget->SetVisibility(true);
 }
-
 void AEnemy::HideEnemyHUD() {
 	if (!HealthWidget) return;
 	HealthWidget->SetVisibility(false);
 }
-
 void AEnemy::SetHealthRatio() {
 	HealthRatio = CurrentHealth / MaxHealth;
 }

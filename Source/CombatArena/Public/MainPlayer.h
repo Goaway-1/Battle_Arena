@@ -296,6 +296,12 @@ public:
 
 #pragma endregion
 #pragma region SKILL
+	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "Anims")
+	class UAnimMontage* SkillAttackMontage;
+
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Skill | Decal")
+	class UDecalComponent* SkillDecal;
+
 	/** Skill Test*/
 	UFUNCTION()
 	void SkillBegin();
@@ -325,9 +331,6 @@ public:
 
 	UFUNCTION()
 	void GroundAttack();
-
-	UFUNCTION()
-	void GroundEnd();
 
 	UFUNCTION()
 	void SetSkillLocation(FVector& OutViewPoint);

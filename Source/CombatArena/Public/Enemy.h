@@ -92,7 +92,12 @@ public:
 
 	UFUNCTION()
 	void IsKnockBack();
-	
+
+	/** Up The Sky */
+	UFUNCTION()
+	void LaunchSky(FVector Pos);
+
+
 	/** Hited AnimMontage */
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Montage")
 	UAnimMontage* HitedMontage;

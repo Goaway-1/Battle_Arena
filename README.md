@@ -9,9 +9,11 @@
 |Action|Shift|Sprinting| 
 |Action|LMB|Attack| 
 |Action|Left Ctrl|Dodge // 4000.f| 
+|Action|Left Tab|Targeting| 
 |Action|E|Equip Item| 
 |Action|Q|Drop Item| 
 |Action|F|Kick (knock Back)| 
+|Action|K|Kill (Lazer, Ground)| 
 |Axis|Mouse_X|Camera LookUp| 
 |Axis|Mouse_Y|Camera Turn|  
 |Axis|S & W|Forward Move| 
@@ -4871,7 +4873,7 @@
       </details>
 
 - ## <span style = "color:yellow;">Player View Point (Camera Pos)</span>
-  - <img src="Image/Player_Skill_Cam_Pos.gif" height="300" title="Player_Skill_Cam_Pos"> 
+- <img src="Image/Player_Skill_Cam_Pos.gif" height="300" title="Player_Skill_Cam_Pos"> 
   - 기존 사용했던 메서드 ZoomInCam을 사용하여 카메라의 시점 변경.
     
     <details><summary>cpp 코드</summary> 
@@ -4899,7 +4901,146 @@
     </details>
 
 > **<h3>Realization</h3>**
-- FCollisionQueryParams.AddIgnoredActor
-  - 탐색방법에 대한 설정 값을 모은 구조체이며, 이름, 추적 복잡성, 무시할 액터를 설정가능하다.
 - Controller->GetPlayerViewPoint()
   - 컨트롤러를 사용하여 Player의 시점과 회전도를 알수있는 메서드.
+
+## **09.20**
+> **<h3>Today Dev Story</h3>**
+- ## <span style = "color:yellow;">Player View Point (Launch Enemy to the Sky)</span>
+  - <img src="Image/Ground_LaunchSky.gif" height="300" title="Ground_LaunchSky"> 
+  - 범위내의 적들을 공중에 띄우는 스킬로 K키를 눌러 범위를 지정한 후 기본공격과 동일한 키인 마우스 왼쪽버튼을 통해 실현.
+  - MainPlayer클래스에 새로운 ConfirmTargetAndContinue()메서드 제작. (모션 추가)
+    - OverlapMultiByObjectType()메서드와 Enemy트레이스채널을 사용하여 해당 범위 내에 있는 모든 Enemy액터를 TArray인 OverlapedEnemy에 Add
+    - OverlapedEnemy를 for문으로 돌며 Enemy클래스에 있는 LaunchSky()호출하여 공중에 띄움.
+  - Enemy클래스에 LaunchSky()메서드 제작후. MainPlayer의 ConfirmTargetAndContinue()로 호출.
+    - 해당 메서드 내에는 LaunchCharacter()메서드 사용하여 일시적으로 힘을 가함.
+
+    <details><summary>cpp 코드</summary> 
+
+    ```c++
+    //MainPlayer.cpp
+    void AMainPlayer::Attack() {
+      UAnimMontage* PlayMontage = nullptr;
+      
+      if(bGround) PlayMontage = SkillAttackMontage;
+      else if (GetRightCurrentWeapon() == nullptr) PlayMontage = AttackMontage;
+      else PlayMontage = WeaponAttackMontage;
+
+      if (!AnimInstance) AnimInstance = GetMesh()->GetAnimInstance();
+
+      /** USEING SKILL */
+      if (AnimInstance && bGround && PlayMontage) {
+        AnimInstance->Montage_Play(PlayMontage);
+        AnimInstance->Montage_JumpToSection("SkillEmpact", PlayMontage);
+        ConfirmTargetAndContinue();
+      }
+      /** NOMAL ATTACK */
+      else if (AnimInstance && PlayMontage) {
+       ...
+      }
+    }
+    void AMainPlayer::ConfirmTargetAndContinue() {
+      TArray<FOverlapResult> Overlaps;
+      TArray<TWeakObjectPtr<AEnemy>> OverlapedEnemy;
+      bool TraceComplex = false;
+
+      FCollisionQueryParams CollisionQueryParams;
+      CollisionQueryParams.bTraceComplex = TraceComplex;
+      CollisionQueryParams.bReturnPhysicalMaterial = false;
+      APawn* OwnerPawn = Controller->GetPawn();
+      if(OwnerPawn) CollisionQueryParams.AddIgnoredActor(OwnerPawn->GetUniqueID());
+
+      bool TryOverlap = GetWorld()->OverlapMultiByObjectType(Overlaps,
+        out, FQuat::Identity, FCollisionObjectQueryParams(ECC_GameTraceChannel2),
+        FCollisionShape::MakeSphere(200.f), CollisionQueryParams);
+      
+      if (TryOverlap) {
+        for (auto i : Overlaps) {
+          AEnemy* EnemyOverlaped = Cast<AEnemy>(i.GetActor());
+          if(EnemyOverlaped && !OverlapedEnemy.Contains(EnemyOverlaped)) OverlapedEnemy.Add(EnemyOverlaped);
+        }
+        for (auto i : OverlapedEnemy) {
+          AEnemy* EnemyOverlaped = Cast<AEnemy>(i);
+          i->LaunchSky(FVector(0.f,0.f,700.f));
+          UE_LOG(LogTemp, Warning, TEXT("Overlap Actor : %s"), *i->GetName());
+        }
+      }
+      GroundAttack();
+    }
+    ```
+    ```c++
+    //Enemy.cpp
+    void AEnemy::LaunchSky(FVector Pos) {
+      LaunchCharacter(Pos,false,false);
+    }
+    ```
+    
+    </details> 
+
+    <details><summary>h 코드</summary> 
+
+    ```c++
+    //MainPlayer.h
+    public:
+      UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "Anims")
+	    class UAnimMontage* SkillAttackMontage;
+
+      UFUNCTION()
+      void ConfirmTargetAndContinue();
+    ```
+    ```c++
+    //Enemy.h
+    public:
+      UFUNCTION()
+      void LaunchSky(FVector Pos);
+    ```
+    </details>
+
+- ## <span style = "color:yellow;">Player View Point (Decal)</span>
+  - <img src="Image/SKill_Decal.gif" height="300" title="SKill_Decal"> 
+  - Skill위치에 Decal사용을 위해 제작 후 SetVisibility(true)를 사용하여 가시성 설정.
+    <details><summary>cpp 코드</summary> 
+
+    ```c++
+    //MainPlayer.cpp    
+    #include "Components/DecalComponent.h"
+
+    AMainPlayer::AMainPlayer()
+    {
+      SkillDecal = CreateDefaultSubobject<UDecalComponent>("SkillDecal");
+      SkillDecal->SetupAttachment(GetRootComponent());
+      SkillDecal->DecalSize = FVector(10.f,200.f,200.f);
+
+      bGround = false;
+    }
+    void AMainPlayer::GroundAttack() {
+      if (!bGround) {
+        ...
+        SkillDecal->SetVisibility(true);
+      }
+      else {
+        ...
+        SkillDecal->SetVisibility(false);
+      }
+    }
+    ```
+    </details> 
+    <details><summary>h 코드</summary> 
+
+    ```c++
+    //MainPlayer.h
+    public:
+      UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Skill | Decal")
+      class UDecalComponent* SkillDecal;
+    ```
+    </details>
+
+> **<h3>Realization</h3>**
+- ### FCollisionQueryParams
+  - 충돌 함수에 전달된 매개 변수를 정의하는 구조 //탐색방법에 대한 설정 값을 모은 구조체 
+  1. bTraceComplex
+    - 복잡한 충돌에 대항하여 추적해야 하는지 여부
+  2. bReturnPhysicalMaterial
+    - 결과에 물리적 재료를 포함시킬지 여부
+  3. AddIgnoredActor
+    - 탐색방법에 대한 설정 값을 모은 구조체이며, 이름, 추적 복잡성, 무시할 액터를 설정가능
