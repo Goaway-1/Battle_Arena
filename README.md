@@ -5044,3 +5044,49 @@
     - 결과에 물리적 재료를 포함시킬지 여부
   3. AddIgnoredActor
     - 탐색방법에 대한 설정 값을 모은 구조체이며, 이름, 추적 복잡성, 무시할 액터를 설정가능
+
+## **09.22**
+> **<h3>Today Dev Story</h3>**
+- ## <span style = "color:yellow;">Enemy의 공격 로직 강화</span>
+  - <img src="Image/Enemy_Random_Attack.gif" height="300" title="Enemy_Random_Attack"> 
+  - Attack의 모션 추가을 몽타주에 추가 및 랜덤값을 사용하여 몽타주 재생.
+  - 즉 랜덤값을 통해 근접 공격의 다양화. 추가로 데미지 지정.
+    - 추후 DamageType을 사용하여 스턴과 같은 추가 요소 추가예정.
+
+    <details><summary>cpp 코드</summary> 
+
+    ```c++
+    //Enemy.cpp
+    void AEnemy::AttackReady() {
+      LaunchCharacter(GetActorForwardVector() * 700.f, true, true);
+    }
+    FName AEnemy::GetAttackMontageSection(FString Type) {
+      if (Type == "Attack") {
+        int range = FMath::RandRange(1,2);
+		    AttackDamage = (range == 1) ? 10.f : 20.f;
+        return FName(*FString::Printf(TEXT("Attack%d"), range));
+      }
+      else return "Error";
+    }
+    ```
+    </details> 
+    <details><summary>h 코드</summary> 
+
+    ```c++
+    public:
+    	/** If Attack Ready and go forward a little bit */
+      UFUNCTION(BlueprintCallable)
+      void AttackReady();
+
+      UFUNCTION()
+      FName GetAttackMontageSection(FString Type);
+    ```
+    </details>
+
+- ## <span style = "color:yellow;">잡다한 것</span>
+  1. Dummy 추가
+    - 과녁을 추가하여 구현된 기능을 볼 수 있도록 추가.
+  2. Enemy의 SkillFunction 로직 생성
+    - 기존 Player에게 만들었던 Skill 메서드들을 옮겨 작성하기 위해 ActorComponent클래스를 상속받은 SkillFunction클래스를 생성.
+
+> **<h3>Realization</h3>**

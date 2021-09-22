@@ -113,8 +113,11 @@ void AEnemy::Attack() {
 	if (AttackMontage && Anim) {
 		IsAttacking = true;
 		Anim->Montage_Play(AttackMontage);
-		Anim->Montage_JumpToSection("Attack1", AttackMontage);
+		Anim->Montage_JumpToSection(GetAttackMontageSection("Attack"), AttackMontage);
 	}
+}
+void AEnemy::AttackReady() {
+	LaunchCharacter(GetActorForwardVector() * 700.f, true, true);
 }
 void AEnemy::AttackStart() {
 	FString Type = "Enemy";
@@ -144,9 +147,9 @@ float AEnemy::TakeDamage(float DamageAmount, struct FDamageEvent const& DamageEv
 }
 void AEnemy::DeathEnd() {
 	if (!Anim) Anim = Cast<UEnemyAnim>(GetMesh()->GetAnimInstance());
-	if (AttackMontage && Anim) {
-		Anim->Montage_Play(AttackMontage);
-		Anim->Montage_JumpToSection("Death", AttackMontage);
+	if (DeathMontage && Anim) {
+		Anim->Montage_Play(DeathMontage);
+		Anim->Montage_JumpToSection("Death", DeathMontage);
 	}
 
 	Cast<AEnemyController>(GetController())->StopBeTree();	//비헤이비어 트리 정지 (내가 만듬)
@@ -175,6 +178,14 @@ void AEnemy::IsKnockBack() {
 }
 void AEnemy::LaunchSky(FVector Pos) {
 	LaunchCharacter(Pos,false,false);
+}
+FName AEnemy::GetAttackMontageSection(FString Type) {
+	if (Type == "Attack") {
+		int range = FMath::RandRange(1,2);
+		AttackDamage = (range == 1) ? 10.f : 20.f;
+		return FName(*FString::Printf(TEXT("Attack%d"), range));
+	}
+	else return "Error";
 }
 #pragma endregion
 

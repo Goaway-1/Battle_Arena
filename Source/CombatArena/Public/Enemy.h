@@ -54,11 +54,21 @@ public:
 	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "Montage")
 	class UAnimMontage* AttackMontage;
 
+	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "Montage")
+	class UAnimMontage* DeathMontage;
+
 	UFUNCTION()
 	void OnAttackMontageEnded(UAnimMontage* Montage, bool bInterrupted);
 
 	UFUNCTION()
 	void Attack();
+
+	/** If Attack Ready and go forward a little bit */
+	UFUNCTION(BlueprintCallable)
+	void AttackReady();
+
+	UFUNCTION()
+	FName GetAttackMontageSection(FString Type);
 
 	/** Sweap ½ÇÇà */
 	UFUNCTION(BlueprintCallable)	
@@ -96,7 +106,6 @@ public:
 	/** Up The Sky */
 	UFUNCTION()
 	void LaunchSky(FVector Pos);
-
 
 	/** Hited AnimMontage */
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Montage")

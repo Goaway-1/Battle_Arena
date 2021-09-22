@@ -118,6 +118,7 @@ AMainPlayer::AMainPlayer()
 	EnemyHUDOverlap = CreateDefaultSubobject<USphereComponent>(TEXT("EnemyHUDOverlap"));
 	EnemyHUDOverlap->SetupAttachment(GetRootComponent());
 	EnemyHUDOverlap->SetSphereRadius(700.f);
+	EnemyHUDOverlap->SetVisibility(false);
 
 	EnemyHUDOverlap->OnComponentBeginOverlap.AddDynamic(this, &AMainPlayer::OnEnemyHUD_OverlapBegin);
 	EnemyHUDOverlap->OnComponentEndOverlap.AddDynamic(this, &AMainPlayer::OnEnemyHUD_OverlapEnd);
@@ -426,7 +427,7 @@ float AMainPlayer::TakeDamage(float DamageAmount, struct FDamageEvent const& Dam
 	/** KnockBack */
 	FVector Loc = DamageCauser->GetActorForwardVector();
 	Loc.Z = 0;
-	LaunchCharacter(Loc * 2000.f, true, true);
+	LaunchCharacter(Loc * 1000.f, true, true);
 	UGameplayStatics::SpawnEmitterAtLocation(GetWorld(), HitParticle, GetActorLocation(), FRotator(0.f));
 
 	/** CameraShake */
@@ -549,6 +550,7 @@ void AMainPlayer::SetSkillLocation(FVector& OutViewPoint) {
 
 	FVector ViewPoint;
 	FRotator ViewRotation;
+	//Controller->GetPlayerViewPoint(ViewPoint, ViewRotation);
 	PlayerController->GetPlayerViewPoint(ViewPoint, ViewRotation);
 	FHitResult HitResult;
 	FCollisionQueryParams QueryParams(NAME_None, false, this);
@@ -579,7 +581,6 @@ void AMainPlayer::ConfirmTargetAndContinue() {
 		out, FQuat::Identity, FCollisionObjectQueryParams(ECC_GameTraceChannel2),
 		FCollisionShape::MakeSphere(200.f), CollisionQueryParams);
 	
-	UE_LOG(LogTemp,Warning,TEXT("OUt : %s"),*out.ToString());
 	if (TryOverlap) {
 		for (auto i : Overlaps) {
 			AEnemy* EnemyOverlaped = Cast<AEnemy>(i.GetActor());
