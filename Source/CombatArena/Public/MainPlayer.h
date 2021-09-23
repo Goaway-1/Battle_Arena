@@ -191,7 +191,7 @@ public:
 #pragma region ATTACK
 public:
 	UPROPERTY()
-		class UPlayerAttackFunction* AttackFunction;
+	class UPlayerAttackFunction* AttackFunction;
 
 	UFUNCTION(BlueprintCallable)
 	FORCEINLINE UPlayerAttackFunction* GetAttackFunction() { return AttackFunction; }
@@ -296,47 +296,15 @@ public:
 
 #pragma endregion
 #pragma region SKILL
-	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "Anims")
-	class UAnimMontage* SkillAttackMontage;
-
-	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Skill | Decal")
-	class UDecalComponent* SkillDecal;
-
-	/** Skill Test*/
+	/** Skill */
 	UFUNCTION()
 	void SkillBegin();
 
 	UFUNCTION()
 	void SkillEnd();
 
-	//Lazer
-	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Skill | Lazer")
-	AActor* Lazer;
-
-	UPROPERTY(EditDefaultsOnly, Category = "Skill | Lazer")
-	TSubclassOf<class AActor> LazerClass;
-
-	UFUNCTION()
-	void LazerAttack();
-
-	UFUNCTION()
-	void LazerEnd();
-
-	/** Targeting On Ground */
-	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Skill | Ground")
-	bool bGround;
-
-	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Skill | Ground")
-	FVector out;
-
-	UFUNCTION()
-	void GroundAttack();
-
-	UFUNCTION()
-	void SetSkillLocation(FVector& OutViewPoint);
-
-	UFUNCTION()
-	void ConfirmTargetAndContinue();
+	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Skill")
+	class USkillFunction* SkillFunction;
 #pragma endregion
 
 #pragma region HEALTH

@@ -18,14 +18,14 @@ protected:
 
 public:	
 	virtual void TickComponent(float DeltaTime, ELevelTick TickType, FActorComponentTickFunction* ThisTickFunction) override;
-#pragma region SKILL
+
 	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "Anims")
 	class UAnimMontage* SkillAttackMontage;
 
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Skill | Decal")
 	class UDecalComponent* SkillDecal;
 
-	//내가 만듬
+	/** 초기 설정 */
 	UFUNCTION()
 	void SetInitial(APawn* P, USkeletalMeshComponent* S, AController* C, AActor* A);
 
@@ -33,14 +33,9 @@ public:
 	USkeletalMeshComponent* OwnerSkeletal;
 	AController* OwnerController;
 	AActor* OwnerActor;
-	//내가 만듬
 
-	/** Skill Test*/
-	UFUNCTION()
-	void SkillBegin();
-
-	UFUNCTION()
-	void SkillEnd();
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Skill")
+	class UMaterialInterface* DecalMaterial;
 
 	//Lazer
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Skill | Lazer")
@@ -63,13 +58,11 @@ public:
 	FVector out;
 
 	UFUNCTION()
-	void GroundAttack(FRotator Rot);
+	void GroundAttack();
 
 	UFUNCTION()
-	void SetSkillLocation(FVector& OutViewPoint);
+	void SetSkillLocation();
 
 	UFUNCTION()
 	void ConfirmTargetAndContinue();
-#pragma endregion
-		
 };

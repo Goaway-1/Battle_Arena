@@ -5073,6 +5073,7 @@
     <details><summary>h 코드</summary> 
 
     ```c++
+    //Enemy.h
     public:
     	/** If Attack Ready and go forward a little bit */
       UFUNCTION(BlueprintCallable)
@@ -5086,7 +5087,271 @@
 - ## <span style = "color:yellow;">잡다한 것</span>
   1. Dummy 추가
     - 과녁을 추가하여 구현된 기능을 볼 수 있도록 추가.
-  2. Enemy의 SkillFunction 로직 생성
+  2. SkillFunction 로직 생성
     - 기존 Player에게 만들었던 Skill 메서드들을 옮겨 작성하기 위해 ActorComponent클래스를 상속받은 SkillFunction클래스를 생성.
 
 > **<h3>Realization</h3>**
+
+## **09.23**
+> **<h3>Today Dev Story</h3>**
+- ## <span style = "color:yellow;">SkillFunction클래스 생성</span>
+  - MainPlayer클래스에 만들었던 Skill관련 메서드들을 옮겨 작성하기 위해 ActorComponent클래스를 상속받은 SkillFunction클래스를 생성.
+  - 기존 MainPlayer에는 SkillBegin/End 메서드만을 두고, SkillFunction을 변수로 받아 사용.
+    - SkillFunction의 메서드들을 호출하여 사용.
+  - SkillFunction클래스에서는 기존과 동일하되 SetInitial()메서드를 통해서 Skeletal,Instigator,Controller, Actor등을 초기 설정.  
+
+    <details><summary>cpp 코드</summary> 
+
+    ```c++
+    //MainPlayer.cpp
+    #include "SkillFunction.h"
+    AMainPlayer::AMainPlayer()
+    {
+      ...
+      SkillFunction = CreateDefaultSubobject<USkillFunction>("SkillFunction");
+    }
+    void AMainPlayer::Attack() {
+      UAnimMontage* PlayMontage = nullptr;
+      
+      if(SkillFunction->bGround) PlayMontage = SkillFunction->SkillAttackMontage;
+      else if (GetRightCurrentWeapon() == nullptr) PlayMontage = AttackMontage;
+      else PlayMontage = WeaponAttackMontage;
+
+      if (!AnimInstance) AnimInstance = GetMesh()->GetAnimInstance();
+
+      /** USEING SKILL */
+      if (AnimInstance && SkillFunction->bGround && PlayMontage) {
+        AnimInstance->Montage_Play(PlayMontage);
+        AnimInstance->Montage_JumpToSection("SkillEmpact", PlayMontage);
+        SkillFunction->ConfirmTargetAndContinue();
+      }
+      /** NOMAL ATTACK */
+      else if (AnimInstance && PlayMontage) {
+        bAttacking = true;
+        if (!AnimInstance->Montage_IsPlaying(PlayMontage)) {	//공격중이 아닐때 (처음 공격)
+          ComboCnt = 0;
+          AnimInstance->Montage_Play(PlayMontage);
+        }
+        else {													//공격중일때 2타 3타
+          AnimInstance->Montage_Play(PlayMontage);
+          AnimInstance->Montage_JumpToSection(GetAttackMontageSection("Attack", ComboCnt), PlayMontage);
+
+          /** Combo Event */
+          if (ComboCnt == 2) {
+            GetController()->SetInitialLocationAndRotation(FVector(0.f),GetActorRotation());
+            ZoomInCam(FVector(300.f, 120.f, -30.f), FRotator(0.f, -40.f, 0.f));
+          }
+        }
+      }
+    }
+    void AMainPlayer::SkillBegin() {
+      //SkillFunction->LazerAttack();	//Lazer
+      SkillFunction->GroundAttack();
+    }
+
+    void AMainPlayer::SkillEnd() {
+      //SkillFunction->LazerEnd();		//Lazer
+      SkillFunction->GroundAttack();
+    }
+    ```
+    ```c++
+    //SkillFunction.cpp
+    #include "SkillFunction.h"
+    #include "Components/DecalComponent.h"
+    #include "Enemy.h"
+
+    USkillFunction::USkillFunction()
+    {
+      PrimaryComponentTick.bCanEverTick = true;
+
+      SkillDecal = CreateDefaultSubobject<UDecalComponent>("SkillDecal");
+      SkillDecal->DecalSize = FVector(10.f, 200.f, 200.f);
+      SkillDecal->SetVisibility(false);
+
+      bGround = false;
+    }
+
+    void USkillFunction::BeginPlay()
+    {
+      Super::BeginPlay();
+      
+    }
+
+    void USkillFunction::TickComponent(float DeltaTime, ELevelTick TickType, FActorComponentTickFunction* ThisTickFunction)
+    {
+      Super::TickComponent(DeltaTime, TickType, ThisTickFunction);
+
+      /** Targeting On Ground */
+      SetSkillLocation();
+    }
+
+    void USkillFunction::SetInitial(APawn* P, USkeletalMeshComponent* S, AController* C,AActor* A) {
+      OwnerInstigator = P;
+      OwnerSkeletal = S;
+      OwnerController = C;
+      OwnerActor = A;
+
+      /** Setting (기존 생성자함수에서는 적용이 안되는 오류)*/
+      SkillDecal->SetRelativeRotation(FRotator(90.f, 0.f, 0.f));
+      SkillDecal->SetDecalMaterial(DecalMaterial);
+    }
+
+    void USkillFunction::LazerAttack() {
+      FActorSpawnParameters SpawnParams;
+      SpawnParams.Owner = OwnerActor;
+      SpawnParams.Instigator = OwnerInstigator;
+      Lazer = GetWorld()->SpawnActor<AActor>(LazerClass, FVector(0.f), FRotator(0.f), SpawnParams);
+
+      Lazer->AttachToComponent(OwnerSkeletal, FAttachmentTransformRules(EAttachmentRule::SnapToTarget, false), FName("LazerPos"));
+    }
+    void USkillFunction::LazerEnd() {
+      if (Lazer) {
+        Lazer->Destroy();
+      }
+    }
+    void USkillFunction::GroundAttack() {
+      if (!bGround) {
+        bGround = true;
+
+        //Camera Pos 
+        OwnerController->SetInitialLocationAndRotation(FVector(0.f), FRotator(0.f));
+        //ZoomInCam(FVector(-200.f, 0.f, 400.f), FRotator(-30.f, 0.f, 0.f));
+        SkillDecal->SetVisibility(true);
+      }
+      else {
+        bGround = false;
+
+        //Camera Pos
+        OwnerController->SetControlRotation(FRotator(0.f));
+        //ZoomOutCam();
+        SkillDecal->SetVisibility(false);
+      }
+    }
+    void USkillFunction::SetSkillLocation() {
+      if (!bGround) return;
+
+      FVector ViewPoint;
+      FRotator ViewRotation;
+      OwnerController->GetPlayerViewPoint(ViewPoint, ViewRotation);
+      FHitResult HitResult;
+      FCollisionQueryParams QueryParams(NAME_None, false, OwnerActor);
+      QueryParams.bTraceComplex = true;
+      APawn* OwnerPawn = OwnerController->GetPawn();
+
+      if (OwnerPawn) QueryParams.AddIgnoredActor(OwnerPawn->GetUniqueID());	//주인은 무시
+
+      //플레이어의 시점에 있는 곳
+      bool TryTrace = GetWorld()->LineTraceSingleByChannel(HitResult, ViewPoint, ViewPoint + ViewRotation.Vector() * 10000.f, ECC_Visibility, QueryParams);
+      if (TryTrace) {
+        out = HitResult.ImpactPoint;
+        SkillDecal->SetWorldLocation(out);
+      }
+      else out = FVector();
+    }
+    void USkillFunction::ConfirmTargetAndContinue() {
+      TArray<FOverlapResult> Overlaps;
+      TArray<TWeakObjectPtr<AEnemy>> OverlapedEnemy;
+
+      FCollisionQueryParams CollisionQueryParams;
+      CollisionQueryParams.bTraceComplex = false;
+      CollisionQueryParams.bReturnPhysicalMaterial = false;
+      APawn* OwnerPawn = OwnerController->GetPawn();
+      if (OwnerPawn) CollisionQueryParams.AddIgnoredActor(OwnerPawn->GetUniqueID());
+
+      bool TryOverlap = GetWorld()->OverlapMultiByObjectType(Overlaps,
+        out, FQuat::Identity, FCollisionObjectQueryParams(ECC_GameTraceChannel2),
+        FCollisionShape::MakeSphere(200.f), CollisionQueryParams);
+
+      if (TryOverlap) {
+        for (auto i : Overlaps) {
+          AEnemy* EnemyOverlaped = Cast<AEnemy>(i.GetActor());
+          if (EnemyOverlaped && !OverlapedEnemy.Contains(EnemyOverlaped)) OverlapedEnemy.Add(EnemyOverlaped);
+        }
+        for (auto i : OverlapedEnemy) {
+          AEnemy* EnemyOverlaped = Cast<AEnemy>(i);
+          i->LaunchSky(FVector(0.f, 0.f, 700.f));
+        }
+      }
+      GroundAttack();
+    }
+    ```
+    </details> 
+    <details><summary>h 코드</summary> 
+
+    ```c++
+    //MainPlayer.h
+    public:
+    	UFUNCTION()
+      void SkillBegin();
+
+      UFUNCTION()
+      void SkillEnd();
+
+      UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Skill")
+      class USkillFunction* SkillFunction;
+    ```
+    ```c++
+    //SkillFunction.h
+    public:
+    	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "Anims")
+      class UAnimMontage* SkillAttackMontage;
+
+      UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Skill | Decal")
+      class UDecalComponent* SkillDecal;
+
+      UFUNCTION()
+      void SetInitial(APawn* P, USkeletalMeshComponent* S, AController* C, AActor* A);
+
+      APawn* OwnerInstigator;
+      USkeletalMeshComponent* OwnerSkeletal;
+      AController* OwnerController;
+      AActor* OwnerActor;
+
+      UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Skill")
+      class UMaterialInterface* DecalMaterial;
+
+      //Lazer
+      UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Skill | Lazer")
+      AActor* Lazer;
+
+      UPROPERTY(EditDefaultsOnly, Category = "Skill | Lazer")
+      TSubclassOf<class AActor> LazerClass;
+
+      UFUNCTION()
+      void LazerAttack();
+
+      UFUNCTION()
+      void LazerEnd();
+
+      /** Targeting On Ground */
+      UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Skill | Ground")
+      bool bGround;
+
+      UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Skill | Ground")
+      FVector out;
+
+      UFUNCTION()
+      void GroundAttack();
+
+      UFUNCTION()
+      void SetSkillLocation();
+
+      UFUNCTION()
+      void ConfirmTargetAndContinue();
+    ```
+    </details>
+
+> **<h3>Realization</h3>**
+
+    <details><summary>cpp 코드</summary> 
+
+    ```c++
+    
+    ```
+    </details>
+    <details><summary>cpp 코드</summary> 
+
+    ```c++
+    
+    ```
+    </details>

@@ -8,7 +8,6 @@ USkillFunction::USkillFunction()
 
 #pragma region SKILL
 	SkillDecal = CreateDefaultSubobject<UDecalComponent>("SkillDecal");
-	//SkillDecal->SetupAttachment(GetRootComponent());
 	SkillDecal->DecalSize = FVector(10.f, 200.f, 200.f);
 	SkillDecal->SetVisibility(false);
 
@@ -27,7 +26,7 @@ void USkillFunction::TickComponent(float DeltaTime, ELevelTick TickType, FActorC
 	Super::TickComponent(DeltaTime, TickType, ThisTickFunction);
 
 	/** Targeting On Ground */
-	SetSkillLocation(out);
+	SetSkillLocation();
 }
 
 void USkillFunction::SetInitial(APawn* P, USkeletalMeshComponent* S, AController* C,AActor* A) {
@@ -35,16 +34,12 @@ void USkillFunction::SetInitial(APawn* P, USkeletalMeshComponent* S, AController
 	OwnerSkeletal = S;
 	OwnerController = C;
 	OwnerActor = A;
-}
-void USkillFunction::SkillBegin() {
-	//LazerAttack();	//Lazer
-//	GroundAttack();
+
+	/** Setting (기존 생성자함수에서는 적용이 안되는 오류)*/
+	SkillDecal->SetRelativeRotation(FRotator(90.f, 0.f, 0.f));
+	SkillDecal->SetDecalMaterial(DecalMaterial);
 }
 
-void USkillFunction::SkillEnd() {
-	//LazerEnd();		//Lazer
-	//GroundAttack();
-}
 void USkillFunction::LazerAttack() {
 	FActorSpawnParameters SpawnParams;
 	SpawnParams.Owner = OwnerActor;
@@ -58,25 +53,25 @@ void USkillFunction::LazerEnd() {
 		Lazer->Destroy();
 	}
 }
-void USkillFunction::GroundAttack(FRotator Rot) {
+void USkillFunction::GroundAttack() {
 	if (!bGround) {
 		bGround = true;
 
-		//Camera Pos (수정 필요.)
-		OwnerController->SetInitialLocationAndRotation(FVector(0.f), Rot);
+		//Camera Pos 
+		OwnerController->SetInitialLocationAndRotation(FVector(0.f), FRotator(0.f));
 		//ZoomInCam(FVector(-200.f, 0.f, 400.f), FRotator(-30.f, 0.f, 0.f));
 		SkillDecal->SetVisibility(true);
 	}
 	else {
 		bGround = false;
 
-		//Camera Pos (수정 필요.)
-		OwnerController->SetControlRotation(Rot);
+		//Camera Pos
+		OwnerController->SetControlRotation(FRotator(0.f));
 		//ZoomOutCam();
 		SkillDecal->SetVisibility(false);
 	}
 }
-void USkillFunction::SetSkillLocation(FVector& OutViewPoint) {
+void USkillFunction::SetSkillLocation() {
 	if (!bGround) return;
 
 	FVector ViewPoint;
@@ -121,5 +116,5 @@ void USkillFunction::ConfirmTargetAndContinue() {
 			i->LaunchSky(FVector(0.f, 0.f, 700.f));
 		}
 	}
-	//GroundAttack();
+	GroundAttack();
 }
