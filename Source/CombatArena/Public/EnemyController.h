@@ -34,4 +34,7 @@ public:
 
 	UFUNCTION()	//트리를 정지. (Enemy 사망시)
 	void StopBeTree();
+
+	UFUNCTION()
+	FVector GetTargetVec();
 };

@@ -2,6 +2,7 @@
 #include "BehaviorTree/BlackboardComponent.h"
 #include "BehaviorTree/BehaviorTreeComponent.h"
 #include "Perception/AIPerceptionComponent.h"
+#include "MainPlayer.h"
 
 const FName AEnemyController::HomePosKey(TEXT("HomePosKey"));
 const FName AEnemyController::PatrolPosKey(TEXT("PatrolPosKey"));
@@ -33,4 +34,14 @@ void AEnemyController::Sense(AActor* Actor, FAIStimulus Stimulus) {
 void AEnemyController::StopBeTree() {
     UBehaviorTreeComponent* BTComp = Cast<UBehaviorTreeComponent>(BrainComponent);
     BTComp->StopTree();
+}
+
+FVector AEnemyController::GetTargetVec() {
+    AMainPlayer* Player = Cast<AMainPlayer>(Blackboard->GetValueAsObject(TargetActor));
+    if(Player) {
+        FVector Vec =  Player->GetActorLocation();
+        Vec.Z -= 86.f;      //¹Ù´Ú¿¡ Å¸°Ù Ç¥Çö À§ÇÔ.
+        return Vec; 
+    }
+    else return FVector(0.f);
 }

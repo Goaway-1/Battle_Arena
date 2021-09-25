@@ -12,6 +12,8 @@
 #include "Components/DecalComponent.h"
 #include "DamageTextWidget.h"	
 #include "Components/PrimitiveComponent.h"
+#include "EnemySkillFunction.h"
+#include "Engine/World.h"
 
 AEnemy::AEnemy()
 {
@@ -46,13 +48,20 @@ AEnemy::AEnemy()
 	AttackFunction = CreateDefaultSubobject<UEnemyAttackFunction>(TEXT("AttackFunction"));
 	AttackDamage = 10.f;
 #pragma endregion
-}
+#pragma region SKILL
+	SkillFunction = CreateDefaultSubobject<UEnemySkillFunction>(TEXT("SkillFunction"));
+#pragma endregion
 
+}
 void AEnemy::PossessedBy(AController* NewController) {
 	Super::PossessedBy(NewController);
 
 	EnemyController = NewController;
 	AttackFunction->SetOwner(GetMesh(),EnemyController);
+
+#pragma region SKILL
+	SkillFunction->SetInitial(GetController()->GetPawn(), GetMesh(), GetController(), this);
+#pragma endregion
 }
 void AEnemy::BeginPlay()
 {
@@ -107,17 +116,35 @@ void AEnemy::SetupPlayerInputComponent(UInputComponent* PlayerInputComponent)
 
 }
 #pragma region ATTACK
-void AEnemy::Attack() {
+void AEnemy::Attack(FString type) {
 	if(!Anim) Anim = Cast<UEnemyAnim>(GetMesh()->GetAnimInstance());
 
 	if (AttackMontage && Anim) {
 		IsAttacking = true;
-		Anim->Montage_Play(AttackMontage);
-		Anim->Montage_JumpToSection(GetAttackMontageSection("Attack"), AttackMontage);
+		if (type == "Melee") {
+			Anim->Montage_Play(AttackMontage);
+			Anim->Montage_JumpToSection(GetAttackMontageSection("Attack"), AttackMontage);
+		}
+		else if(type == "Skill" && !bisSkill) {
+			Anim->Montage_Play(SkillAttackMontage);
+			Anim->Montage_JumpToSection("Attack", SkillAttackMontage);
+		}
 	}
 }
 void AEnemy::AttackReady() {
 	LaunchCharacter(GetActorForwardVector() * 700.f, true, true);
+}
+void AEnemy::SkillAttack() {
+	//Skill 불러오기
+	if(bisSkill) return;
+	bisSkill = true;
+	SkillFunction->GroundAttack();
+	
+	GetWorldTimerManager().SetTimer(SKillCoolTimer,this,&AEnemy::SkillAttackEnd,0.4f,false);
+}
+void AEnemy::SkillAttackEnd() {
+	bisSkill = false;
+	SkillFunction->GroundAttack();
 }
 void AEnemy::AttackStart() {
 	FString Type = "Enemy";

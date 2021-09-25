@@ -16,7 +16,7 @@ EBTNodeResult::Type UBTTask_Attack::ExecuteTask(UBehaviorTreeComponent& OwnerCom
 	auto Enemy = Cast<AEnemy>(OwnerComp.GetAIOwner()->GetPawn());
 	if (!Enemy)	return EBTNodeResult::Failed;
 
-	Enemy->Attack();
+	Enemy->Attack("Melee");
 	IsAttacking = true;
 	Enemy->OnAttackEnd.AddLambda([this]()-> void
 	{

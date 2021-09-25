@@ -1,57 +1,18 @@
-#include "SkillFunction.h"
+#include "PlayerSkillFunction.h"
 
-USkillFunction::USkillFunction()
-{
-	PrimaryComponentTick.bCanEverTick = true;
+UPlayerSkillFunction::UPlayerSkillFunction() {
 
-#pragma region SKILL
-	SkillDecal = CreateDefaultSubobject<UDecalComponent>("SkillDecal");
-	SkillDecal->DecalSize = FVector(10.f, 200.f, 200.f);
-	SkillDecal->SetVisibility(false);
-
-	bGround = false;
-#pragma endregion
 }
 
-void USkillFunction::BeginPlay()
-{
+void UPlayerSkillFunction::BeginPlay() {
 	Super::BeginPlay();
-	
 }
 
-void USkillFunction::TickComponent(float DeltaTime, ELevelTick TickType, FActorComponentTickFunction* ThisTickFunction)
-{
-	Super::TickComponent(DeltaTime, TickType, ThisTickFunction);
+void UPlayerSkillFunction::TickComponent(float DeltaTime, ELevelTick TickType, FActorComponentTickFunction* ThisTickFunction) {
+	Super::TickComponent(DeltaTime,TickType,ThisTickFunction);
 
-	/** Targeting On Ground */
-	SetSkillLocation();
 }
-
-void USkillFunction::SetInitial(APawn* P, USkeletalMeshComponent* S, AController* C,AActor* A) {
-	OwnerInstigator = P;
-	OwnerSkeletal = S;
-	OwnerController = C;
-	OwnerActor = A;
-
-	/** Setting (기존 생성자함수에서는 적용이 안되는 오류)*/
-	SkillDecal->SetRelativeRotation(FRotator(90.f, 0.f, 0.f));
-	SkillDecal->SetDecalMaterial(DecalMaterial);
-}
-
-void USkillFunction::LazerAttack() {
-	FActorSpawnParameters SpawnParams;
-	SpawnParams.Owner = OwnerActor;
-	SpawnParams.Instigator = OwnerInstigator;
-	Lazer = GetWorld()->SpawnActor<AActor>(LazerClass, FVector(0.f), FRotator(0.f), SpawnParams);
-
-	Lazer->AttachToComponent(OwnerSkeletal, FAttachmentTransformRules(EAttachmentRule::SnapToTarget, false), FName("LazerPos"));
-}
-void USkillFunction::LazerEnd() {
-	if (Lazer) {
-		Lazer->Destroy();
-	}
-}
-void USkillFunction::GroundAttack() {
+void UPlayerSkillFunction::GroundAttack() {
 	if (!bGround) {
 		bGround = true;
 
@@ -69,7 +30,7 @@ void USkillFunction::GroundAttack() {
 		SkillDecal->SetVisibility(false);
 	}
 }
-void USkillFunction::SetSkillLocation() {
+void UPlayerSkillFunction::SetSkillLocation() {
 	if (!bGround) return;
 
 	FVector ViewPoint;
@@ -90,7 +51,7 @@ void USkillFunction::SetSkillLocation() {
 	}
 	else out = FVector();
 }
-void USkillFunction::ConfirmTargetAndContinue() {
+void UPlayerSkillFunction::ConfirmTargetAndContinue() {
 	TArray<FOverlapResult> Overlaps;
 	TArray<TWeakObjectPtr<AEnemy>> OverlapedEnemy;
 

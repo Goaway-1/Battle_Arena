@@ -32,6 +32,7 @@ enum class ECombatStatus : uint8 {
 	ECS_Normal			UMETA(DisplayName = "Normal"),
 	ECS_Attacking		UMETA(DisplayName = "Attacking"),
 	ECS_Blocking		UMETA(DisplayName = "Blocking"),
+	ECS_Skilling		UMETA(DisplayName = "Skilling"),
 
 	ECS_Default			UMETA(DisplayName = "Default")
 };
@@ -304,7 +305,7 @@ public:
 	void SkillEnd();
 
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Skill")
-	class USkillFunction* SkillFunction;
+	class UPlayerSkillFunction* SkillFunction;
 #pragma endregion
 
 #pragma region HEALTH

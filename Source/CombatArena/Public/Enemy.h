@@ -57,11 +57,33 @@ public:
 	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "Montage")
 	class UAnimMontage* DeathMontage;
 
+	//test start
+	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "Montage")
+	class UAnimMontage* SkillAttackMontage;
+
+	UFUNCTION(BlueprintCallable)
+	void SkillAttack();
+
+	UFUNCTION(BlueprintCallable)
+	void SkillAttackEnd();
+
+	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Skill")
+	class UEnemySkillFunction* SkillFunction;
+
+	bool bisSkill = false;
+
+	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Skill")
+	FTimerHandle SKillCoolTimer;
+
+	/// <summary>
+	/// test end
+	/// </summary>
+
 	UFUNCTION()
 	void OnAttackMontageEnded(UAnimMontage* Montage, bool bInterrupted);
 
 	UFUNCTION()
-	void Attack();
+	void Attack(FString type);
 
 	/** If Attack Ready and go forward a little bit */
 	UFUNCTION(BlueprintCallable)

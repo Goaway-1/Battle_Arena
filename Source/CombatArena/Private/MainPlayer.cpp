@@ -14,7 +14,7 @@
 #include "Blueprint/UserWidget.h"	
 #include "PlayerSaveGame.h"	
 #include "Components/DecalComponent.h"
-#include "SkillFunction.h"
+#include "PlayerSkillFunction.h"
 
 AMainPlayer::AMainPlayer()
 {
@@ -89,7 +89,7 @@ AMainPlayer::AMainPlayer()
 
 #pragma endregion
 #pragma region SKILL
-	SkillFunction = CreateDefaultSubobject<USkillFunction>("SkillFunction");
+	SkillFunction = CreateDefaultSubobject<UPlayerSkillFunction>("SkillFunction");
 #pragma endregion
 
 #pragma region HEALTH
@@ -502,11 +502,15 @@ bool AMainPlayer::IsBlockingSuccess(AActor* DamageCauser) {
 #pragma endregion
 #pragma region SKILL
 void AMainPlayer::SkillBegin() {
+	SetCombatStatus(ECombatStatus::ECS_Skilling);
+
 	//SkillFunction->LazerAttack();	//Lazer
 	SkillFunction->GroundAttack();
 }
 
 void AMainPlayer::SkillEnd() {
+	SetCombatStatus(ECombatStatus::ECS_Normal);
+
 	//SkillFunction->LazerEnd();		//Lazer
 	SkillFunction->GroundAttack();
 }

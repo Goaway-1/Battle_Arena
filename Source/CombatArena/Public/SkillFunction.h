@@ -2,6 +2,8 @@
 
 #include "EngineMinimal.h"
 #include "Components/ActorComponent.h"
+#include "Components/DecalComponent.h"
+#include "Enemy.h"
 #include "SkillFunction.generated.h"
 
 
@@ -19,50 +21,53 @@ protected:
 public:	
 	virtual void TickComponent(float DeltaTime, ELevelTick TickType, FActorComponentTickFunction* ThisTickFunction) override;
 
+	/** Initial */
 	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "Anims")
 	class UAnimMontage* SkillAttackMontage;
-
-	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Skill | Decal")
-	class UDecalComponent* SkillDecal;
-
-	/** 초기 설정 */
-	UFUNCTION()
-	void SetInitial(APawn* P, USkeletalMeshComponent* S, AController* C, AActor* A);
 
 	APawn* OwnerInstigator;
 	USkeletalMeshComponent* OwnerSkeletal;
 	AController* OwnerController;
 	AActor* OwnerActor;
 
-	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Skill")
-	class UMaterialInterface* DecalMaterial;
-
-	//Lazer
+	/** Lazer */
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Skill | Lazer")
 	AActor* Lazer;
 
 	UPROPERTY(EditDefaultsOnly, Category = "Skill | Lazer")
 	TSubclassOf<class AActor> LazerClass;
 
-	UFUNCTION()
-	void LazerAttack();
+	/** Ground */
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Skill")
+	class UMaterialInterface* DecalMaterial;
 
-	UFUNCTION()
-	void LazerEnd();
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Skill | Decal")
+	class UDecalComponent* SkillDecal;
 
-	/** Targeting On Ground */
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Skill | Ground")
 	bool bGround;
 
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Skill | Ground")
 	FVector out;
 
+	/** 초기 설정 */
 	UFUNCTION()
-	void GroundAttack();
+	void SetInitial(APawn* P, USkeletalMeshComponent* S, AController* C, AActor* A);
+
+	/** Lazer */
+	UFUNCTION()
+	void LazerAttack();
 
 	UFUNCTION()
-	void SetSkillLocation();
+	void LazerEnd();
+
+	/** Ground */
+	UFUNCTION()
+	virtual void GroundAttack();
 
 	UFUNCTION()
-	void ConfirmTargetAndContinue();
+	virtual void SetSkillLocation();
+
+	UFUNCTION()
+	virtual void ConfirmTargetAndContinue();
 };
