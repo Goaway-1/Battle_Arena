@@ -5343,15 +5343,306 @@
 
 > **<h3>Realization</h3>**
 
+## **09.25**
+> **<h3>Today Dev Story</h3>**
+- ## <span style = "color:yellow;">SkillFunction클래스 분할</span>
+  - SkillFunction을 할당받은 PlaterFunction과 EnemyFunction 클래스 제작.
+    
     <details><summary>cpp 코드</summary> 
 
     ```c++
-    
+    //PlayerSkillFunction.cpp
+    void UPlayerSkillFunction::GroundAttack() {
+      if (!bGround) {
+        bGround = true;
+
+        //Camera Pos 
+        OwnerController->SetInitialLocationAndRotation(FVector(0.f), FRotator(0.f));
+        //ZoomInCam(FVector(-200.f, 0.f, 400.f), FRotator(-30.f, 0.f, 0.f));
+        SkillDecal->SetVisibility(true);
+      }
+      else {
+        bGround = false;
+
+        //Camera Pos
+        OwnerController->SetControlRotation(FRotator(0.f));
+        //ZoomOutCam();
+        SkillDecal->SetVisibility(false);
+      }
+    }
+    void UPlayerSkillFunction::SetSkillLocation() {
+      if (!bGround) return;
+
+      FVector ViewPoint;
+      FRotator ViewRotation;
+      OwnerController->GetPlayerViewPoint(ViewPoint, ViewRotation);
+      FHitResult HitResult;
+      FCollisionQueryParams QueryParams(NAME_None, false, OwnerActor);
+      QueryParams.bTraceComplex = true;
+      APawn* OwnerPawn = OwnerController->GetPawn();
+
+      if (OwnerPawn) QueryParams.AddIgnoredActor(OwnerPawn->GetUniqueID());	//주인은 무시
+
+      //플레이어의 시점에 있는 곳
+      bool TryTrace = GetWorld()->LineTraceSingleByChannel(HitResult, ViewPoint, ViewPoint + ViewRotation.Vector() * 10000.f, ECC_Visibility, QueryParams);
+      if (TryTrace) {
+        out = HitResult.ImpactPoint;
+        SkillDecal->SetWorldLocation(out);
+      }
+      else out = FVector();
+    }
+    void UPlayerSkillFunction::ConfirmTargetAndContinue() {
+      TArray<FOverlapResult> Overlaps;
+      TArray<TWeakObjectPtr<AEnemy>> OverlapedEnemy;
+
+      FCollisionQueryParams CollisionQueryParams;
+      CollisionQueryParams.bTraceComplex = false;
+      CollisionQueryParams.bReturnPhysicalMaterial = false;
+      APawn* OwnerPawn = OwnerController->GetPawn();
+      if (OwnerPawn) CollisionQueryParams.AddIgnoredActor(OwnerPawn->GetUniqueID());
+
+      bool TryOverlap = GetWorld()->OverlapMultiByObjectType(Overlaps,
+        out, FQuat::Identity, FCollisionObjectQueryParams(ECC_GameTraceChannel2),
+        FCollisionShape::MakeSphere(200.f), CollisionQueryParams);
+
+      if (TryOverlap) {
+        for (auto i : Overlaps) {
+          AEnemy* EnemyOverlaped = Cast<AEnemy>(i.GetActor());
+          if (EnemyOverlaped && !OverlapedEnemy.Contains(EnemyOverlaped)) OverlapedEnemy.Add(EnemyOverlaped);
+        }
+        for (auto i : OverlapedEnemy) {
+          AEnemy* EnemyOverlaped = Cast<AEnemy>(i);
+          i->LaunchSky(FVector(0.f, 0.f, 700.f));
+        }
+      }
+      GroundAttack();
+    }
+    ```
+    ```c++
+    //EnemySkillFunction.cpp
+    void UEnemySkillFunction::TickComponent(float DeltaTime, ELevelTick TickType, FActorComponentTickFunction* ThisTickFunction) {
+      Super::TickComponent(DeltaTime, TickType, ThisTickFunction);
+
+    }
+    void UEnemySkillFunction::GroundAttack() {
+      if (!bGround) {
+        bGround = true;
+        SkillDecal->SetVisibility(true);
+      }
+      else {
+        bGround = false;
+        ConfirmTargetAndContinue();
+        SkillDecal->SetVisibility(false);
+      }
+    }
+
+    void UEnemySkillFunction::SetSkillLocation() {
+      if (!bGround) return;
+
+      AEnemyController* Con = Cast<AEnemyController>(OwnerController);
+      out = Con->GetTargetVec();
+      SkillDecal->SetWorldLocation(out);	//적의 위치
+    }
+
+    void UEnemySkillFunction::ConfirmTargetAndContinue() {
+      TArray<FOverlapResult> Overlaps;
+      TArray<TWeakObjectPtr<AMainPlayer>> OverlapedEnemy;
+
+      FCollisionQueryParams CollisionQueryParams;
+      CollisionQueryParams.bTraceComplex = false;
+      CollisionQueryParams.bReturnPhysicalMaterial = false;
+      APawn* OwnerPawn = OwnerController->GetPawn();
+      if (OwnerPawn) CollisionQueryParams.AddIgnoredActor(OwnerPawn->GetUniqueID());
+
+      bool TryOverlap = GetWorld()->OverlapMultiByObjectType(Overlaps,
+        out, FQuat::Identity, FCollisionObjectQueryParams(ECC_GameTraceChannel1),
+        FCollisionShape::MakeSphere(200.f), CollisionQueryParams);
+
+      if (TryOverlap) {
+        for (auto i : Overlaps) {
+          AMainPlayer* PlayerOverlaped = Cast<AMainPlayer>(i.GetActor());
+          if (PlayerOverlaped && !OverlapedEnemy.Contains(PlayerOverlaped)) OverlapedEnemy.Add(PlayerOverlaped);
+        }
+        for (auto i : OverlapedEnemy) {
+          AMainPlayer* PlayerOverlaped = Cast<AMainPlayer>(i);
+          UE_LOG(LogTemp,Warning,TEXT("Overlaped"));
+        }
+      }
+      GroundAttack();
+    }
     ```
     </details>
+    <details><summary>h 코드</summary> 
+
+    ```c++
+    //PlayerSkillFunction.h
+    public:
+      virtual void TickComponent(float DeltaTime, ELevelTick TickType, FActorComponentTickFunction* ThisTickFunction) override;
+
+      /** Ground */
+      virtual void GroundAttack() override;
+
+      virtual void SetSkillLocation() override;
+
+      virtual void ConfirmTargetAndContinue() override;
+    ```
+    ```c++
+    //EnemySkillFunction.h
+    public:
+      virtual void TickComponent(float DeltaTime, ELevelTick TickType, FActorComponentTickFunction* ThisTickFunction) override;
+
+      /** Ground */
+      virtual void GroundAttack() override;
+
+      virtual void SetSkillLocation() override;
+
+      virtual void ConfirmTargetAndContinue() override;
+    ```
+    </details>
+
+- ## <span style = "color:yellow;">Enemy의 Skill 구현_1</span>
+  - NotCanAttack, 즉 공격 범위에 있지 않을때 Enemy의 공격은 2가지로 나뉜다. (돌진, 마법)
+  - 일단 Target의 위치를 얻기 위해서 AEnemyController클래스에서 Behaviour Tree의 속성값을 가져와 위치를 반환하는 메서드(GetTargetVec())를 생성.
+  - BTTask에서 Enemy의 Attack을 호출할때 Skill과 Melee을 구분하기 위해서 Attack(FString)을 매개변수로 받아 공격 판단.
+  - Skill 공격을 위해서 BTTask_SkillAttack클래스 생성.
+    - 기존 BTTask_Attack클래스와 비슷하며 타겟을 향해 미리 회전한다는 차이존재
+  - Enemy클래스에서는 전에 만든 EnemySkillFunction클래스를 인스턴스화하여 사용.
+    - PossessedBy()메서드에서 SetInitial()메서드를 호출하여 기본 설정을 하며, SkillAttack/End()메서드를 사용하여 스킬 사용.(미완)
     <details><summary>cpp 코드</summary> 
 
     ```c++
-    
+    //EnemyController.cpp
+    FVector AEnemyController::GetTargetVec() {
+      MainPlayer* Player = Cast<AMainPlayer>(Blackboard->GetValueAsObject(TargetActor));
+      if(Player) {
+        FVector Vec =  Player->GetActorLocation();
+        Vec.Z -= 86.f;      //바닥에 타겟 표현 위함.
+          return Vec; 
+      }
+      else return FVector(0.f);
+    }
+    ```
+    ```c++
+    //Enemy.cpp	
+    #include "EnemySkillFunction.h"
+    AEnemy::AEnemy()
+    {
+      SkillFunction = CreateDefaultSubobject<UEnemySkillFunction>(TEXT("SkillFunction"));
+    }
+    void AEnemy::PossessedBy(AController* NewController) {
+      Super::PossessedBy(NewController);
+
+      SkillFunction->SetInitial(GetController()->GetPawn(), GetMesh(), GetController(), this);
+    }
+    void AEnemy::Attack(FString type) {
+      if(!Anim) Anim = Cast<UEnemyAnim>(GetMesh()->GetAnimInstance());
+
+      if (AttackMontage && Anim) {
+        IsAttacking = true;
+        if (type == "Melee") {
+          Anim->Montage_Play(AttackMontage);
+          Anim->Montage_JumpToSection(GetAttackMontageSection("Attack"), AttackMontage);
+        }
+        else if(type == "Skill" && !bisSkill) {
+          Anim->Montage_Play(SkillAttackMontage);
+          Anim->Montage_JumpToSection("Attack", SkillAttackMontage);
+        }
+      }
+    }
+    void AEnemy::SkillAttack() {
+      //Skill 불러오기
+      if(bisSkill) return;
+      bisSkill = true;
+      SkillFunction->GroundAttack();
+      
+      GetWorldTimerManager().SetTimer(SKillCoolTimer,this,&AEnemy::SkillAttackEnd,0.4f,false);
+    }
+    void AEnemy::SkillAttackEnd() {
+      bisSkill = false;
+      SkillFunction->GroundAttack();
+    }
+    ```
+    ```c++
+    //BTTask_SkillAttack.cpp
+    UBTTask_SkillAttack::UBTTask_SkillAttack() {
+      NodeName = "SkillAttack";
+
+      bNotifyTick = true;	//tick 사용
+      IsAttacking = false;
+    }
+
+    EBTNodeResult::Type UBTTask_SkillAttack::ExecuteTask(UBehaviorTreeComponent& OwnerComp, uint8* NodeMemory) {
+
+      Super::ExecuteTask(OwnerComp, NodeMemory);
+
+      auto Enemy = Cast<AEnemy>(OwnerComp.GetAIOwner()->GetPawn());
+      if (!Enemy)	return EBTNodeResult::Failed;
+
+      AMainPlayer* Target = Cast<AMainPlayer>(OwnerComp.GetBlackboardComponent()->GetValueAsObject(AEnemyController::TargetActor));
+      if (!Target) return EBTNodeResult::Failed;
+
+      FVector LookVec = Target->GetActorLocation() - Enemy->GetActorLocation();
+      LookVec.Z = 0;
+      FRotator LookRot = FRotationMatrix::MakeFromX(LookVec).Rotator();
+      Enemy->SetActorRotation(LookRot);
+
+      Enemy->Attack("Skill");
+      IsAttacking = true;
+      Enemy->OnAttackEnd.AddLambda([this]()-> void
+        {
+          IsAttacking = false;
+        });
+
+      return EBTNodeResult::InProgress;
+    }
+
+    void UBTTask_SkillAttack::TickTask(UBehaviorTreeComponent& OwnerComp, uint8* NodeMemory, float DeltaSeconds) {
+      Super::TickTask(OwnerComp, NodeMemory, DeltaSeconds);
+
+      //여기서 테스크 종료
+      if (!IsAttacking) {
+        FinishLatentTask(OwnerComp, EBTNodeResult::Succeeded);
+      }
+    }
     ```
     </details>
+    <details><summary>h 코드</summary> 
+
+    ```c++
+    //EnemyController.h
+    public:
+    	UFUNCTION()
+	    FVector GetTargetVec();
+    ```
+    ```c++
+    //Enemy.h
+    public:
+    	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "Montage")
+      class UAnimMontage* SkillAttackMontage;
+
+      UFUNCTION(BlueprintCallable)
+      void SkillAttack();
+
+      UFUNCTION(BlueprintCallable)
+      void SkillAttackEnd();
+
+      UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Skill")
+      class UEnemySkillFunction* SkillFunction;
+
+      bool bisSkill = false;
+
+      UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Skill")
+      FTimerHandle SKillCoolTimer;
+    ```
+    ```c++
+    //BTTask_SkillAttack.h
+    public:
+      UBTTask_SkillAttack();
+      virtual EBTNodeResult::Type ExecuteTask(UBehaviorTreeComponent& OwnerComp, uint8* NodeMemory) override;
+    protected:
+      virtual void TickTask(UBehaviorTreeComponent& OwnerComp, uint8* NodeMemory, float DeltaSeconds) override;
+      bool IsAttacking = false;
+    ```
+    </details>
+
+> **<h3>Realization</h3>**
