@@ -127,7 +127,7 @@ void AEnemy::Attack(FString type) {
 		}
 		else if(type == "Skill" && !bisSkill) {
 			Anim->Montage_Play(SkillAttackMontage);
-			Anim->Montage_JumpToSection("Attack", SkillAttackMontage);
+			Anim->Montage_JumpToSection(GetAttackMontageSection("Skill"), SkillAttackMontage);
 		}
 	}
 }
@@ -138,9 +138,11 @@ void AEnemy::SkillAttack() {
 	//Skill 불러오기
 	if(bisSkill) return;
 	bisSkill = true;
+
+	/** Random */
 	SkillFunction->GroundAttack();
 	
-	GetWorldTimerManager().SetTimer(SKillCoolTimer,this,&AEnemy::SkillAttackEnd,0.4f,false);
+	GetWorldTimerManager().SetTimer(SKillCoolTimer,this,&AEnemy::SkillAttackEnd,0.5f,false);
 }
 void AEnemy::SkillAttackEnd() {
 	bisSkill = false;
@@ -211,6 +213,12 @@ FName AEnemy::GetAttackMontageSection(FString Type) {
 		int range = FMath::RandRange(1,2);
 		AttackDamage = (range == 1) ? 10.f : 20.f;
 		return FName(*FString::Printf(TEXT("Attack%d"), range));
+	}
+	else if (Type == "Skill") {
+		//int range = FMath::RandRange(1, 2);
+		//AttackDamage = (range == 1) ? 10.f : 20.f;
+		//return FName(*FString::Printf(TEXT("Attack%d"), range));
+		return FName(*FString::Printf(TEXT("Attack%d"), 1));
 	}
 	else return "Error";
 }

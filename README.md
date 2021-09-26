@@ -5646,3 +5646,193 @@
     </details>
 
 > **<h3>Realization</h3>**
+ - null
+
+## **09.26**
+> **<h3>Today Dev Story</h3>**
+- ## <span style = "color:yellow;">Enemy의 Skill 구현_2</span>
+  - <img src="Image/Enemy_Skill_Ground.gif" height="300" title="Enemy_Skill_Ground"> 
+  - Enemy가 설정한 지역에 운석과 같은 액터가 떨어지도록 하여 그 액터가 지면에 닿을때 일정 범위 내의 플레이어 공격.
+  - 운석액터를 위해 Actor클래스를 상속받은 SK_Meteor클래스를 생성하였고, 이는 지면과 부딪히면 공격.
+    - Meteor는 Physics 사용을 위해 BoxComponent를 SimulatePhysisc를 켜고, Collision을 PhysiscsOnly로 지정.
+    - 지면과 부딪힐때 Delegate를 통해 EnemySkillFunction클래스의 ConfirmTargetAndContinue()메서드를 실행.
+    - 충돌을 위해 BoxComponent를 사용하였으며, OverlapBegin을 사용해도 좋지만 LineTraceSingleByChannel()메서드를 사용. (익히기 위함.)
+  - 기존 존재하는 EnemySkillFunction클래스에서는 DECLARE_DELEGATE인 FSkillEnd를 생성하여, 델리게이트 처리.
+    - SpawnActor()메서드를 사용하여 일정한 일정한 높이에서 Meteor 액터를 생성.
+    - 다른 메서드들은 기존과 동일.
+
+  <details><summary>cpp 코드</summary> 
+
+    ```c++
+    //SK_Meteor.cpp
+    ASK_Meteor::ASK_Meteor()
+    {
+      PrimaryActorTick.bCanEverTick = true;
+      CollisionBox = CreateDefaultSubobject<UBoxComponent>(TEXT("CollisionBox"));
+      SkeletalMesh = CreateDefaultSubobject<USkeletalMeshComponent>(TEXT("SkeletalMesh"));
+      CollisionBox->SetupAttachment(GetRootComponent());
+      SkeletalMesh->SetupAttachment(CollisionBox);
+
+      CollisionBox->SetSimulatePhysics(true);
+      CollisionBox->SetCollisionEnabled(ECollisionEnabled::PhysicsOnly);
+    }
+
+    void ASK_Meteor::BeginPlay()
+    {
+      Super::BeginPlay();
+      
+    }
+
+    void ASK_Meteor::Tick(float DeltaTime)
+    {
+      Super::Tick(DeltaTime);
+
+      /** Is Actor Detected a Ground */
+      IsInGround();
+    }
+
+    void ASK_Meteor::SetInitial(UEnemySkillFunction* Function) {
+      SkillFunction = Function;
+    }
+
+    void ASK_Meteor::IsInGround() {
+      if(bIsEnd) return;
+
+      FVector EndVec = GetActorLocation();
+      EndVec.Z -= 20.f;
+
+      FHitResult HitResult;
+      FCollisionQueryParams QueryParams(NAME_None, false, this);
+      QueryParams.bTraceComplex = true;
+
+      bool TryTrace = GetWorld()->LineTraceSingleByChannel(HitResult, GetActorLocation(), EndVec, ECC_Visibility, QueryParams);
+      if(TryTrace){
+        bIsEnd = true;
+        SkillFunction->SkillDelegate.ExecuteIfBound();		//EnemySkillFunction의 Delegate -> 공격을 판단.
+      }
+    }
+    ```
+    ```c++
+    //EnemySkillFunction.cpp
+    #include "MainPlayer.h"
+    #include "EnemyController.h"
+    #include "SK_Meteor.h"
+    void UEnemySkillFunction::BeginPlay() {
+      Super::BeginPlay();
+      
+      /** Set Delegate */
+      SkillDelegate.BindUObject(this, &UEnemySkillFunction::ConfirmTargetAndContinue);
+    }
+    void UEnemySkillFunction::GroundAttack() {
+      if (!bGround) {
+        bGround = true;
+        SkillDecal->SetVisibility(true);
+        UE_LOG(LogTemp, Warning, TEXT("Ground Start"));
+      }
+      else {
+        bGround = false;
+        SkillDecal->SetVisibility(false);
+        SpawnMeteor();
+        UE_LOG(LogTemp, Warning, TEXT("Ground End"));
+      }
+    }
+
+    void UEnemySkillFunction::SetSkillLocation() {
+      if (!bGround) return;
+
+      AEnemyController* Con = Cast<AEnemyController>(OwnerController);
+      out = Con->GetTargetVec();
+      SkillDecal->SetWorldLocation(out);
+    }
+
+    void UEnemySkillFunction::ConfirmTargetAndContinue() {
+      TArray<FOverlapResult> Overlaps;
+      TArray<TWeakObjectPtr<AMainPlayer>> OverlapedEnemy;
+
+      FCollisionQueryParams CollisionQueryParams;
+      CollisionQueryParams.bTraceComplex = false;
+      CollisionQueryParams.bReturnPhysicalMaterial = false;
+      APawn* OwnerPawn = OwnerController->GetPawn();
+      if (OwnerPawn) CollisionQueryParams.AddIgnoredActor(OwnerPawn->GetUniqueID());
+
+      bool TryOverlap = GetWorld()->OverlapMultiByObjectType(Overlaps,
+        out, FQuat::Identity, FCollisionObjectQueryParams(ECC_GameTraceChannel1),
+        FCollisionShape::MakeSphere(200.f), CollisionQueryParams);
+
+      /** Apply Damage for Player */
+      if (TryOverlap) {
+        for (auto i : Overlaps) {
+          AMainPlayer* PlayerOverlaped = Cast<AMainPlayer>(i.GetActor());
+          if (PlayerOverlaped && !OverlapedEnemy.Contains(PlayerOverlaped)) OverlapedEnemy.Add(PlayerOverlaped);
+        }
+        for (auto i : OverlapedEnemy) {
+          AMainPlayer* PlayerOverlaped = Cast<AMainPlayer>(i);
+          UGameplayStatics::ApplyDamage(PlayerOverlaped, 10.f, OwnerController,OwnerPawn, MeteorDamageType); 
+        }
+      }
+    }
+
+    void UEnemySkillFunction::SpawnMeteor() {
+      FActorSpawnParameters SpawnParams;
+      SpawnParams.Owner = OwnerActor;
+      SpawnParams.Instigator = OwnerInstigator;
+
+      /** Spawn Location */
+      FVector tmp = out;
+      tmp.Z += 1000.f;
+
+      Meteor = GetWorld()->SpawnActor<ASK_Meteor>(MeteorClass, FVector(tmp), FRotator(0.f), SpawnParams);
+      Meteor->SetInitial(this);
+    }
+    ```
+    </details>
+    
+    <details><summary>h 코드</summary> 
+
+    ```c++
+    //Sk_Meteor.h
+    private:
+      UPROPERTY(EditAnyWhere, BlueprintReadWrite , meta = (AllowPrivateAccess = "true"))
+      UBoxComponent* CollisionBox;
+
+      UPROPERTY(EditAnyWhere, BlueprintReadWrite, meta = (AllowPrivateAccess = "true"))
+      USkeletalMeshComponent* SkeletalMesh;
+
+      UPROPERTY(VisibleAnywhere)
+      class UEnemySkillFunction* SkillFunction;
+
+      UPROPERTY(VisibleAnywhere)
+      bool bIsEnd = false;
+
+    public:
+      /** Set Initial of Meteor */
+      UFUNCTION()
+      void SetInitial(UEnemySkillFunction* Function);
+
+      /** Is Actor Detected a Ground */
+      UFUNCTION()
+      void IsInGround();
+    ```
+    ```c++
+    //EnemySkillFunction.h
+    DECLARE_DELEGATE(FSkillEnd)   //SK_Meteor의 바닥 충돌 여부를 위함.
+
+    private:
+      UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Skill | Meteor", meta = (AllowPrivateAccess = "true"))
+      TSubclassOf<UDamageType> MeteorDamageType;
+
+      UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Skill | Meteor", meta = (AllowPrivateAccess = "true"))
+      class ASK_Meteor* Meteor;
+
+      UPROPERTY(EditDefaultsOnly, BlueprintReadWrite, Category = "Skill | Meteor", meta = (AllowPrivateAccess = "true"))
+      TSubclassOf<class ASK_Meteor> MeteorClass;
+    public:
+      UFUNCTION()
+      void SpawnMeteor();
+
+      FSkillEnd SkillDelegate;
+    ```
+    </details>
+
+> **<h3>Realization</h3>**
+  - null

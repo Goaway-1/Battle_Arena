@@ -22,9 +22,6 @@ public:
 	virtual void TickComponent(float DeltaTime, ELevelTick TickType, FActorComponentTickFunction* ThisTickFunction) override;
 
 	/** Initial */
-	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "Anims")
-	class UAnimMontage* SkillAttackMontage;
-
 	APawn* OwnerInstigator;
 	USkeletalMeshComponent* OwnerSkeletal;
 	AController* OwnerController;

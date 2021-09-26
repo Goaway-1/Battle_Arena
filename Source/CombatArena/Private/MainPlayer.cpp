@@ -352,7 +352,7 @@ void AMainPlayer::LMBDown() {
 void AMainPlayer::Attack() {
 	UAnimMontage* PlayMontage = nullptr;
 	
-	if(SkillFunction->bGround) PlayMontage = SkillFunction->SkillAttackMontage;
+	if(SkillFunction->bGround) PlayMontage = SkillAttackMontage;
 	else if (GetRightCurrentWeapon() == nullptr) PlayMontage = AttackMontage;
 	else PlayMontage = WeaponAttackMontage;
 

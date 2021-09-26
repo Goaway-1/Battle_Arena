@@ -206,6 +206,9 @@ public:
 	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "Anims")
 	class UAnimMontage* WeaponAttackMontage;
 
+	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "Anims")
+	class UAnimMontage* SkillAttackMontage;
+
 	bool bLMBDown;			//공격 키가 눌렸는지 여부
 	bool bAttacking;		//공격중인지 여부
 	bool bIsAttackCheck;	//또 공격할 건지에 대한 여부
