@@ -5661,7 +5661,7 @@
     - SpawnActor()메서드를 사용하여 일정한 일정한 높이에서 Meteor 액터를 생성.
     - 다른 메서드들은 기존과 동일.
 
-  <details><summary>cpp 코드</summary> 
+    <details><summary>cpp 코드</summary> 
 
     ```c++
     //SK_Meteor.cpp
@@ -5833,6 +5833,81 @@
       FSkillEnd SkillDelegate;
     ```
     </details>
+
+> **<h3>Realization</h3>**
+  - null
+
+## **09.27**
+> **<h3>Today Dev Story</h3>**
+- ## <span style = "color:yellow;">Enemy의 Skill 구현_3</span>
+  - <img src="Image/Enemy_Skill_Logical.gif" height="300" title="Enemy_Skill_Logical">
+  - Enemy의 Skill에 랜덤성을 부여하기 위해서 구현.
+    - String타입의 SkillType을 생성하고 GetAttackMontageSection()에서 Skill을 랜덤으로 지정.
+    - 그에 맞는 SkillType을 지정하고 SkillAttack/End()시 판정하여 실행.
+  - 기존 USkillFunction클래스의 Lazer의 생성은 액터의 SkeletalBone에 Attach하여 사용했지만, 액터의 전방으로 수정.
+
+    <details><summary>cpp 코드</summary> 
+
+    ```c++
+    //Enemy.cpp
+    void AEnemy::SkillAttack() {
+      //Skill 불러오기
+      if(bisSkill) return;
+      bisSkill = true;
+
+      /** Random */
+      if(SkillType == "Meteor") SkillFunction->GroundAttack();
+      else if(SkillType == "Lazer") SkillFunction->LazerAttack();
+      
+      GetWorldTimerManager().SetTimer(SKillCoolTimer,this,&AEnemy::SkillAttackEnd,1.0f,false);
+    }
+    void AEnemy::SkillAttackEnd() {
+      bisSkill = false; 
+      
+      if (SkillType == "Meteor") SkillFunction->GroundAttack();
+      else if (SkillType == "Lazer") SkillFunction->LazerEnd();
+    }
+    FName AEnemy::GetAttackMontageSection(FString Type) {
+    	if (Type == "Attack") {
+        int range = FMath::RandRange(1,2);
+        AttackDamage = (range == 1) ? 10.f : 20.f;
+        return FName(*FString::Printf(TEXT("Attack%d"), range));
+      }
+      else if (Type == "Skill") {
+        int range = FMath::RandRange(1, 2);
+        AttackDamage = (range == 1) ? 20.f : 30.f;
+        SkillType = (range == 1) ? "Meteor" : "Lazer";
+        return FName(*FString::Printf(TEXT("Attack%d"), range));
+      }
+      else return "Error";
+    }
+    ```
+    ```c++
+    //SKillFunction.cpp
+    void USkillFunction::LazerAttack() {
+      FActorSpawnParameters SpawnParams;
+      SpawnParams.Owner = OwnerActor;
+      SpawnParams.Instigator = OwnerInstigator;
+
+      /** 변경 */
+      FVector Loc = OwnerActor->GetActorLocation();
+      Loc.X += 50.f;
+      Lazer = GetWorld()->SpawnActor<AActor>(LazerClass, Loc, OwnerActor->GetActorRotation(), SpawnParams);
+    }
+    ```
+    </details>
+    <details><summary>h 코드</summary> 
+
+    ```c++
+    //Enemy.h
+    public:
+      FString SkillType;
+    ```
+    </details>
+
+- ## <span style = "color:yellow;">잡다한 것</span>
+  1. 플레이어가 스킬 공격할때 카메라의 위치 변환 구현.
+    - Mainplayer클래스와 SkillFunction클래스 중 고민하다가 그냥 MainPlayer클래스로 지정.
 
 > **<h3>Realization</h3>**
   - null

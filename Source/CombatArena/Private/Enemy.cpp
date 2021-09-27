@@ -140,13 +140,16 @@ void AEnemy::SkillAttack() {
 	bisSkill = true;
 
 	/** Random */
-	SkillFunction->GroundAttack();
+	if(SkillType == "Meteor") SkillFunction->GroundAttack();
+	else if(SkillType == "Lazer") SkillFunction->LazerAttack();
 	
-	GetWorldTimerManager().SetTimer(SKillCoolTimer,this,&AEnemy::SkillAttackEnd,0.5f,false);
+	GetWorldTimerManager().SetTimer(SKillCoolTimer,this,&AEnemy::SkillAttackEnd,1.0f,false);
 }
 void AEnemy::SkillAttackEnd() {
-	bisSkill = false;
-	SkillFunction->GroundAttack();
+	bisSkill = false; 
+	
+	if (SkillType == "Meteor") SkillFunction->GroundAttack();
+	else if (SkillType == "Lazer") SkillFunction->LazerEnd();
 }
 void AEnemy::AttackStart() {
 	FString Type = "Enemy";
@@ -215,10 +218,10 @@ FName AEnemy::GetAttackMontageSection(FString Type) {
 		return FName(*FString::Printf(TEXT("Attack%d"), range));
 	}
 	else if (Type == "Skill") {
-		//int range = FMath::RandRange(1, 2);
-		//AttackDamage = (range == 1) ? 10.f : 20.f;
-		//return FName(*FString::Printf(TEXT("Attack%d"), range));
-		return FName(*FString::Printf(TEXT("Attack%d"), 1));
+		int range = FMath::RandRange(1, 2);
+		AttackDamage = (range == 1) ? 20.f : 30.f;
+		SkillType = (range == 1) ? "Meteor" : "Lazer";
+		return FName(*FString::Printf(TEXT("Attack%d"), range));
 	}
 	else return "Error";
 }

@@ -42,9 +42,10 @@ void USkillFunction::LazerAttack() {
 	FActorSpawnParameters SpawnParams;
 	SpawnParams.Owner = OwnerActor;
 	SpawnParams.Instigator = OwnerInstigator;
-	Lazer = GetWorld()->SpawnActor<AActor>(LazerClass, FVector(0.f), FRotator(0.f), SpawnParams);
 
-	Lazer->AttachToComponent(OwnerSkeletal, FAttachmentTransformRules(EAttachmentRule::SnapToTarget, false), FName("LazerPos"));
+	FVector Loc = OwnerActor->GetActorLocation();
+	Loc.X += 50.f;
+	Lazer = GetWorld()->SpawnActor<AActor>(LazerClass, Loc, OwnerActor->GetActorRotation(), SpawnParams);
 }
 void USkillFunction::LazerEnd() {
 	if (Lazer) {

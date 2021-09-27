@@ -205,7 +205,7 @@ void AMainPlayer::SetupPlayerInputComponent(UInputComponent* PlayerInputComponen
 	PlayerInputComponent->BindAction("Drop", EInputEvent::IE_Pressed, this, &AMainPlayer::ItemDrop);
 
 	/** Skill Test Input */
-	PlayerInputComponent->BindAction("SkillTest", EInputEvent::IE_Pressed, this, &AMainPlayer::SkillBegin);
+	PlayerInputComponent->BindAction("SkillTest", EInputEvent::IE_Pressed, this, &AMainPlayer::SkillController);
 
 	/** Pause Menu */
 	PlayerInputComponent->BindAction("Quit", EInputEvent::IE_Pressed, this, &AMainPlayer::ESCDown);
@@ -362,7 +362,9 @@ void AMainPlayer::Attack() {
 	if (AnimInstance && SkillFunction->bGround && PlayMontage) {
 		AnimInstance->Montage_Play(PlayMontage);
 		AnimInstance->Montage_JumpToSection("SkillEmpact", PlayMontage);
+
 		SkillFunction->ConfirmTargetAndContinue();
+		SkillEnd();
 	}
 	/** NOMAL ATTACK */
 	else if (AnimInstance && PlayMontage) {
@@ -501,18 +503,32 @@ bool AMainPlayer::IsBlockingSuccess(AActor* DamageCauser) {
 }
 #pragma endregion
 #pragma region SKILL
+void AMainPlayer::SkillController() {
+	if(GetCombatStatus() != ECombatStatus::ECS_Skilling) SkillBegin();
+	else SkillEnd();
+}
 void AMainPlayer::SkillBegin() {
 	SetCombatStatus(ECombatStatus::ECS_Skilling);
 
-	//SkillFunction->LazerAttack();	//Lazer
-	SkillFunction->GroundAttack();
+	/** Set Player View */
+	PlayerController->SetInitialLocationAndRotation(FVector(0.f), FRotator(0.f));
+	ZoomInCam(FVector(-200.f, 0.f, 400.f), FRotator(-30.f, 0.f, 0.f));
+
+	/** Use Skill */
+	SkillFunction->LazerAttack();	
+	//SkillFunction->GroundAttack();
 }
 
 void AMainPlayer::SkillEnd() {
 	SetCombatStatus(ECombatStatus::ECS_Normal);
 
-	//SkillFunction->LazerEnd();		//Lazer
-	SkillFunction->GroundAttack();
+	/** Set Player View */
+	PlayerController->SetControlRotation(FRotator(0.f));
+	ZoomOutCam();
+
+	/** Use Skill */
+	SkillFunction->LazerEnd();		
+	//SkillFunction->GroundAttack();
 }
 #pragma endregion
 

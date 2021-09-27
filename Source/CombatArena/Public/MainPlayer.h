@@ -302,6 +302,9 @@ public:
 #pragma region SKILL
 	/** Skill */
 	UFUNCTION()
+	void SkillController();
+
+	UFUNCTION()
 	void SkillBegin();
 
 	UFUNCTION()

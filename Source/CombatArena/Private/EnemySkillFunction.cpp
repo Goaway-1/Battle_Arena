@@ -23,13 +23,11 @@ void UEnemySkillFunction::GroundAttack() {
 	if (!bGround) {
 		bGround = true;
 		SkillDecal->SetVisibility(true);
-		UE_LOG(LogTemp, Warning, TEXT("Ground Start"));
 	}
 	else {
 		bGround = false;
 		SkillDecal->SetVisibility(false);
 		SpawnMeteor();
-		UE_LOG(LogTemp, Warning, TEXT("Ground End"));
 	}
 }
 

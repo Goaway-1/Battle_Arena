@@ -15,18 +15,10 @@ void UPlayerSkillFunction::TickComponent(float DeltaTime, ELevelTick TickType, F
 void UPlayerSkillFunction::GroundAttack() {
 	if (!bGround) {
 		bGround = true;
-
-		//Camera Pos 
-		OwnerController->SetInitialLocationAndRotation(FVector(0.f), FRotator(0.f));
-		//ZoomInCam(FVector(-200.f, 0.f, 400.f), FRotator(-30.f, 0.f, 0.f));
 		SkillDecal->SetVisibility(true);
 	}
 	else {
 		bGround = false;
-
-		//Camera Pos
-		OwnerController->SetControlRotation(FRotator(0.f));
-		//ZoomOutCam();
 		SkillDecal->SetVisibility(false);
 	}
 }
@@ -75,5 +67,4 @@ void UPlayerSkillFunction::ConfirmTargetAndContinue() {
 			i->LaunchSky(FVector(0.f, 0.f, 700.f));
 		}
 	}
-	GroundAttack();
 }
