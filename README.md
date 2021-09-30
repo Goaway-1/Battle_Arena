@@ -5911,3 +5911,12 @@
 
 > **<h3>Realization</h3>**
   - null
+
+## **09.30**
+> **<h3>Today Dev Story</h3>**
+- ## <span style = "color:yellow;">잡다한 것</span>
+  1. 공격 중에도 이동을 구현하기 위해서 CanMove 수정.
+    - Kick은 그대로 유지.
+  2. lag 삭제.
+    - lag 사용시 몰입감 감소로 삭제
+> **<h3>Realization</h3>**
