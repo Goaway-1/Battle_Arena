@@ -366,16 +366,16 @@ public:
 
 	//현재 장착중인 무기
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly,Category = "Weapon")
-	class AShieldWeapon* CurrentLeftWeapon;
+	class AShieldWeapon* CurrentShieldWeapon;
 
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Weapon")
-	class AAttackWeapon* CurrentRightWeapon;
+	class AWeapon* CurrentAttackWeapon;
 
-	void SetLeftCurrentWeapon(AShieldWeapon* Weapon);
-	FORCEINLINE AShieldWeapon* GetLeftCurrentWeapon() { return CurrentLeftWeapon; }
+	void SetShieldCurrentWeapon(AShieldWeapon* Weapon);
+	FORCEINLINE AShieldWeapon* GetShieldCurrentWeapon() { return CurrentShieldWeapon; }
 
-	void SetRightCurrentWeapon(AAttackWeapon* Weapon);
-	FORCEINLINE AAttackWeapon* GetRightCurrentWeapon() { return CurrentRightWeapon; }
+	void SetAttackCurrentWeapon(AWeapon* Weapon);
+	FORCEINLINE AWeapon* GetAttackCurrentWeapon() { return CurrentAttackWeapon; }
 
 	UFUNCTION()
 	void ItemEquip();

@@ -10,8 +10,9 @@
 UENUM(BlueprintType)
 enum class EWeaponPos : uint8 {
 	EWP_Empty		UMETA(DIsplayName = "Empty"),
-	EWP_Left		UMETA(DisplayName = "Left"),
-	EWP_Right		UMETA(DisplayName = "Right"),
+	EWP_Shield		UMETA(DisplayName = "Shield"),
+	EWP_Melee		UMETA(DisplayName = "Melee"),
+	EWP_Bow			UMETA(DisplayName = "Bow"),
 	EWP_Full		UMETA(DisplayName = "Full"),
 
 	EWP_Default		UMETA(DisplayName = "Default")

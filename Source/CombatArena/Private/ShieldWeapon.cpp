@@ -1,7 +1,7 @@
 #include "ShieldWeapon.h"
 
 AShieldWeapon::AShieldWeapon() {
-	WeaponPos = EWeaponPos::EWP_Left;
+	WeaponPos = EWeaponPos::EWP_Shield;
 	ShiledMinAngle = -40.f;
 	ShiledMaxAngle = 40.f;
 }
@@ -14,18 +14,20 @@ void AShieldWeapon::Equip(class AMainPlayer* Player) {
 	Super::Equip(Player);
 
 	if (Player) {
-		if ((GetWeaponPos() == EWeaponPos::EWP_Left && Player->GetLeftCurrentWeapon() != nullptr)) {
+		if ((GetWeaponPos() == EWeaponPos::EWP_Shield && Player->GetShieldCurrentWeapon() != nullptr)) {
 			Player->ItemDrop();
 		}
 
 		/** ÀåÂø ·ÎÁ÷ */
 		const USkeletalMeshSocket* HandSocket = nullptr;
-		HandSocket = Player->GetMesh()->GetSocketByName("LeftWeapon");
+		if (GetWeaponPos() == EWeaponPos::EWP_Melee) HandSocket = Player->GetMesh()->GetSocketByName("MeleeWeapon");
+		else if (GetWeaponPos() == EWeaponPos::EWP_Shield) HandSocket = Player->GetMesh()->GetSocketByName("ShieldWeapon");
+		else if (GetWeaponPos() == EWeaponPos::EWP_Bow) HandSocket = Player->GetMesh()->GetSocketByName("BowWeapon");
 
 		if (HandSocket) {
 			HandSocket->AttachActor(this, Player->GetMesh());
 			Player->SetWeaponStatus(EWeaponStatus::EWS_Weapon);
-			Player->SetLeftCurrentWeapon(this);
+			Player->SetShieldCurrentWeapon(this);
 
 			CollisionVolume->SetCollisionEnabled(ECollisionEnabled::NoCollision);
 		}

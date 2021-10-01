@@ -1,5 +1,3 @@
-// Fill out your copyright notice in the Description page of Project Settings.
-
 #pragma once
 
 #include "CoreMinimal.h"
@@ -7,7 +5,7 @@
 #include "AttackWeapon.generated.h"
 
 /**
- * 
+ * MeleeWeapon
  */
 UCLASS()
 class COMBATARENA_API AAttackWeapon : public AWeapon

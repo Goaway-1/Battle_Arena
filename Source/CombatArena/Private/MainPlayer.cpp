@@ -28,12 +28,6 @@ AMainPlayer::AMainPlayer()
 	SpringArm->SetupAttachment(GetRootComponent());
 	SpringArm->bUsePawnControlRotation = true;	//플레이어가 컨트롤 할 수 있게 만들어줌
 	SpringArm->SocketOffset = FVector(0.f, 0.f, 0.f);
-
-	//LagSpeed
-	SpringArm->bEnableCameraLag = true;
-	SpringArm->bEnableCameraRotationLag = true;
-	SpringArm->CameraLagSpeed = 9.0f;				//이동
-	SpringArm->CameraRotationLagSpeed = 9.5f;		//회전
 	
 	//카메라 회전 On
 	SpringArm->bInheritPitch = true;
@@ -107,8 +101,8 @@ AMainPlayer::AMainPlayer()
 	GetCapsuleComponent()->SetCollisionProfileName(TEXT("Player"));	//콜리전 설정
 
 	ActiveOverlappingItem = nullptr;
-	CurrentLeftWeapon = nullptr;
-	CurrentRightWeapon = nullptr;
+	CurrentShieldWeapon = nullptr;
+	CurrentAttackWeapon = nullptr;
 #pragma endregion
 #pragma region HUD
 	EnemyHUDOverlap = CreateDefaultSubobject<USphereComponent>(TEXT("EnemyHUDOverlap"));
@@ -225,6 +219,7 @@ void AMainPlayer::Turn(float value) {
 #pragma region MOVEMENT
 void AMainPlayer::MoveForward(float Value) {
 	if (!IsCanMove()) return;
+
 	AddMovementInput(Camera->GetForwardVector(), Value);
 	DirX = Value;
 }
@@ -294,7 +289,7 @@ void AMainPlayer::AnimDodge() {
 	}
 }
 bool AMainPlayer::IsCanMove() {
-	if (AttackFunction->bKicking || bAttacking || GetMovementStatus() == EMovementStatus::EMS_Death) return false;
+	if (AttackFunction->bKicking || GetMovementStatus() == EMovementStatus::EMS_Death) return false;
 	else return true;
 }
 void AMainPlayer::Targeting() {
@@ -341,7 +336,6 @@ void AMainPlayer::RunCamShake() {
 #pragma endregion
 
 #pragma region ATTACK
-
 void AMainPlayer::LMBDown() {
 	bLMBDown = true;
 
@@ -353,7 +347,7 @@ void AMainPlayer::Attack() {
 	UAnimMontage* PlayMontage = nullptr;
 	
 	if(SkillFunction->bGround) PlayMontage = SkillAttackMontage;
-	else if (GetRightCurrentWeapon() == nullptr) PlayMontage = AttackMontage;
+	else if (GetAttackCurrentWeapon() == nullptr) PlayMontage = AttackMontage;
 	else PlayMontage = WeaponAttackMontage;
 
 	if (!AnimInstance) AnimInstance = GetMesh()->GetAnimInstance();
@@ -478,25 +472,25 @@ void AMainPlayer::DeathEnd() {
 }
 void AMainPlayer::Blocking() {
 	if (!IsCanMove()) return;
-	if (CurrentLeftWeapon != nullptr) {
+	if (CurrentShieldWeapon != nullptr) {
 		SetCombatStatus(ECombatStatus::ECS_Blocking);
 	}
 }
 void AMainPlayer::UnBlocking() {
-	if (CurrentLeftWeapon != nullptr) {
+	if (CurrentShieldWeapon != nullptr) {
 		SetCombatStatus(ECombatStatus::ECS_Normal);
 	}
 }
 bool AMainPlayer::IsBlockingSuccess(AActor* DamageCauser) {
 	FRotator BetweenRot = UKismetMathLibrary::FindLookAtRotation(GetActorLocation(), DamageCauser->GetActorLocation());
 	BetweenRot = UKismetMathLibrary::NormalizedDeltaRotator(GetActorRotation(), BetweenRot);
-	bool isShieldRange = UKismetMathLibrary::InRange_FloatFloat(BetweenRot.Yaw, CurrentLeftWeapon->ShiledMinAngle, CurrentLeftWeapon->ShiledMaxAngle);
+	bool isShieldRange = UKismetMathLibrary::InRange_FloatFloat(BetweenRot.Yaw, CurrentShieldWeapon->ShiledMinAngle, CurrentShieldWeapon->ShiledMaxAngle);
 
-	if (isShieldRange && CurrentLeftWeapon->HitedParticle) {
+	if (isShieldRange && CurrentShieldWeapon->HitedParticle) {
 		FVector Loc = GetActorForwardVector();
 		Loc.Z = 0;
 		LaunchCharacter(DamageCauser->GetActorForwardVector() * 500.f, true, true);
-		UGameplayStatics::SpawnEmitterAtLocation(GetWorld(), CurrentLeftWeapon->HitedParticle, GetActorLocation(), FRotator(0.f));
+		UGameplayStatics::SpawnEmitterAtLocation(GetWorld(), CurrentShieldWeapon->HitedParticle, GetActorLocation(), FRotator(0.f));
 		return true;
 	}
 	return false;
@@ -515,8 +509,8 @@ void AMainPlayer::SkillBegin() {
 	ZoomInCam(FVector(-200.f, 0.f, 400.f), FRotator(-30.f, 0.f, 0.f));
 
 	/** Use Skill */
-	SkillFunction->LazerAttack();	
-	//SkillFunction->GroundAttack();
+	//SkillFunction->LazerAttack();	
+	SkillFunction->GroundAttack();
 }
 
 void AMainPlayer::SkillEnd() {
@@ -527,8 +521,8 @@ void AMainPlayer::SkillEnd() {
 	ZoomOutCam();
 
 	/** Use Skill */
-	SkillFunction->LazerEnd();		
-	//SkillFunction->GroundAttack();
+	//SkillFunction->LazerEnd();		
+	SkillFunction->GroundAttack();
 }
 #pragma endregion
 
@@ -549,25 +543,25 @@ void AMainPlayer::ItemEquip() {
 }
 void AMainPlayer::ItemDrop() {
 	if (GetWeaponStatus() == EWeaponStatus::EWS_Weapon) {
-		if (CurrentRightWeapon != nullptr) {
-			CurrentRightWeapon->UnEquip();
-			CurrentRightWeapon = nullptr;		
+		if (CurrentAttackWeapon != nullptr) {
+			CurrentAttackWeapon->UnEquip();
+			CurrentAttackWeapon = nullptr;
 			AttackDamage = DefaultDamage;	
 			AttackRange = DefaultAttackRange;				//공격 범위 조절
-			if (CurrentLeftWeapon == nullptr) SetWeaponStatus(EWeaponStatus::EWS_Normal);
+			if (CurrentShieldWeapon == nullptr) SetWeaponStatus(EWeaponStatus::EWS_Normal);
 		}
-		else if (CurrentLeftWeapon != nullptr) {
-			CurrentLeftWeapon->UnEquip();
-			CurrentLeftWeapon = nullptr;
-			if(CurrentRightWeapon == nullptr) SetWeaponStatus(EWeaponStatus::EWS_Normal);
+		else if (CurrentShieldWeapon != nullptr) {
+			CurrentShieldWeapon->UnEquip();
+			CurrentShieldWeapon = nullptr;
+			if(CurrentAttackWeapon == nullptr) SetWeaponStatus(EWeaponStatus::EWS_Normal);
 		}
 	}
 }
-void AMainPlayer::SetLeftCurrentWeapon(AShieldWeapon* Weapon) {
-	CurrentLeftWeapon = Weapon;
+void AMainPlayer::SetShieldCurrentWeapon(AShieldWeapon* Weapon) {
+	CurrentShieldWeapon = Weapon;
 }
-void AMainPlayer::SetRightCurrentWeapon(AAttackWeapon* Weapon) {
-	CurrentRightWeapon = Weapon;
+void AMainPlayer::SetAttackCurrentWeapon(AWeapon* Weapon) {
+	CurrentAttackWeapon = Weapon;
 }
 #pragma endregion
 
@@ -591,7 +585,6 @@ void AMainPlayer::OnEnemyHUD_OverlapEnd(UPrimitiveComponent* OverlappedComponent
 void AMainPlayer::ESCUp() {
 	bESCDown = false;
 }
-
 void AMainPlayer::ESCDown(){
 	bESCDown = true;
 	if (PlayerController) {

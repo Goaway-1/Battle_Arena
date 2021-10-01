@@ -46,9 +46,6 @@ protected:
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Item", Meta = (AllowPrivateAccess = true))
 	float SpinSpeed;
 
-	FORCEINLINE void SetItemState(EItemState State) { ItemState = State; }
-	FORCEINLINE EItemState GetItemState() { return ItemState; }
-
 	UPROPERTY(VisibleAnywhere, BlueprintReadWrite, Category = "Item | Collision")
 	class USphereComponent* CollisionVolume;
 
@@ -70,6 +67,9 @@ protected:
 	UFUNCTION()
 	void SetSpinItem();
 public:
-	UFUNCTION()
+	FORCEINLINE void SetItemState(EItemState State) { ItemState = State; }
+	FORCEINLINE EItemState GetItemState() { return ItemState; }
+
+	FORCEINLINE void SetItemType(EItemType type) { ItemType = type; }
 	FORCEINLINE EItemType GetItemType() { return ItemType; }
 };

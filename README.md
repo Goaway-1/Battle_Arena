@@ -5919,4 +5919,90 @@
     - Kick은 그대로 유지.
   2. lag 삭제.
     - lag 사용시 몰입감 감소로 삭제
+
 > **<h3>Realization</h3>**
+
+## **10.01**
+> **<h3>Today Dev Story</h3>**
+- ## <span style = "color:yellow;">Bow의 장착</span>
+  - <img src="Image/Equip_Bow.gif" height="300" title="Equip_Bow">
+  - Weapon클래스를 상속받은 활 클래스(BowWeapon) 제작.
+    - Player가 Bow를 장착시 양측의 무기를 모두 내려둠. (양손 무기이기 때문에) 
+  - 기존 MainPlayer의 장착 로직 중 Rigth/LeftWeapon의 이름을 Attack/ShieldWeapon으로 수정.
+  - 소켓명을 다음과 같이 변경. (Melee/shield/BowWeapon) && EWeaponPos 또한 Shield를 추가 및 다른 DisplayName 수정.
+
+    <details><summary>cpp 코드</summary> 
+
+    ```c++
+    //BowWeapon.cpp
+    ABowWeapon::ABowWeapon() {
+      WeaponPos = EWeaponPos::EWP_Bow;
+      Damage = 20.f;
+      AttackRange = 200.f;
+    }
+
+    void ABowWeapon::Equip(class AMainPlayer* Player) {
+      Super::Equip(Player);
+
+      if (Player) {
+        while (true) {
+          if (Player->GetShieldCurrentWeapon() == nullptr && Player->GetAttackCurrentWeapon() == nullptr) break;
+          Player->ItemDrop();
+        }
+
+        /** 장착 로직 */
+        const USkeletalMeshSocket* HandSocket = nullptr;
+        if (GetWeaponPos() == EWeaponPos::EWP_Melee) HandSocket = Player->GetMesh()->GetSocketByName("MeleeWeapon");
+        else if(GetWeaponPos() == EWeaponPos::EWP_Shield) HandSocket = Player->GetMesh()->GetSocketByName("ShieldWeapon");
+        else if(GetWeaponPos() == EWeaponPos::EWP_Bow) HandSocket = Player->GetMesh()->GetSocketByName("BowWeapon");
+
+        if (HandSocket) {
+          HandSocket->AttachActor(this, Player->GetMesh());
+          Player->SetWeaponStatus(EWeaponStatus::EWS_Weapon);
+
+          Player->AttackRange = GetAttackRange();		//오른쪽 무기만 거리 지정
+          Player->SetAttackCurrentWeapon(this);
+
+          Player->SetAttackDamage(Damage);
+          CollisionVolume->SetCollisionEnabled(ECollisionEnabled::NoCollision);
+        }
+      }
+    }
+    ```
+    ```c++
+    //Weapon.cpp
+    AWeapon::AWeapon() {
+      SetItemType(EItemType::EIT_Weapon);
+    }
+    ```
+    </details>
+    <details><summary>h 코드</summary> 
+
+    ```c++
+    //BowWeapon.h
+    public:
+      UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Attack")
+      float AttackRange;
+
+      FORCEINLINE float GetAttackRange() { return AttackRange; }
+
+      UPROPERTY(EditAnyWhere, BlueprintReadWrite, Category = "Combat")
+      float Damage;
+
+      UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Combat")
+      TSubclassOf<UDamageType> DamageTypeClass;
+    ```
+    ```c++
+    //Weapon.h
+    UENUM(BlueprintType)
+    enum class EWeaponPos : uint8 {
+      EWP_Empty		UMETA(DIsplayName = "Empty"),
+      EWP_Shield		UMETA(DisplayName = "Shield"),
+      EWP_Melee		UMETA(DisplayName = "Melee"),
+      EWP_Bow			UMETA(DisplayName = "Bow"),
+      EWP_Full		UMETA(DisplayName = "Full"),
+
+      EWP_Default		UMETA(DisplayName = "Default")
+    };
+    ```
+    </details>
