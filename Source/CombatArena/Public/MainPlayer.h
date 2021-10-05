@@ -298,6 +298,13 @@ public:
 	UFUNCTION()
 	bool IsBlockingSuccess(AActor* DamageCauser);
 
+	/** Bow */
+	UFUNCTION()
+	void BeginCharge();
+
+	UFUNCTION()
+	void EndCharge();
+
 #pragma endregion
 #pragma region SKILL
 	/** Skill */

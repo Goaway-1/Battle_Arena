@@ -6006,3 +6006,88 @@
     };
     ```
     </details>
+
+> **<h3>Realization</h3>**
+  - null
+
+## **10.02**
+> **<h3>Today Dev Story</h3>**
+- ## <span style = "color:yellow;">잡다한 것</span>
+  1. 타겟팅하고 스킬 사용 시 오류 발생. 
+	  - 스킬 사용 시 타겟팅을 풀어줌.
+
+> **<h3>Realization</h3>**
+  - null
+
+## **10.05**
+> **<h3>Today Dev Story</h3>**
+- ## <span style = "color:yellow;">Bow Anim</span>
+  - <img src="Image/" height="300" title="">
+  - Bow Animation을 위해서 Blend 1D와 AnimInstance를 사용.
+    - Bow의 Bone인 String_mid 소켓에 새로운 소켓을 생성하여 이 위치에 Arrow 생성.
+    - 각 위치를 토대로 Anim을 만들고 다시 AnimInstance 생성.
+  - 기존 활의 Blueprint를 위해서 Implement 사용.
+    - Begin/Stop/EndCharge() 메서드와 Fire(), Reload()메서드로 구분.
+  - MainPlayer클래스에서는 마우스 오른쪽을 누르고 있으면 Begin/EndCharge()메서드를 생성하여 활시위를 당기는 모션을 할 수 있도록 제작.
+    - Bow가 존재한다면 Reload()와 BeginCharge()메서드 실행.
+
+
+    ```c++
+    //BowWeapon.h
+    public:
+    	UFUNCTION(BlueprintNativeEvent, BlueprintCallable)
+      void BeginCharge();
+
+      UFUNCTION(BlueprintNativeEvent, BlueprintCallable)
+      void StopCharge();
+
+      UFUNCTION(BlueprintNativeEvent, BlueprintCallable)
+      void EndCharge();
+
+      UFUNCTION(BlueprintNativeEvent, BlueprintCallable)
+      void Fire();	
+      
+      UFUNCTION(BlueprintNativeEvent, BlueprintCallable)
+      void Reload();
+    ```
+    ```c++
+    //Arrow.cpp
+    AArrow::AArrow()
+    {
+      PrimaryActorTick.bCanEverTick = true;
+
+      ArrowMesh = CreateDefaultSubobject<USkeletalMeshComponent>(TEXT("ArrowMesh"));
+      RootComponent = ArrowMesh;
+
+      ArrowMesh->SetRelativeScale3D(FVector(1.f,5.f,5.f));
+    }
+    ```
+    ```c++
+    //MainPlayer.cpp
+    void AMainPlayer::BeginCharge() {
+      if (GetMesh()->DoesSocketExist("BowWeapon")) {
+        ABowWeapon* Bow = Cast<ABowWeapon>(CurrentAttackWeapon);
+        if (Bow) {
+          Bow->Reload();
+          Bow->BeginCharge();
+        }
+      }
+    }
+
+    void AMainPlayer::EndCharge() {
+      if (GetMesh()->DoesSocketExist("BowWeapon")) {
+        ABowWeapon* Bow = Cast<ABowWeapon>(CurrentAttackWeapon);
+        if (Bow) {
+          Bow->EndCharge();
+        }
+      }
+    }
+    ```
+    ```c++
+    /** Bow */
+      UFUNCTION()
+      void BeginCharge();
+
+      UFUNCTION()
+      void EndCharge();
+    ```

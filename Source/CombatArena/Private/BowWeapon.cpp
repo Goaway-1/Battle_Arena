@@ -1,9 +1,27 @@
 #include "BowWeapon.h"
+#include "Components/TimelineComponent.h"
 
 ABowWeapon::ABowWeapon() {
 	WeaponPos = EWeaponPos::EWP_Bow;
 	Damage = 20.f;
 	AttackRange = 200.f;
+
+	///** TimeLine */
+	//static ConstructorHelpers::FObjectFinder<UCurveFloat> Curvy(TEXT("CurveFloat'/Game/Blueprint/Weapons/ChargeAmount.ChargeAmount'"));
+	//if (Curvy.Object) {
+	//	fCurve = Curvy.Object;
+	//}
+
+	//ScoreTimeline = CreateDefaultSubobject<UTimelineComponent>(this, TEXT("TimelineScore"));
+
+	//InterpFunction.BindUFunction(this, FName{ TEXT("TimelineFloatReturn") });
+}
+
+void ABowWeapon::BeginPlay() {
+	Super::BeginPlay();
+
+	//ScoreTimeline->AddInterpFloat(fCurve, InterpFunction, FName{ TEXT("Floaty") });
+	//ScoreTimeline->Play(); 
 }
 
 void ABowWeapon::Equip(class AMainPlayer* Player) {
@@ -32,4 +50,23 @@ void ABowWeapon::Equip(class AMainPlayer* Player) {
 			CollisionVolume->SetCollisionEnabled(ECollisionEnabled::NoCollision);
 		}
 	}
+}
+
+void ABowWeapon::BeginCharge_Implementation() {
+
+}
+void ABowWeapon::StopCharge_Implementation() {
+
+}
+
+void ABowWeapon::EndCharge_Implementation() {
+
+}
+
+void ABowWeapon::Fire_Implementation() {
+
+}
+
+void ABowWeapon::Reload() {
+	//GetWorld()->SpawnActor<AArrow>();
 }

@@ -15,6 +15,7 @@
 #include "PlayerSaveGame.h"	
 #include "Components/DecalComponent.h"
 #include "PlayerSkillFunction.h"
+#include "BowWeapon.h"
 
 AMainPlayer::AMainPlayer()
 {
@@ -204,6 +205,10 @@ void AMainPlayer::SetupPlayerInputComponent(UInputComponent* PlayerInputComponen
 	/** Pause Menu */
 	PlayerInputComponent->BindAction("Quit", EInputEvent::IE_Pressed, this, &AMainPlayer::ESCDown);
 	PlayerInputComponent->BindAction("Quit", EInputEvent::IE_Released, this, &AMainPlayer::ESCUp);
+
+	/** Charge & Fire */
+	PlayerInputComponent->BindAction("Charge",EInputEvent::IE_Pressed,this, &AMainPlayer::BeginCharge);
+	PlayerInputComponent->BindAction("Charge",EInputEvent::IE_Released,this, &AMainPlayer::EndCharge);
 }
 
 #pragma region CAMERA
@@ -495,10 +500,33 @@ bool AMainPlayer::IsBlockingSuccess(AActor* DamageCauser) {
 	}
 	return false;
 }
+void AMainPlayer::BeginCharge() {
+	if (GetMesh()->DoesSocketExist("BowWeapon")) {
+		ABowWeapon* Bow = Cast<ABowWeapon>(CurrentAttackWeapon);
+		if (Bow) {
+			Bow->Reload();
+			Bow->BeginCharge();
+		}
+	}
+}
+
+void AMainPlayer::EndCharge() {
+	if (GetMesh()->DoesSocketExist("BowWeapon")) {
+		ABowWeapon* Bow = Cast<ABowWeapon>(CurrentAttackWeapon);
+		if (Bow) {
+			Bow->EndCharge();
+		}
+	}
+}
+
 #pragma endregion
+
 #pragma region SKILL
 void AMainPlayer::SkillController() {
-	if(GetCombatStatus() != ECombatStatus::ECS_Skilling) SkillBegin();
+	if(GetCombatStatus() != ECombatStatus::ECS_Skilling) {
+		if(bTargeting) OffTargeting();
+		SkillBegin();
+	}
 	else SkillEnd();
 }
 void AMainPlayer::SkillBegin() {
@@ -517,7 +545,7 @@ void AMainPlayer::SkillEnd() {
 	SetCombatStatus(ECombatStatus::ECS_Normal);
 
 	/** Set Player View */
-	PlayerController->SetControlRotation(FRotator(0.f));
+	PlayerController->SetInitialLocationAndRotation(GetActorForwardVector(),FRotator(0.f));
 	ZoomOutCam();
 
 	/** Use Skill */
