@@ -1,4 +1,5 @@
 #include "Arrow.h"
+#include "Kismet/KismetMathLibrary.h"
 
 AArrow::AArrow()
 {
@@ -8,6 +9,9 @@ AArrow::AArrow()
 	RootComponent = ArrowMesh;
 
 	ArrowMesh->SetRelativeScale3D(FVector(1.f,5.f,5.f));
+	SetArrowStatus(EArrowStatus::EAS_InBow);
+
+	FirePower = 0;
 }
 
 void AArrow::BeginPlay()
@@ -20,5 +24,41 @@ void AArrow::Tick(float DeltaTime)
 {
 	Super::Tick(DeltaTime);
 
+	OnStateBegine();
 }
 
+void AArrow::OnStateBegine() {
+	switch (ArrowStatus)
+	{
+	case EArrowStatus::EAS_Normal:
+		break;
+	case EArrowStatus::EAS_Unobtained:
+		ArrowMesh->SetCollisionProfileName(FName("OverlapAllDynamic"));
+		ArrowMesh->SetSimulatePhysics(true);
+		break;
+	case EArrowStatus::EAS_InBow:
+		ArrowMesh->SetCollisionProfileName(FName("NoCollision"));
+		ArrowMesh->SetSimulatePhysics(false);
+		break;
+	case EArrowStatus::EAS_InArrow:
+		ArrowMesh->SetCollisionProfileName(FName("Arrow"));
+		ArrowMesh->SetSimulatePhysics(true);
+		if(!bisFire){
+			ArrowMesh->AddImpulse(GetActorForwardVector() * UKismetMathLibrary::Lerp(7000, 50000, FirePower));	
+		}
+		bisFire = true;
+		break;
+	default:
+		break;
+	}
+}
+
+void AArrow::SetArrowStatus(EArrowStatus Status) {
+	ArrowStatus = Status;
+}
+
+void AArrow::Fire(float Amount) {
+	DetachFromActor(FDetachmentTransformRules::KeepWorldTransform);
+	SetArrowStatus(EArrowStatus::EAS_InArrow);
+	FirePower = Amount;
+}

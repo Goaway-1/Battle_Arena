@@ -6022,48 +6022,54 @@
 ## **10.05**
 > **<h3>Today Dev Story</h3>**
 - ## <span style = "color:yellow;">Bow Anim</span>
-  - <img src="Image/" height="300" title="">
+  - <img src="Image/Bow_Animation.png" height="300" title="Bow_Animation">
   - Bow Animation을 위해서 Blend 1D와 AnimInstance를 사용.
     - Bow의 Bone인 String_mid 소켓에 새로운 소켓을 생성하여 이 위치에 Arrow 생성.
-    - 각 위치를 토대로 Anim을 만들고 다시 AnimInstance 생성.
-  - 기존 활의 Blueprint를 위해서 Implement 사용.
-    - Begin/Stop/EndCharge() 메서드와 Fire(), Reload()메서드로 구분.
+    - Bone의 각 위치를 토대로 Anim을 만들고 다시 AnimInstance 생성.
+  - BowWeapon클래스에서 활시위 애니메이션을 위해 TimeLine을 사용.
+    - C++에서의 방법을 몰라 Implementation사용하여 Blueprint와의 동시 호출. (Begin/Stop/EndCharge(), Fire(), Reload()메서드) 
+    - 위의 그림과 같이 활시위를 당기거나 그만 둘때 TimeLine을 사용하여 ChargeAmount의 값을 조절하고, 이 값을 BlendAnim1D에 대입하여 활시위 표시.
   - MainPlayer클래스에서는 마우스 오른쪽을 누르고 있으면 Begin/EndCharge()메서드를 생성하여 활시위를 당기는 모션을 할 수 있도록 제작.
     - Bow가 존재한다면 Reload()와 BeginCharge()메서드 실행.
 
+    <details><summary>cpp 코드</summary> 
 
     ```c++
-    //BowWeapon.h
-    public:
-    	UFUNCTION(BlueprintNativeEvent, BlueprintCallable)
-      void BeginCharge();
-
-      UFUNCTION(BlueprintNativeEvent, BlueprintCallable)
-      void StopCharge();
-
-      UFUNCTION(BlueprintNativeEvent, BlueprintCallable)
-      void EndCharge();
-
-      UFUNCTION(BlueprintNativeEvent, BlueprintCallable)
-      void Fire();	
+    //BowWeapon.cpp
+    void ABowWeapon::BeginCharge_Implementation() {
+      if(!Arow) return;
+    }
+    void ABowWeapon::StopCharge_Implementation() {
       
-      UFUNCTION(BlueprintNativeEvent, BlueprintCallable)
-      void Reload();
-    ```
-    ```c++
-    //Arrow.cpp
-    AArrow::AArrow()
-    {
-      PrimaryActorTick.bCanEverTick = true;
-
-      ArrowMesh = CreateDefaultSubobject<USkeletalMeshComponent>(TEXT("ArrowMesh"));
-      RootComponent = ArrowMesh;
-
-      ArrowMesh->SetRelativeScale3D(FVector(1.f,5.f,5.f));
+    }
+    void ABowWeapon::EndCharge_Implementation() {
+      if (!Arow) return;
+    }
+    void ABowWeapon::Fire() {
+     
+    }
+    void ABowWeapon::Reload() {
+     
     }
     ```
     ```c++
     //MainPlayer.cpp
+    #include "BowWeapon.h"
+    void AMainPlayer::SetupPlayerInputComponent(UInputComponent* PlayerInputComponent)
+    {
+      PlayerInputComponent->BindAction("Charge",EInputEvent::IE_Pressed,this, &AMainPlayer::BeginCharge);
+      PlayerInputComponent->BindAction("Charge",EInputEvent::IE_Released,this, &AMainPlayer::EndCharge);
+    }
+    void AMainPlayer::LMBDown() {
+      ...
+      //Bow
+      if (GetMesh()->DoesSocketExist("BowWeapon")) {
+        ABowWeapon* Bow = Cast<ABowWeapon>(CurrentAttackWeapon);
+        if (Bow) Bow->Fire();
+        return;
+      }
+      ...
+    }
     void AMainPlayer::BeginCharge() {
       if (GetMesh()->DoesSocketExist("BowWeapon")) {
         ABowWeapon* Bow = Cast<ABowWeapon>(CurrentAttackWeapon);
@@ -6073,7 +6079,6 @@
         }
       }
     }
-
     void AMainPlayer::EndCharge() {
       if (GetMesh()->DoesSocketExist("BowWeapon")) {
         ABowWeapon* Bow = Cast<ABowWeapon>(CurrentAttackWeapon);
@@ -6083,11 +6088,176 @@
       }
     }
     ```
+    </details>
+
+    <details><summary>h 코드</summary> 
+
     ```c++
-    /** Bow */
+    //BowWeapon.h
+    public:
+    	UPROPERTY(EditDefaultsOnly, BlueprintReadWrite, Category = "Arrow", meta = (AllowPrivateAccess = "true"))
+      AArrow* Arow;
+
+      UPROPERTY(EditDefaultsOnly, BlueprintReadWrite, Category = "Arrow", meta = (AllowPrivateAccess = "true"))
+      TSubclassOf<class AArrow> ArrowClass;
+
+      UPROPERTY(EditAnyWhere, BlueprintReadWrite, Category = "Arrow")
+      float ChargeAmount;
+
+      UFUNCTION(BlueprintNativeEvent, BlueprintCallable)
+      void BeginCharge();
+    
+      UFUNCTION(BlueprintNativeEvent, BlueprintCallable)
+      void StopCharge();
+
+      UFUNCTION(BlueprintNativeEvent, BlueprintCallable)
+      void EndCharge();
+
       UFUNCTION()
+      void Fire();	
+        
+      UFUNCTION()
+      void Reload();
+    ```
+    ```c++
+    //MainPlayer.h
+    public:
+    	UFUNCTION()
       void BeginCharge();
 
       UFUNCTION()
       void EndCharge();
     ```
+    </details>
+
+> **<h3>Realization</h3>**
+  - null
+
+## **10.07**
+> **<h3>Today Dev Story</h3>**
+- ## <span style = "color:yellow;">Bow Fire</span>  
+  - <img src="Image/Arrow_1.gif" height="300" title="Arrow_1">
+  - Actor클래스를 상속받은 Arrow클래스를 생성.
+    - 화살의 상태를 나타내기 위해서 enum타입인 EArrowStatus를 제작하여 상태를 구분.
+    - Fire()메서드를 생성하여 활의 ChargeAmount를 받아 FirePower값을 설정. 이 값을 Lerp()를 사용하여 화살을 AddImpulse한다.
+    - 또한 DetachFromActor()를 사용하여 사용자로 부터 해제하고 KeepWorldTransform으로 전환하고, 상태 또한 InArrow로 변환.
+    - 기존에는 projectile로 사용할 예정이였으나 사용시 초기에만 속도가 적용되어 못함.
+  - BowWeapon클래스의 Fire()메서드가 Player에 의해 호출 되면 Arrow를 발사. 
+    - Reload()호출시 Arrow를 "arrow_attach_socket"의 소켓에 어태치하여 활시위 당길 때 같이 이동.
+    
+    <details><summary>cpp 코드</summary> 
+
+    ```c++
+    //Arrow.cpp
+    #include "Kismet/KismetMathLibrary.h"
+    AArrow::AArrow()
+    {
+      PrimaryActorTick.bCanEverTick = true;
+
+      ArrowMesh = CreateDefaultSubobject<USkeletalMeshComponent>(TEXT("ArrowMesh"));
+      RootComponent = ArrowMesh;
+
+      ArrowMesh->SetRelativeScale3D(FVector(1.f,5.f,5.f));
+      SetArrowStatus(EArrowStatus::EAS_InBow);
+
+      FirePower = 0;
+    }
+    void AArrow::Tick(float DeltaTime)
+    {
+      Super::Tick(DeltaTime);
+
+      OnStateBegine();
+    }
+    void AArrow::OnStateBegine() {
+      switch (ArrowStatus)
+      {
+      case EArrowStatus::EAS_Normal:
+        break;
+      case EArrowStatus::EAS_Unobtained:
+        ArrowMesh->SetCollisionProfileName(FName("OverlapAllDynamic"));
+        ArrowMesh->SetSimulatePhysics(true);
+        break;
+      case EArrowStatus::EAS_InBow:
+        ArrowMesh->SetCollisionProfileName(FName("NoCollision"));
+        ArrowMesh->SetSimulatePhysics(false);
+        break;
+      case EArrowStatus::EAS_InArrow:
+        ArrowMesh->SetCollisionProfileName(FName("Arrow"));
+        ArrowMesh->SetSimulatePhysics(true);
+        if(!bisFire){
+          ArrowMesh->AddImpulse(GetActorForwardVector() * UKismetMathLibrary::Lerp(7000, 50000, FirePower));	
+        }
+        bisFire = true;
+        break;
+      default:
+        break;
+      }
+    }
+    void AArrow::SetArrowStatus(EArrowStatus Status) {
+      ArrowStatus = Status;
+    }
+    void AArrow::Fire(float Amount) {
+      DetachFromActor(FDetachmentTransformRules::KeepWorldTransform);
+      SetArrowStatus(EArrowStatus::EAS_InArrow);
+      FirePower = Amount;
+    }
+    ```
+    ```c++
+    //BowWeapon.c
+    void ABowWeapon::Fire() {
+      if(!Arow) return;
+
+      Arow->Fire(ChargeAmount);
+      StopCharge();
+    }
+    void ABowWeapon::Reload() {
+      FActorSpawnParameters SpawnParams;
+      SpawnParams.Owner = this;
+      SpawnParams.Instigator = GetInstigator();
+
+      Arow = GetWorld()->SpawnActor<AArrow>(ArrowClass, FVector(0.f), FRotator(0.f), SpawnParams);
+      Arow->AttachToComponent(SkeletalMesh,FAttachmentTransformRules::SnapToTargetNotIncludingScale,FName("arrow_attach_socket"));
+    }
+    ```
+    </details>
+
+    <details><summary>h 코드</summary> 
+
+    ```c++
+    //Arrow.h
+    UENUM(BlueprintType)
+    enum class EArrowStatus : uint8 {
+      EAS_Normal		UMETA(DisplayName = "Normal"),
+      EAS_Unobtained	UMETA(DisplayName = "Unobtained"),
+      EAS_InBow		UMETA(DisplayName = "InBow"),
+      EAS_InArrow		UMETA(DisplayName = "InArrow")
+    };
+
+    public:
+      UPROPERTY(EditAnywhere, BlueprintReadWrite)
+      USkeletalMeshComponent* ArrowMesh;
+
+      UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Arrow")
+      EArrowStatus ArrowStatus;
+
+      UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Arrow")
+      bool bisFire = false;
+
+      UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Arrow")
+      float FirePower;
+
+      UFUNCTION()
+      void Fire(float Amount);
+
+      UFUNCTION()
+      void OnStateBegine();
+
+      UFUNCTION()
+      void SetArrowStatus(EArrowStatus Status);
+
+      FORCEINLINE EArrowStatus GetArrowStatus() { return ArrowStatus; }
+    ```
+    </details>
+
+> **<h3>Realization</h3>**
+  - null

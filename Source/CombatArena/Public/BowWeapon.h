@@ -30,7 +30,16 @@ public:
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Combat")
 	TSubclassOf<UDamageType> DamageTypeClass;
 
-	//reload
+	/** Arrow */
+	UPROPERTY(EditDefaultsOnly, BlueprintReadWrite, Category = "Arrow", meta = (AllowPrivateAccess = "true"))
+	AArrow* Arow;
+
+	UPROPERTY(EditDefaultsOnly, BlueprintReadWrite, Category = "Arrow", meta = (AllowPrivateAccess = "true"))
+	TSubclassOf<class AArrow> ArrowClass;
+
+	UPROPERTY(EditAnyWhere, BlueprintReadWrite, Category = "Arrow")
+	float ChargeAmount;
+
 	UFUNCTION(BlueprintNativeEvent, BlueprintCallable)
 	void BeginCharge();
 
@@ -40,9 +49,9 @@ public:
 	UFUNCTION(BlueprintNativeEvent, BlueprintCallable)
 	void EndCharge();
 
-	UFUNCTION(BlueprintNativeEvent, BlueprintCallable)
+	UFUNCTION()
 	void Fire();	
 	
-	UFUNCTION(BlueprintNativeEvent, BlueprintCallable)
+	UFUNCTION()
 	void Reload();
 };

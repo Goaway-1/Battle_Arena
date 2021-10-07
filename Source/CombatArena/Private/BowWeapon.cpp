@@ -1,27 +1,14 @@
 #include "BowWeapon.h"
-#include "Components/TimelineComponent.h"
+#include "Arrow.h"
 
 ABowWeapon::ABowWeapon() {
 	WeaponPos = EWeaponPos::EWP_Bow;
 	Damage = 20.f;
 	AttackRange = 200.f;
-
-	///** TimeLine */
-	//static ConstructorHelpers::FObjectFinder<UCurveFloat> Curvy(TEXT("CurveFloat'/Game/Blueprint/Weapons/ChargeAmount.ChargeAmount'"));
-	//if (Curvy.Object) {
-	//	fCurve = Curvy.Object;
-	//}
-
-	//ScoreTimeline = CreateDefaultSubobject<UTimelineComponent>(this, TEXT("TimelineScore"));
-
-	//InterpFunction.BindUFunction(this, FName{ TEXT("TimelineFloatReturn") });
 }
 
 void ABowWeapon::BeginPlay() {
 	Super::BeginPlay();
-
-	//ScoreTimeline->AddInterpFloat(fCurve, InterpFunction, FName{ TEXT("Floaty") });
-	//ScoreTimeline->Play(); 
 }
 
 void ABowWeapon::Equip(class AMainPlayer* Player) {
@@ -53,20 +40,29 @@ void ABowWeapon::Equip(class AMainPlayer* Player) {
 }
 
 void ABowWeapon::BeginCharge_Implementation() {
-
+	if(!Arow) return;
 }
-void ABowWeapon::StopCharge_Implementation() {
 
+void ABowWeapon::StopCharge_Implementation() {
+	
 }
 
 void ABowWeapon::EndCharge_Implementation() {
-
+	if (!Arow) return;
 }
 
-void ABowWeapon::Fire_Implementation() {
+void ABowWeapon::Fire() {
+	if(!Arow) return;
 
+	Arow->Fire(ChargeAmount);
+	StopCharge();
 }
 
 void ABowWeapon::Reload() {
-	//GetWorld()->SpawnActor<AArrow>();
+	FActorSpawnParameters SpawnParams;
+	SpawnParams.Owner = this;
+	SpawnParams.Instigator = GetInstigator();
+
+	Arow = GetWorld()->SpawnActor<AArrow>(ArrowClass, FVector(0.f), FRotator(0.f), SpawnParams);
+	Arow->AttachToComponent(SkeletalMesh,FAttachmentTransformRules::SnapToTargetNotIncludingScale,FName("arrow_attach_socket"));
 }

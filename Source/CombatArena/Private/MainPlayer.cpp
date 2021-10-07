@@ -344,6 +344,13 @@ void AMainPlayer::RunCamShake() {
 void AMainPlayer::LMBDown() {
 	bLMBDown = true;
 
+	//Bow
+	if (GetMesh()->DoesSocketExist("BowWeapon")) {
+		ABowWeapon* Bow = Cast<ABowWeapon>(CurrentAttackWeapon);
+		if (Bow) Bow->Fire();
+		return;
+	}
+
 	//SKILL
 	if (!bAttacking) Attack();
 	else bIsAttackCheck = true;
