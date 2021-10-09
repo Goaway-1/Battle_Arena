@@ -324,6 +324,8 @@ void AMainPlayer::OffTargeting() {
 	}
 }
 void AMainPlayer::ZoomInCam(FVector Pos,FRotator Rot) {
+	GetController()->SetInitialLocationAndRotation(FVector(0.f), GetActorRotation());
+
 	FLatentActionInfo LatentInfo;
 	LatentInfo.CallbackTarget = this;
 	UKismetSystemLibrary::MoveComponentTo(Camera, Pos, Rot,false,false,0.3f, true,EMoveComponentAction::Type::Move,LatentInfo);
@@ -343,16 +345,17 @@ void AMainPlayer::RunCamShake() {
 #pragma region ATTACK
 void AMainPlayer::LMBDown() {
 	bLMBDown = true;
-
+	
 	//Bow
-	if (GetMesh()->DoesSocketExist("BowWeapon")) {
+	if (GetAttackCurrentWeapon() != nullptr && GetAttackCurrentWeapon()->GetWeaponPos() == EWeaponPos::EWP_Bow) {
 		ABowWeapon* Bow = Cast<ABowWeapon>(CurrentAttackWeapon);
-		if (Bow) Bow->Fire();
-		return;
+		if (Bow) {
+			Bow->Fire();
+			EndCharge();
+			UE_LOG(LogTemp, Warning, TEXT("Shot"));
+		}
 	}
-
-	//SKILL
-	if (!bAttacking) Attack();
+	else if (!bAttacking) Attack();
 	else bIsAttackCheck = true;
 }
 void AMainPlayer::Attack() {
@@ -385,7 +388,6 @@ void AMainPlayer::Attack() {
 
 			/** Combo Event */
 			if (ComboCnt == 2) {
-				GetController()->SetInitialLocationAndRotation(FVector(0.f),GetActorRotation());
 				ZoomInCam(FVector(300.f, 120.f, -30.f), FRotator(0.f, -40.f, 0.f));
 			}
 		}
@@ -508,7 +510,7 @@ bool AMainPlayer::IsBlockingSuccess(AActor* DamageCauser) {
 	return false;
 }
 void AMainPlayer::BeginCharge() {
-	if (GetMesh()->DoesSocketExist("BowWeapon")) {
+	if (GetAttackCurrentWeapon() != nullptr && GetAttackCurrentWeapon()->GetWeaponPos() == EWeaponPos::EWP_Bow) {
 		ABowWeapon* Bow = Cast<ABowWeapon>(CurrentAttackWeapon);
 		if (Bow) {
 			Bow->Reload();
@@ -518,7 +520,7 @@ void AMainPlayer::BeginCharge() {
 }
 
 void AMainPlayer::EndCharge() {
-	if (GetMesh()->DoesSocketExist("BowWeapon")) {
+	if (GetAttackCurrentWeapon() != nullptr && GetAttackCurrentWeapon()->GetWeaponPos() == EWeaponPos::EWP_Bow) {
 		ABowWeapon* Bow = Cast<ABowWeapon>(CurrentAttackWeapon);
 		if (Bow) {
 			Bow->EndCharge();

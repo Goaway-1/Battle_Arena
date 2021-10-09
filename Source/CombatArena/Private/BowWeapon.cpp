@@ -11,6 +11,11 @@ void ABowWeapon::BeginPlay() {
 	Super::BeginPlay();
 }
 
+
+void ABowWeapon::Tick(float DeltaTime) {
+	Super::Tick(DeltaTime);
+}
+
 void ABowWeapon::Equip(class AMainPlayer* Player) {
 	Super::Equip(Player);
 

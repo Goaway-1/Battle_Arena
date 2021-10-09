@@ -14,8 +14,10 @@ class COMBATARENA_API ABowWeapon : public AWeapon
 public:
 	ABowWeapon();
 
-
 	virtual void BeginPlay() override;
+
+public:
+	virtual void Tick(float DeltaTime) override;
 
 	virtual void Equip(class AMainPlayer* Player) override;
 

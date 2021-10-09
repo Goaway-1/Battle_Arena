@@ -6260,4 +6260,53 @@
     </details>
 
 > **<h3>Realization</h3>**
-  - null
+  - UKismetMathLibrary::Lerp(7000, 50000, FirePower)
+  - Attach할때 FDetachmentTransformRules의 상태
+
+## **10.09**
+> **<h3>Today Dev Story</h3>**
+- ## <span style = "color:yellow;">Aim Offset Normal</span>  
+  - <img src="Image/Aim_Offset_Normal.gif" height="300" title="Aim_Offset_Normal">
+  - <img src="Image/Aim_Offset_Normal.png" height="300" title="Aim_Offset_Normal">
+  - 사용자 시점의 변화에 따라서 캐릭터의 시점 또한 변화하기 위한 작업. (추후 활과 같은 곳에서 응용.)
+    - MainPlayer의 스켈레톤에 맞는 Aim Offset을 만들고, Pitch와 Yaw에 맞게 애니메이션 배치.
+    - Aim Offset을 AnimInstance_BP에 끌어다 사용. Blocking이전에 사용하여 결정. (Block시에는 회전 X)
+  - MainPlayerAnim클래스에서 위의 Aim Offset에 할당할 float 값인 ViewYaw/Pitch를 선언하고 할당.
+    - Player의 GetBaseAimRotation()과 GetActorRotation()메서드를 사용하여 각각 시점방향과 회전방향을 반환.
+    - 이 두개의 값을 빼고 평준화하여 각 ViewYaw/Pitch 할당.
+
+    <details><summary>cpp 코드</summary> 
+
+    ```c++
+    //MainPlayerAnim.cpp
+    void UMainPlayerAnim::NativeUpdateAnimation(float DeltaSeconds){
+      ...
+      if (MainPlayer) {
+        ...
+        FRotator VeiwRotator = UKismetMathLibrary::NormalizedDeltaRotator(MainPlayer->GetBaseAimRotation(), MainPlayer->GetActorRotation());
+        ViewYaw =  VeiwRotator.Yaw;
+        ViewPitch = VeiwRotator.Pitch;
+      }
+    }
+    ```
+    </details>
+
+    <details><summary>h 코드</summary> 
+
+    ```c++
+    //MainPlayerAnim.h
+    public:
+      UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Movement", Meta = (AllowPrivateAccess = true))
+      float ViewYaw;
+
+      UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Movement", Meta = (AllowPrivateAccess = true))
+      float ViewPitch;
+    ```
+    </details>
+
+> **<h3>Realization</h3>**
+  - 시점에서 이동 방향을 빼면 위치에 따른 시점.
+    - GetBaseAimRotation : 액터의 시점 각도
+    - GetActorRotation : 액터의 진행 방향
+    - NormalizedDeltaRotator : 두 값을 빼고 평준화. 
+  

@@ -1,5 +1,6 @@
 #include "MainPlayerAnim.h"
 #include "MainPlayer.h"
+#include "Kismet/KismetMathLibrary.h"
 
 void UMainPlayerAnim::NativeInitializeAnimation() {
 	if (!MainPlayer) MainPlayer = Cast<AMainPlayer>(TryGetPawnOwner());
@@ -20,5 +21,10 @@ void UMainPlayerAnim::NativeUpdateAnimation(float DeltaSeconds){
 
 		bIsInAir = MainPlayer->GetMovementComponent()->IsFalling();
 		bTargetOn = MainPlayer->GetTargeting();		
+
+		/** Rotation */
+		FRotator ViewRotator = UKismetMathLibrary::NormalizedDeltaRotator(MainPlayer->GetBaseAimRotation(), MainPlayer->GetActorRotation());
+		ViewYaw = ViewRotator.Yaw;
+		ViewPitch = ViewRotator.Pitch;
 	}
 }
