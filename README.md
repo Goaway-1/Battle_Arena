@@ -6309,4 +6309,148 @@
     - GetBaseAimRotation : 액터의 시점 각도
     - GetActorRotation : 액터의 진행 방향
     - NormalizedDeltaRotator : 두 값을 빼고 평준화. 
-  
+
+## **10.10**
+> **<h3>Today Dev Story</h3>**
+- ## <span style = "color:yellow;">Aim Animation</span>  
+  - <img src="Image/Arrow_Logic.gif" height="300" title="Arrow_Logic">
+  - <img src="Image/Arrow_Logic.png" height="300" title="Arrow_Logic.png">
+  - 활 시위를 당기는 애니메이션을 위해서 Blend Space 1D애니메이션을 생성.
+    - AnimInstance에서 스테이트 머신을 제작하여 활요하며, WeaponStatus가 Bow일때만 활성화.
+    - MainPlayer클래스의 bool 타입인 bCharging에 따라 Animation 전환.
+    - Bow의 ChargeAmount를 MainPlayer의 ChargeAmount에 매 Tick마다 할당하여 Blend Space 1D 사용. (0 ~ 1)
+  - 현재의 무기 상태를 나타내기 위해서 기존 WeaponStatus의 Enum을 수정하여 Weapon이 아닌 Bow/Melee/Shield로 수정. 
+  - 화살을 발사 시 자동으로 원상태로 복구되며 활시위를 당기고 쏘지 않는다면 줄어드는 Animation 활성화. 
+
+    <details><summary>cpp 코드</summary> 
+
+    ```c++
+    //MainPlayer.cpp
+    void AMainPlayer::Tick(float DeltaTime){
+    	BowAnimCharge();
+    }
+    void AMainPlayer::LMBDown() {
+      bLMBDown = true;
+      
+      //Bow
+      if (GetAttackCurrentWeapon() != nullptr && GetAttackCurrentWeapon()->GetWeaponPos() == EWeaponPos::EWP_Bow) {
+        Bow = Cast<ABowWeapon>(CurrentAttackWeapon);
+        if (Bow) {
+          Bow->Fire();
+          EndCharge();
+
+          bBowCharging = false;
+          ChargeAmount = 0;
+        }
+      }
+      else if (!bAttacking) Attack();
+      else bIsAttackCheck = true;
+    }
+    void AMainPlayer::BeginCharge() {
+      if (GetAttackCurrentWeapon() != nullptr && GetAttackCurrentWeapon()->GetWeaponPos() == EWeaponPos::EWP_Bow) {
+        Bow = Cast<ABowWeapon>(CurrentAttackWeapon);
+        if (Bow) {
+          Bow->Reload();
+          Bow->BeginCharge();
+          bBowCharging = true;
+        }
+      }
+    }
+
+    void AMainPlayer::EndCharge() {
+      if (GetAttackCurrentWeapon() != nullptr && GetAttackCurrentWeapon()->GetWeaponPos() == EWeaponPos::EWP_Bow) {
+        Bow = Cast<ABowWeapon>(CurrentAttackWeapon);
+        if (Bow) {
+          Bow->EndCharge();
+        }
+      }
+    }
+    void AMainPlayer::BowAnimCharge() {
+      if (Bow && bBowCharging) ChargeAmount = Bow->ChargeAmount;
+    }
+    ```
+    </details>
+
+    <details><summary>h 코드</summary> 
+
+    ```c++
+    //MainPlayer.h
+    public:
+    	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Bow")
+      class ABowWeapon* Bow;
+
+      UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Bow")
+      float ChargeAmount = 0;
+
+      UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Bow")
+      bool bBowCharging = false;
+          
+      UFUNCTION()
+      void BowAnimCharge();
+    ```
+    </details>
+
+- ## <span style = "color:yellow;">Turn In Place</span>  
+  - <img src="Image/TurnInPlace.gif" height="300" title="TurnInPlace">
+  - <img src="Image/TurnInPlace.png" height="300" title="TurnInPlace">
+  - 캐릭터의 움직임이 없이 카메라의 회전만 있을때 캐릭터를 제자리에서 회전.
+    - CharacterMovement의 bUseControllerDesiredRotation를 활성화 하여 회전속도에 맞게 캐릭터를 회전.
+    - MainPlayer클래스의 LookUp()메서드내에서 실행하며, 이동속도가 없고 회전 값의 크기에 따라 좌우를 구분.
+    - int형인 TurnAxis의 값을 Left(-1)/Idel(0)/Right(1)로 지정.
+  - 위의 TurnAxis 값을 MainPlayerAnim클래스의 UpdateAnimation()메서드에서 매시간 호출하여 저장.
+    - 이 값에 따라 위 그림과 같은 로직으로 이동. __회전을 위해서는 이동속도가 0이여야 함.__
+
+    <details><summary>cpp 코드</summary> 
+
+    ```c++
+    //MainPlayer.cpp
+    AMainPlayer::AMainPlayer()
+    { 
+    	GetCharacterMovement()->bUseControllerDesiredRotation = true;	
+  	  GetCharacterMovement()->bOrientRotationToMovement = false;	//이동방향 회전
+	    GetCharacterMovement()->RotationRate = FRotator(0.f,100.f,0.f);
+    }
+    void AMainPlayer::Lookup(float value) {
+      AddControllerYawInput(value * CameraSpeed * GetWorld()->GetDeltaSeconds());
+
+      //Length
+      if (GetVelocity().Size() == 0) {
+        if (value > 0.3f) TurnAxis = 1;
+        else if (value < -0.3f) TurnAxis = -1;
+        else TurnAxis = 0;
+      }
+      else TurnAxis = 0;
+    }
+    ```
+    ```c++
+    //MainPlayerAnim.cpp
+    void UMainPlayerAnim::NativeUpdateAnimation(float DeltaSeconds){
+      Super::NativeUpdateAnimation(DeltaSeconds);
+      ...
+
+      if (MainPlayer) {
+        ...
+        /** Turn In Place*/
+        TurnAxis = MainPlayer->TurnAxis;
+      }
+    }
+    ```
+    </details>
+
+    <details><summary>h 코드</summary> 
+
+    ```c++
+    //MainPlayer.h
+    public:
+      int TurnAxis = 0;	// Left(-1)/Idle(0)/Right(1)
+    ```
+    ```c++
+    //MainPlayerAnim.h
+    public:
+    	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Movement", Meta = (AllowPrivateAccess = true))
+      int TurnAxis = 0;	
+    ```
+    </details>
+
+> **<h3>Realization</h3>**
+  - null

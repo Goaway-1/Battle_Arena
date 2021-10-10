@@ -26,5 +26,8 @@ void UMainPlayerAnim::NativeUpdateAnimation(float DeltaSeconds){
 		FRotator ViewRotator = UKismetMathLibrary::NormalizedDeltaRotator(MainPlayer->GetBaseAimRotation(), MainPlayer->GetActorRotation());
 		ViewYaw = ViewRotator.Yaw;
 		ViewPitch = ViewRotator.Pitch;
+
+		/** Turn In Place*/
+		TurnAxis = MainPlayer->TurnAxis;
 	}
 }

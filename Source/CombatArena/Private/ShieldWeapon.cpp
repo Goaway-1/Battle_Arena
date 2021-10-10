@@ -26,7 +26,7 @@ void AShieldWeapon::Equip(class AMainPlayer* Player) {
 
 		if (HandSocket) {
 			HandSocket->AttachActor(this, Player->GetMesh());
-			Player->SetWeaponStatus(EWeaponStatus::EWS_Weapon);
+			Player->SetWeaponStatus(EWeaponStatus::EWS_Shield);
 			Player->SetShieldCurrentWeapon(this);
 
 			CollisionVolume->SetCollisionEnabled(ECollisionEnabled::NoCollision);

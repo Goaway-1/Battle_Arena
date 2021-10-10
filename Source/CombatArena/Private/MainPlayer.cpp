@@ -48,8 +48,9 @@ AMainPlayer::AMainPlayer()
 
 #pragma endregion
 #pragma	region	MOVEMENT
-	GetCharacterMovement()->bOrientRotationToMovement = true;	//이동방향 회전
-	GetCharacterMovement()->RotationRate = FRotator(0.f,540.f,0.f);
+	GetCharacterMovement()->bUseControllerDesiredRotation = true;	
+	GetCharacterMovement()->bOrientRotationToMovement = false;	//이동방향 회전
+	GetCharacterMovement()->RotationRate = FRotator(0.f,100.f,0.f);
 	GetCharacterMovement()->JumpZVelocity = 600.f;	//변하지 않아!
 	GetCharacterMovement()->AirControl = 0.5f;
 
@@ -156,6 +157,9 @@ void AMainPlayer::Tick(float DeltaTime)
 
 	/** Set StaminaRatio Widget */
 	SetStaminaRatio();
+
+	/** Anim Charging */
+	BowAnimCharge();
 }
 
 void AMainPlayer::SetupPlayerInputComponent(UInputComponent* PlayerInputComponent)
@@ -214,6 +218,14 @@ void AMainPlayer::SetupPlayerInputComponent(UInputComponent* PlayerInputComponen
 #pragma region CAMERA
 void AMainPlayer::Lookup(float value) {
 	AddControllerYawInput(value * CameraSpeed * GetWorld()->GetDeltaSeconds());
+
+	//Length
+	if (GetVelocity().Size() == 0) {
+		if (value > 0.3f) TurnAxis = 1;
+		else if (value < -0.3f) TurnAxis = -1;
+		else TurnAxis = 0;
+	}
+	else TurnAxis = 0;
 }
 
 void AMainPlayer::Turn(float value) {
@@ -348,11 +360,13 @@ void AMainPlayer::LMBDown() {
 	
 	//Bow
 	if (GetAttackCurrentWeapon() != nullptr && GetAttackCurrentWeapon()->GetWeaponPos() == EWeaponPos::EWP_Bow) {
-		ABowWeapon* Bow = Cast<ABowWeapon>(CurrentAttackWeapon);
+		Bow = Cast<ABowWeapon>(CurrentAttackWeapon);
 		if (Bow) {
 			Bow->Fire();
 			EndCharge();
-			UE_LOG(LogTemp, Warning, TEXT("Shot"));
+
+			bBowCharging = false;
+			ChargeAmount = 0;
 		}
 	}
 	else if (!bAttacking) Attack();
@@ -511,21 +525,26 @@ bool AMainPlayer::IsBlockingSuccess(AActor* DamageCauser) {
 }
 void AMainPlayer::BeginCharge() {
 	if (GetAttackCurrentWeapon() != nullptr && GetAttackCurrentWeapon()->GetWeaponPos() == EWeaponPos::EWP_Bow) {
-		ABowWeapon* Bow = Cast<ABowWeapon>(CurrentAttackWeapon);
+		Bow = Cast<ABowWeapon>(CurrentAttackWeapon);
 		if (Bow) {
 			Bow->Reload();
 			Bow->BeginCharge();
+			bBowCharging = true;
 		}
 	}
 }
 
 void AMainPlayer::EndCharge() {
 	if (GetAttackCurrentWeapon() != nullptr && GetAttackCurrentWeapon()->GetWeaponPos() == EWeaponPos::EWP_Bow) {
-		ABowWeapon* Bow = Cast<ABowWeapon>(CurrentAttackWeapon);
+		Bow = Cast<ABowWeapon>(CurrentAttackWeapon);
 		if (Bow) {
 			Bow->EndCharge();
 		}
 	}
+}
+
+void AMainPlayer::BowAnimCharge() {
+	if (Bow && bBowCharging) ChargeAmount = Bow->ChargeAmount;
 }
 
 #pragma endregion
@@ -579,7 +598,7 @@ void AMainPlayer::ItemEquip() {
 	}
 }
 void AMainPlayer::ItemDrop() {
-	if (GetWeaponStatus() == EWeaponStatus::EWS_Weapon) {
+	if (GetWeaponStatus() != EWeaponStatus::EWS_Normal) {
 		if (CurrentAttackWeapon != nullptr) {
 			CurrentAttackWeapon->UnEquip();
 			CurrentAttackWeapon = nullptr;

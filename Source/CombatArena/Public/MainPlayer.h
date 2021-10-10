@@ -21,7 +21,9 @@ enum class EMovementStatus : uint8 {
 UENUM(BlueprintType)
 enum class EWeaponStatus : uint8 {
 	EWS_Normal		UMETA(DisplayName = "Normal"),
-	EWS_Weapon		UMETA(DisplayName = "Weapon"),
+	EWS_Shield		UMETA(DisplayName = "Shield"),
+	EWS_Melee		UMETA(DisplayName = "Melee"),
+	EWS_Bow			UMETA(DisplayName = "Bow"),
 
 	EWS_Default		UMETA(DisplayName = "Default")
 };
@@ -99,6 +101,8 @@ public:
 	UFUNCTION()
 	void RunCamShake();
 
+	/** Turn Axis */
+	int TurnAxis = 0;	// Left(-1)/Idle(0)/Right(1)
 #pragma endregion
 
 #pragma region MOVEMENT
@@ -226,12 +230,12 @@ public:
 	int ComboMaxCnt;		//최대 공격 횟수
 
 	/** Weapon의 장착 여부 */
-	UPROPERTY(VisibleAnywhere, BlueprintReadWrite, Category = "Weapon")
+	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Weapon")
 	EWeaponStatus WeaponStatus;
 
 	FORCEINLINE void SetWeaponStatus(EWeaponStatus Status) { WeaponStatus = Status; }
 
-	UFUNCTION()
+	UFUNCTION(BlueprintCallable)
 	FORCEINLINE EWeaponStatus GetWeaponStatus() { return WeaponStatus; }
 
 	/** 현재 싸움 상태의 종류  (Attack, Shield,,,)*/
@@ -299,11 +303,23 @@ public:
 	bool IsBlockingSuccess(AActor* DamageCauser);
 
 	/** Bow */
+	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Bow")
+	class ABowWeapon* Bow;
+
+	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Bow")
+	float ChargeAmount = 0;
+
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Bow")
+	bool bBowCharging = false;
+
 	UFUNCTION()
 	void BeginCharge();
 
 	UFUNCTION()
 	void EndCharge();
+
+	UFUNCTION()
+	void BowAnimCharge();
 
 #pragma endregion
 #pragma region SKILL

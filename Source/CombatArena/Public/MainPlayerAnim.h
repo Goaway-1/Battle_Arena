@@ -36,4 +36,8 @@ private:
 
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Movement", Meta = (AllowPrivateAccess = true))
 	float ViewPitch;
+
+	/** Rotation Character View */
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Movement", Meta = (AllowPrivateAccess = true))
+	int TurnAxis = 0;	// Left(-1)/Idle(0)/Right(1)
 };

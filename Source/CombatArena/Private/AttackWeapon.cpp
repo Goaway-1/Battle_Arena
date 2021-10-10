@@ -22,7 +22,7 @@ void AAttackWeapon::Equip(class AMainPlayer* Player) {
 
 		if (HandSocket) {
 			HandSocket->AttachActor(this, Player->GetMesh());
-			Player->SetWeaponStatus(EWeaponStatus::EWS_Weapon);
+			Player->SetWeaponStatus(EWeaponStatus::EWS_Melee);
 
 			Player->AttackRange = GetAttackRange();		//오른쪽 무기만 거리 지정
 			Player->SetAttackCurrentWeapon(this);
