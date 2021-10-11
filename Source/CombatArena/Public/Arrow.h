@@ -48,4 +48,8 @@ public:
 	void SetArrowStatus(EArrowStatus Status);
 
 	FORCEINLINE EArrowStatus GetArrowStatus() { return ArrowStatus; }
+
+	/** For Destructible Mesh */
+	UPROPERTY(VisibleAnywhere, BlueprintReadWrite, Category = "Physic")
+	class URadialForceComponent* RadiaForce;
 };

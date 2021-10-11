@@ -6454,3 +6454,48 @@
 
 > **<h3>Realization</h3>**
   - null
+
+## **10.11**
+> **<h3>Today Dev Story</h3>**
+- ## <span style = "color:yellow;">Destructible Mesh</span>  
+  - <img src="Image/DestructibleMesh.gif" height="300" title="DestructibleMesh">
+  - 특정 충돌을 통해 부서지는 메시인 Destructible Mesh를 제작 및 배치.
+    - 메시를 미리 청크단위로 나뉜후 무너져 내리게 하는 방식.
+    - APEX Destruction Plugin을 추가하고 스태틱 메시를 디스트럭티블 메시로 전환.
+    - 이때 Damage/Enable Impact Damage를 활성화 시켜야만 충돌시 무저져 내린다.
+  - Arrow클래스에 RadiaForceComponent를 추가하여 physic/Destructible Objects에 영향을 주는 Impulse를 방출.
+    - ImpulseStrength/ForceStrength/DestructibleDamage를 각각 설정하여 물체의 밀리는 정도를 상세화.
+  
+    <details><summary>cpp 코드</summary> 
+
+    ```c++
+    //Arrow.cpp
+    #include "PhysicsEngine/RadialForceComponent.h"
+    AArrow::AArrow()
+    {
+      ...
+
+      /** Destructible Mesh */
+      RadiaForce = CreateDefaultSubobject<URadialForceComponent>(TEXT("RadiaForce"));
+      RadiaForce->SetupAttachment(GetRootComponent());
+
+      RadiaForce->ImpulseStrength = 5000.f;	//?
+      RadiaForce->ForceStrength = 1000.f;
+      RadiaForce->DestructibleDamage = 1000.f;
+    }
+    ```
+    </details>
+
+    <details><summary>h 코드</summary> 
+
+    ```c++
+    //Arrow.h
+    public:
+      UPROPERTY(VisibleAnywhere, BlueprintReadWrite, Category = "Physic")
+      class URadialForceComponent* RadiaForce;
+    ```
+    </details>
+
+> **<h3>Realization</h3>**
+  - Destructibon Mesh
+    - 

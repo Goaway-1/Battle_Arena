@@ -1,5 +1,6 @@
 #include "Arrow.h"
 #include "Kismet/KismetMathLibrary.h"
+#include "PhysicsEngine/RadialForceComponent.h"
 
 AArrow::AArrow()
 {
@@ -12,6 +13,15 @@ AArrow::AArrow()
 	SetArrowStatus(EArrowStatus::EAS_InBow);
 
 	FirePower = 0;
+
+	/** Destructible Mesh */
+	RadiaForce = CreateDefaultSubobject<URadialForceComponent>(TEXT("RadiaForce"));
+	RadiaForce->SetupAttachment(GetRootComponent());
+
+	RadiaForce->ImpulseStrength = 5000.f;		//충돌힘
+	RadiaForce->ForceStrength = 1000.f;			//힘의 강도
+	RadiaForce->DestructibleDamage = 1000.f;	//디스트럭티블 메쉬에 손상을 입히는 데미지량.
+
 }
 
 void AArrow::BeginPlay()
