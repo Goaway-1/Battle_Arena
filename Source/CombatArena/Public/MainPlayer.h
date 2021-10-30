@@ -103,6 +103,9 @@ public:
 
 	/** Turn Axis */
 	int TurnAxis = 0;	// Left(-1)/Idle(0)/Right(1)
+
+	UFUNCTION()
+	void TurnInPlace(float value);
 #pragma endregion
 
 #pragma region MOVEMENT

@@ -48,9 +48,9 @@ AMainPlayer::AMainPlayer()
 
 #pragma endregion
 #pragma	region	MOVEMENT
-	GetCharacterMovement()->bUseControllerDesiredRotation = true;	
+	GetCharacterMovement()->bUseControllerDesiredRotation = false; // on&off	
 	GetCharacterMovement()->bOrientRotationToMovement = false;	//이동방향 회전
-	GetCharacterMovement()->RotationRate = FRotator(0.f,100.f,0.f);
+	GetCharacterMovement()->RotationRate = FRotator(0.f,120.f,0.f);
 	GetCharacterMovement()->JumpZVelocity = 600.f;	//변하지 않아!
 	GetCharacterMovement()->AirControl = 0.5f;
 
@@ -87,7 +87,6 @@ AMainPlayer::AMainPlayer()
 #pragma region SKILL
 	SkillFunction = CreateDefaultSubobject<UPlayerSkillFunction>("SkillFunction");
 #pragma endregion
-
 #pragma region HEALTH
 	//Health
 	MaxHealth = 100.f;
@@ -219,17 +218,33 @@ void AMainPlayer::SetupPlayerInputComponent(UInputComponent* PlayerInputComponen
 void AMainPlayer::Lookup(float value) {
 	AddControllerYawInput(value * CameraSpeed * GetWorld()->GetDeltaSeconds());
 
-	//Length
-	if (GetVelocity().Size() == 0) {
-		if (value > 0.3f) TurnAxis = 1;
-		else if (value < -0.3f) TurnAxis = -1;
-		else TurnAxis = 0;
-	}
-	else TurnAxis = 0;
+	/* TurnInPlace */
+	TurnInPlace(value);
 }
 
 void AMainPlayer::Turn(float value) {
 	AddControllerPitchInput(value * CameraSpeed * GetWorld()->GetDeltaSeconds());
+}
+
+void AMainPlayer::TurnInPlace(float value) {
+	FVector ViewPoint;
+	FRotator ViewRotation;
+	float calculationY;
+	
+	PlayerController->GetPlayerViewPoint(ViewPoint, ViewRotation);
+	calculationY = UKismetMathLibrary::Abs(ViewRotation.Yaw - GetActorRotation().Yaw);
+
+	if (calculationY <= 0.5f) {
+		GetCharacterMovement()->bUseControllerDesiredRotation = false;
+		TurnAxis = 0;
+	}
+	else if (calculationY >= 45.f) {
+		GetCharacterMovement()->bUseControllerDesiredRotation = true;
+		if (GetVelocity().Size() == 0) {
+			if (value > 0.1f) TurnAxis = 1;
+			else if (value < -0.1f) TurnAxis = -1;
+		}
+	}
 }
 #pragma endregion
 

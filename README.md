@@ -6498,4 +6498,64 @@
 
 > **<h3>Realization</h3>**
   - Destructibon Mesh
-    - 
+
+## **10.30**
+> **<h3>Today Dev Story</h3>**
+- ## <span style = "color:yellow;">TurnInPlace 수정</span>  
+  - <img src="Image/TurnInPlace_Edit2.gif" height="300" title="TurnInPlace_Edit2">
+  - 플레어의 시점과 카메라의 시점의 각도 차이가 45도 이상이라면 회전을 하도록 설정.
+  - 기존 회전 애니메이션이 1회만 실행되어 자연스러움이 없었는데 이를 위해 Loop를 씌우고 종료 조건을 변경.
+    - 종료조건에 애니메이션 TimeRatio 조건 삭제.
+  - MainPlayer클래스에 새로운 함수 TurnInPlace()를 선언하고 이는 각도 사이를 계산하고 회전.
+    - GetCharacterMovement()->bUseControllerDesiredRotation를 각도에 따라 On/Off 하는 방식으로 회전 여부를 결정.
+    - 각도가 0.5f 이하면 움직임을 멈추고, 45.f 이상이라면 회전.
+
+    <details><summary>cpp 코드</summary> 
+
+    ```c++
+    //MainPlayer.cpp
+    void AMainPlayer::Lookup(float value) {
+      AddControllerYawInput(value * CameraSpeed * GetWorld()->GetDeltaSeconds());
+
+      /* TurnInPlace */
+      TurnInPlace(value);
+    }
+    void AMainPlayer::TurnInPlace(float value) {
+      FVector ViewPoint;
+      FRotator ViewRotation;
+      float calculationY;
+      
+      PlayerController->GetPlayerViewPoint(ViewPoint, ViewRotation);
+      calculationY = UKismetMathLibrary::Abs(ViewRotation.Yaw - GetActorRotation().Yaw);
+
+      if (calculationY <= 0.5f) {
+        GetCharacterMovement()->bUseControllerDesiredRotation = false;
+        TurnAxis = 0;
+      }
+      else if (calculationY >= 45.f) {
+        GetCharacterMovement()->bUseControllerDesiredRotation = true;
+        if (GetVelocity().Size() == 0) {
+          if (value > 0.1f) TurnAxis = 1;
+          else if (value < -0.1f) TurnAxis = -1;
+        }
+      }
+    }
+    ```
+    </details>
+
+    <details><summary>h 코드</summary> 
+
+    ```c++
+    //MainPlayer.h
+    public: 
+    	UFUNCTION()
+	    void TurnInPlace(float value);
+    ```
+    </details>
+
+- ## <span style = "color:yellow;">잡다한 것</span>  
+  - <img src="Image/TurnInPlace_Edit.png" height="300" title="TurnInPlace_Edit">
+  - 기존 상태 조건없이 상하체를 구분하여 회전에 영향을 받도록 설정하였지만, 활로 줌을 한 상태나 막기 상태가 아니라면 구분이 없도록 처리.
+
+> **<h3>Realization</h3>**
+  - null
