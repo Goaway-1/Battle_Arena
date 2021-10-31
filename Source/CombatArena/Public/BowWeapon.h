@@ -4,9 +4,13 @@
 #include "Weapon.h"
 #include "BowWeapon.generated.h"
 
-/**
- * 
- */
+ UENUM(BlueprintType)
+enum class EBowStatus : uint8 {
+	EBS_Normal		UMETA(DisplayName = "Normal"),
+	EBS_Drawing		UMETA(DisplayName = "Drawing"),
+
+	EBS_Default		UMETA(DisplayName = "Default")
+};
 UCLASS()
 class COMBATARENA_API ABowWeapon : public AWeapon
 {
@@ -34,11 +38,12 @@ public:
 
 	/** Arrow */
 	UPROPERTY(EditDefaultsOnly, BlueprintReadWrite, Category = "Arrow", meta = (AllowPrivateAccess = "true"))
-	AArrow* Arow;
+	class AArrow* Arrow;
 
 	UPROPERTY(EditDefaultsOnly, BlueprintReadWrite, Category = "Arrow", meta = (AllowPrivateAccess = "true"))
 	TSubclassOf<class AArrow> ArrowClass;
 
+	/** Charge & Shoot */
 	UPROPERTY(EditAnyWhere, BlueprintReadWrite, Category = "Arrow")
 	float ChargeAmount;
 

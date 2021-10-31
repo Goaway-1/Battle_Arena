@@ -6559,3 +6559,58 @@
 
 > **<h3>Realization</h3>**
   - null
+
+## **10.31**
+> **<h3>Today Dev Story</h3>**
+- ## <span style = "color:yellow;">활시위 당김</span>  
+  - <img src="Image/DrawSpeed.gif" height="300" title="DrawSpeed">
+  - 활시위를 당기고 있다면 정확도를 위해 플레이어의 속도를 감소.
+  - 기존 Sprinting과 Walk를 구분하는 방식과 동일하게 SetMovementStatus()메서드에서 속도 정의
+    - EMovementStatus에서 상태 Drawing을 추가.
+    - 단순히 Begin/EndCharge() 메서드에서는 EMovementStatus의 상태를 Drawing으로 변경.
+
+    <details><summary>cpp 코드</summary> 
+
+    ```c++
+    //MainPlayer.cpp
+    void AMainPlayer::BeginCharge() {
+      if (GetAttackCurrentWeapon() != nullptr && GetAttackCurrentWeapon()->GetWeaponPos() == EWeaponPos::EWP_Bow) {
+        Bow = Cast<ABowWeapon>(CurrentAttackWeapon);
+        if (Bow) {
+          ...
+          SetMovementStatus(EMovementStatus::EMS_Drawing);
+        }
+      }
+    }
+
+    void AMainPlayer::EndCharge() {
+      if (GetAttackCurrentWeapon() != nullptr && GetAttackCurrentWeapon()->GetWeaponPos() == EWeaponPos::EWP_Bow) {
+        Bow = Cast<ABowWeapon>(CurrentAttackWeapon);
+        if (Bow) {
+          ...
+          SetMovementStatus(EMovementStatus::EMS_Normal);
+        }
+      }
+    }
+    ```
+    </details>
+
+    <details><summary>h 코드</summary> 
+
+    ```c++
+    //MainPlayer.h
+    UENUM(BlueprintType)
+    enum class EMovementStatus : uint8 {
+      ...
+      EMS_Drawing		UMETA(DisplayName = "Drawing"),
+      ...
+    }; 
+    ```
+    </details>
+
+- ## <span style = "color:yellow;">활시위 AimOffset</span>  
+  - <img src="Image/Bow_AimOffset.gif" height="300" title="Bow_AimOffset">
+  - 기존 AO_Player Offset과 동일한 방식으로 새로운 AO_Player_Bow Offset을 생성.
+
+> **<h3>Realization</h3>**
+  - null

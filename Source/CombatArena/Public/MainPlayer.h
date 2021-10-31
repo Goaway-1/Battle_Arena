@@ -12,6 +12,7 @@ enum class EMovementStatus : uint8 {
 	EMS_Normal		UMETA(DisplayName = "Normal"),
 	EMS_Walk		UMETA(DisplayName = "Walk"),
 	EMS_Sprinting	UMETA(DisplayName = "Sprinting"),
+	EMS_Drawing		UMETA(DisplayName = "Drawing"),
 	EMS_Death		UMETA(DisplayName = "Death"),
 
 	EMS_Default		UMETA(DisplayName = "Default")
@@ -120,6 +121,9 @@ public:
 	void OffSprinting();
 
 private:
+	UPROPERTY(EditDefaultsOnly, Category = "Movement", Meta = (AllowPrivateAccess = true))
+	float BowSpeed;
+
 	UPROPERTY(EditDefaultsOnly, Category = "Movement", Meta = (AllowPrivateAccess = true))
 	float MoveSpeed;
 
@@ -339,7 +343,6 @@ public:
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Skill")
 	class UPlayerSkillFunction* SkillFunction;
 #pragma endregion
-
 #pragma region HEALTH
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Health")
 	float MaxHealth;
@@ -381,7 +384,6 @@ public:
 	FORCEINLINE float GetStaminaRatio() { return StaminaRatio; }
 
 #pragma endregion
-
 #pragma region ACTIVE
 
 	//현재 겹친 아이템
@@ -414,7 +416,6 @@ public:
 
 	FORCEINLINE UParticleSystem* GetHitParticle() { return HitParticle; }
 #pragma endregion
-
 #pragma region HUD
 
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "HUD")
@@ -443,7 +444,6 @@ public:
 	UFUNCTION()
 	void ESCDown();
 #pragma endregion
-
 #pragma region SAVE&LOAD
 public:
 	UFUNCTION(BlueprintCallable)

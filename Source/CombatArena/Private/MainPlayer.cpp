@@ -50,11 +50,12 @@ AMainPlayer::AMainPlayer()
 #pragma	region	MOVEMENT
 	GetCharacterMovement()->bUseControllerDesiredRotation = false; // on&off	
 	GetCharacterMovement()->bOrientRotationToMovement = false;	//이동방향 회전
-	GetCharacterMovement()->RotationRate = FRotator(0.f,120.f,0.f);
+	GetCharacterMovement()->RotationRate = FRotator(0.f,150.f,0.f);
 	GetCharacterMovement()->JumpZVelocity = 600.f;	//변하지 않아!
 	GetCharacterMovement()->AirControl = 0.5f;
 
 	MovementStatus = EMovementStatus::EMS_Normal;
+	BowSpeed = 200.f;
 	MoveSpeed = 500.f;
 	SprintingSpeed = 750.f;
 
@@ -130,6 +131,9 @@ void AMainPlayer::BeginPlay()
 	
 	/** SkillFunction Initial */
 	SkillFunction->SetInitial(GetController()->GetPawn(),GetMesh(),GetController(),this);
+
+
+	GetCharacterMovement()->bUseControllerDesiredRotation = false; // on&off	
 }
 
 void AMainPlayer::PossessedBy(AController* NewController) {
@@ -219,7 +223,7 @@ void AMainPlayer::Lookup(float value) {
 	AddControllerYawInput(value * CameraSpeed * GetWorld()->GetDeltaSeconds());
 
 	/* TurnInPlace */
-	TurnInPlace(value);
+	if(GetMovementStatus() != EMovementStatus::EMS_Drawing) TurnInPlace(value);
 }
 
 void AMainPlayer::Turn(float value) {
@@ -268,9 +272,8 @@ void AMainPlayer::Jump() {
 }
 void  AMainPlayer::SetMovementStatus(EMovementStatus Status) {
 	MovementStatus = Status;
-	if (MovementStatus == EMovementStatus::EMS_Sprinting) {
-		GetCharacterMovement()->MaxWalkSpeed = SprintingSpeed;
-	}
+	if (MovementStatus == EMovementStatus::EMS_Sprinting) GetCharacterMovement()->MaxWalkSpeed = SprintingSpeed;
+	else if(MovementStatus == EMovementStatus::EMS_Drawing) GetCharacterMovement()->MaxWalkSpeed = BowSpeed;
 	else GetCharacterMovement()->MaxWalkSpeed = MoveSpeed;
 }
 void AMainPlayer::OnSprinting() {
@@ -545,6 +548,7 @@ void AMainPlayer::BeginCharge() {
 			Bow->Reload();
 			Bow->BeginCharge();
 			bBowCharging = true;
+			SetMovementStatus(EMovementStatus::EMS_Drawing);
 		}
 	}
 }
@@ -554,6 +558,7 @@ void AMainPlayer::EndCharge() {
 		Bow = Cast<ABowWeapon>(CurrentAttackWeapon);
 		if (Bow) {
 			Bow->EndCharge();
+			SetMovementStatus(EMovementStatus::EMS_Normal);
 		}
 	}
 }
@@ -561,7 +566,6 @@ void AMainPlayer::EndCharge() {
 void AMainPlayer::BowAnimCharge() {
 	if (Bow && bBowCharging) ChargeAmount = Bow->ChargeAmount;
 }
-
 #pragma endregion
 
 #pragma region SKILL
