@@ -25,18 +25,27 @@ AMainPlayer::AMainPlayer()
 	AIPerceptionSource = CreateDefaultSubobject<UAIPerceptionStimuliSourceComponent>(TEXT("AIPerceptionSource"));
 #pragma endregion
 #pragma region CAMERA
-	SpringArm = CreateDefaultSubobject<USpringArmComponent>(TEXT("SringArm"));
-	SpringArm->SetupAttachment(GetRootComponent());
-	SpringArm->bUsePawnControlRotation = true;	//플레이어가 컨트롤 할 수 있게 만들어줌
-	SpringArm->SocketOffset = FVector(0.f, 0.f, 0.f);
-	
-	//카메라 회전 On
-	SpringArm->bInheritPitch = true;
-	SpringArm->bInheritRoll = true;
-	SpringArm->bInheritYaw = true;
+	/** SpringArms */
+	SpringArmSence = CreateDefaultSubobject<USceneComponent>(TEXT("SpringArmSence"));
+	SpringArmSence->SetupAttachment(GetRootComponent());
 
+	SpringArm = CreateDefaultSubobject<USpringArmComponent>(TEXT("SringArm"));
+	SetArms(SpringArm);
 	SpringArm->TargetArmLength = 350.f;
 
+	SpringArm_Sprinting = CreateDefaultSubobject<USpringArmComponent>(TEXT("SpringArm_Sprinting"));
+	SetArms(SpringArm_Sprinting);
+
+	SpringArm_Attacking = CreateDefaultSubobject<USpringArmComponent>(TEXT("SpringArm_Attacking"));
+	SetArms(SpringArm_Attacking);
+
+	SpringArm_Drawing = CreateDefaultSubobject<USpringArmComponent>(TEXT("SpringArm_Drawing"));
+	SetArms(SpringArm_Drawing);
+
+	SpringArm_Skilling = CreateDefaultSubobject<USpringArmComponent>(TEXT("SpringArm_Skilling")); 
+	SetArms(SpringArm_Skilling);
+
+	/** Camera Setting */
 	Camera = CreateDefaultSubobject<UCameraComponent>(TEXT("Camera"));
 	Camera->SetupAttachment(SpringArm, USpringArmComponent::SocketName);
 	Camera->bUsePawnControlRotation = false;
@@ -131,9 +140,6 @@ void AMainPlayer::BeginPlay()
 	
 	/** SkillFunction Initial */
 	SkillFunction->SetInitial(GetController()->GetPawn(),GetMesh(),GetController(),this);
-
-
-	GetCharacterMovement()->bUseControllerDesiredRotation = false; // on&off	
 }
 
 void AMainPlayer::PossessedBy(AController* NewController) {
@@ -225,11 +231,9 @@ void AMainPlayer::Lookup(float value) {
 	/* TurnInPlace */
 	if(GetMovementStatus() != EMovementStatus::EMS_Drawing) TurnInPlace(value);
 }
-
 void AMainPlayer::Turn(float value) {
 	AddControllerPitchInput(value * CameraSpeed * GetWorld()->GetDeltaSeconds());
 }
-
 void AMainPlayer::TurnInPlace(float value) {
 	FVector ViewPoint;
 	FRotator ViewRotation;
@@ -242,13 +246,20 @@ void AMainPlayer::TurnInPlace(float value) {
 		GetCharacterMovement()->bUseControllerDesiredRotation = false;
 		TurnAxis = 0;
 	}
-	else if (calculationY >= 45.f) {
+	else if (calculationY >= 90.f) {
 		GetCharacterMovement()->bUseControllerDesiredRotation = true;
 		if (GetVelocity().Size() == 0) {
 			if (value > 0.1f) TurnAxis = 1;
 			else if (value < -0.1f) TurnAxis = -1;
 		}
 	}
+}
+void AMainPlayer::SetArms(USpringArmComponent* Arm) {
+	Arm->SetupAttachment(SpringArmSence);
+	Arm->bUsePawnControlRotation = true;
+	Arm->bInheritPitch = true;
+	Arm->bInheritRoll = true;
+	Arm->bInheritYaw = true;
 }
 #pragma endregion
 
@@ -280,7 +291,7 @@ void AMainPlayer::OnSprinting() {
 	if (!IsCanMove() || GetStaminaRatio() <= 0.3f) return;
 	if (MovementStatus != EMovementStatus::EMS_Sprinting && DirX != 0 || DirY != 0) {
 		SetMovementStatus(EMovementStatus::EMS_Sprinting);
-		ZoomInCam(FVector(150.f, 0.f, 0.f));
+		ZoomInCam(SpringArm_Sprinting);
 	}
 }
 void AMainPlayer::OffSprinting() {
@@ -353,14 +364,16 @@ void AMainPlayer::OffTargeting() {
 		CombatTarget->HideEnemyTarget();
 	}
 }
-void AMainPlayer::ZoomInCam(FVector Pos,FRotator Rot) {
-	GetController()->SetInitialLocationAndRotation(FVector(0.f), GetActorRotation());
+void AMainPlayer::ZoomInCam(USpringArmComponent* Arm,FRotator Rot) {
+	Camera->AttachToComponent(Arm, FAttachmentTransformRules(EAttachmentRule::KeepWorld, false));
 
 	FLatentActionInfo LatentInfo;
 	LatentInfo.CallbackTarget = this;
-	UKismetSystemLibrary::MoveComponentTo(Camera, Pos, Rot,false,false,0.3f, true,EMoveComponentAction::Type::Move,LatentInfo);
+	UKismetSystemLibrary::MoveComponentTo(Camera, FVector(0.f), Rot,false,false,0.3f, true,EMoveComponentAction::Type::Move,LatentInfo);
 }
 void AMainPlayer::ZoomOutCam() {
+	Camera->AttachToComponent(SpringArm, FAttachmentTransformRules(EAttachmentRule::KeepWorld, false));
+
 	FLatentActionInfo LatentInfo;
 	LatentInfo.CallbackTarget = this;
 	UKismetSystemLibrary::MoveComponentTo(Camera, FVector(0.f), FRotator(0.f), false, false, 0.4f, true, EMoveComponentAction::Type::Move, LatentInfo);
@@ -420,7 +433,7 @@ void AMainPlayer::Attack() {
 
 			/** Combo Event */
 			if (ComboCnt == 2) {
-				ZoomInCam(FVector(300.f, 120.f, -30.f), FRotator(0.f, -40.f, 0.f));
+				ZoomInCam(SpringArm_Attacking,FRotator(0.f,-30.f,0.f));
 			}
 		}
 	}
@@ -549,20 +562,20 @@ void AMainPlayer::BeginCharge() {
 			Bow->BeginCharge();
 			bBowCharging = true;
 			SetMovementStatus(EMovementStatus::EMS_Drawing);
+			ZoomInCam(SpringArm_Drawing);
 		}
 	}
 }
-
 void AMainPlayer::EndCharge() {
 	if (GetAttackCurrentWeapon() != nullptr && GetAttackCurrentWeapon()->GetWeaponPos() == EWeaponPos::EWP_Bow) {
 		Bow = Cast<ABowWeapon>(CurrentAttackWeapon);
 		if (Bow) {
 			Bow->EndCharge();
 			SetMovementStatus(EMovementStatus::EMS_Normal);
+			ZoomOutCam();
 		}
 	}
 }
-
 void AMainPlayer::BowAnimCharge() {
 	if (Bow && bBowCharging) ChargeAmount = Bow->ChargeAmount;
 }
@@ -580,19 +593,16 @@ void AMainPlayer::SkillBegin() {
 	SetCombatStatus(ECombatStatus::ECS_Skilling);
 
 	/** Set Player View */
-	PlayerController->SetInitialLocationAndRotation(FVector(0.f), FRotator(0.f));
-	ZoomInCam(FVector(-200.f, 0.f, 400.f), FRotator(-30.f, 0.f, 0.f));
+	ZoomInCam(SpringArm_Skilling, FRotator(-20.f, 0.f, 0.f));
 
 	/** Use Skill */
 	//SkillFunction->LazerAttack();	
 	SkillFunction->GroundAttack();
 }
-
 void AMainPlayer::SkillEnd() {
 	SetCombatStatus(ECombatStatus::ECS_Normal);
 
 	/** Set Player View */
-	PlayerController->SetInitialLocationAndRotation(GetActorForwardVector(),FRotator(0.f));
 	ZoomOutCam();
 
 	/** Use Skill */

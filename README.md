@@ -6614,3 +6614,129 @@
 
 > **<h3>Realization</h3>**
   - null
+
+## **11.01**
+> **<h3>Today Dev Story</h3>**
+- ## <span style = "color:yellow;">카메라의 이동</span>
+  - <img src="Image/Camera_Move_Edit_ver2.gif" height="300" title="Camera_Move_Edit_ver2">
+  - <img src="Image/SpringArmSence.png" height="200" title="SpringArmSence">
+  - 기존 카메라의 이동 방식은 비효율적이고 부자연스러워 새로운 방식으로 진행
+    - 기존 방식 : "카메라 위치,각도 0으로 초기화 후 일정 Vector로 이동하는 방식"
+    - <span style = "color:yellow;">새로운 방식 : "각 위치에 맞는 SpringArmComponent를 생성해두고 그 위치로 Camera를 Attach시키고 위치조절하는 방식"</span>
+  - MainPlayer클래스에 ScecneComponent를 생성하여 이 컴포넌트안에 SpringArm들을 모두 삽입.
+    - 새로운 메서드 SetArms()를 생성하고 이는 많은 SpringArm들을 초기화해주는 작업을 진행.
+    - 기존 __ZoomInCam(USpringArmComponent* Arm, FRotator Rot = FRotator(0.f))메서드에서__ 매개변수를 이동을 원하는 SpringArm과 회전값 Rotator로 입력받음. 이때 Rotator는 기본 0.f로 고정. 
+
+    <details><summary>cpp 코드</summary> 
+
+    ```c++
+    //MainPlayer.cpp
+    AMainPlayer::AMainPlayer()
+    {
+      SpringArmSence = CreateDefaultSubobject<USceneComponent>(TEXT("SpringArmSence"));
+      SpringArmSence->SetupAttachment(GetRootComponent());
+
+      SpringArm = CreateDefaultSubobject<USpringArmComponent>(TEXT("SringArm"));
+      SetArms(SpringArm);
+      SpringArm->TargetArmLength = 350.f;
+
+      SpringArm_Sprinting = CreateDefaultSubobject<USpringArmComponent>(TEXT("SpringArm_Sprinting"));
+      SetArms(SpringArm_Sprinting);
+
+      SpringArm_Attacking = CreateDefaultSubobject<USpringArmComponent>(TEXT("SpringArm_Attacking"));
+      SetArms(SpringArm_Attacking);
+
+      SpringArm_Drawing = CreateDefaultSubobject<USpringArmComponent>(TEXT("SpringArm_Drawing"));
+      SetArms(SpringArm_Drawing);
+
+      SpringArm_Skilling = CreateDefaultSubobject<USpringArmComponent>(TEXT("SpringArm_Skilling")); 
+      SetArms(SpringArm_Skilling);
+
+      ....
+    }
+    void AMainPlayer::SetArms(USpringArmComponent* Arm) {
+      Arm->SetupAttachment(SpringArmSence);
+      Arm->bUsePawnControlRotation = true;
+      Arm->bInheritPitch = true;
+      Arm->bInheritRoll = true;
+      Arm->bInheritYaw = true;
+    }
+    void AMainPlayer::ZoomInCam(USpringArmComponent* Arm,FRotator Rot) {
+      Camera->AttachToComponent(Arm, FAttachmentTransformRules(EAttachmentRule::KeepWorld, false));
+
+      FLatentActionInfo LatentInfo;
+      LatentInfo.CallbackTarget = this;
+      UKismetSystemLibrary::MoveComponentTo(Camera, FVector(0.f), Rot,false,false,0.3f, true,EMoveComponentAction::Type::Move,LatentInfo);
+    }
+    void AMainPlayer::ZoomOutCam() {
+      Camera->AttachToComponent(SpringArm, FAttachmentTransformRules(EAttachmentRule::KeepWorld, false));
+
+      FLatentActionInfo LatentInfo;
+      LatentInfo.CallbackTarget = this;
+      UKismetSystemLibrary::MoveComponentTo(Camera, FVector(0.f), FRotator(0.f), false, false, 0.4f, true, EMoveComponentAction::Type::Move, LatentInfo);
+    }
+    ```
+    </details>
+
+    <details><summary>h 코드</summary> 
+
+    ```c++
+    //MainPlayer.h
+    public:
+    	UPROPERTY(VisibleAnywhere, BlueprintReadWrite, Category = "Camera")
+      class USceneComponent* SpringArmSence;
+
+      UPROPERTY(VisibleAnywhere, BlueprintReadWrite, Category = "Camera")
+      class USpringArmComponent* SpringArm;
+
+      UPROPERTY(VisibleAnywhere, BlueprintReadWrite, Category = "Camera")
+      class USpringArmComponent* SpringArm_Sprinting;
+
+      UPROPERTY(VisibleAnywhere, BlueprintReadWrite, Category = "Camera")
+      class USpringArmComponent* SpringArm_Attacking;
+
+      UPROPERTY(VisibleAnywhere, BlueprintReadWrite, Category = "Camera")
+      class USpringArmComponent* SpringArm_Drawing;
+
+      UPROPERTY(VisibleAnywhere, BlueprintReadWrite, Category = "Camera")
+      class USpringArmComponent* SpringArm_Skilling;
+
+      UFUNCTION()
+    	void ZoomInCam(USpringArmComponent* Arm, FRotator Rot = FRotator(0.f));
+
+    	UFUNCTION()
+    	void SetArms(USpringArmComponent* Arm);
+    ```
+    </details>
+
+- ## <span style = "color:yellow;">활시위 카메라의 이동</span>
+  - <img src="Image/Bow_Aim.gif" height="300" title="Bow_Aim">
+  - 위와 동일한 방식으로 진행하였으며, 활시위를 당길때 ZoomIn하고 놓을때 ZoomOut 진행.
+    
+    <details><summary>cpp 코드</summary> 
+
+    ```c++
+    //MainPlayer.cpp
+    void AMainPlayer::BeginCharge() {
+      if (GetAttackCurrentWeapon() != nullptr && GetAttackCurrentWeapon()->GetWeaponPos() == EWeaponPos::EWP_Bow) {
+        Bow = Cast<ABowWeapon>(CurrentAttackWeapon);
+        if (Bow) {
+          ...
+          ZoomInCam(SpringArm_Drawing);
+        }
+      }
+    }
+    void AMainPlayer::EndCharge() {
+      if (GetAttackCurrentWeapon() != nullptr && GetAttackCurrentWeapon()->GetWeaponPos() == EWeaponPos::EWP_Bow) {
+        Bow = Cast<ABowWeapon>(CurrentAttackWeapon);
+        if (Bow) {
+          ...
+          ZoomOutCam();
+        }
+      }
+    }
+    ```
+    </details>
+
+> **<h3>Realization</h3>**
+  - null

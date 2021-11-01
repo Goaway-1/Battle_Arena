@@ -66,23 +66,40 @@ public:
 
 
 #pragma region CAMERA
+	/** SpringArms */ 
+	UPROPERTY(VisibleAnywhere, BlueprintReadWrite, Category = "Camera")
+	class USceneComponent* SpringArmSence;
 
 	UPROPERTY(VisibleAnywhere, BlueprintReadWrite, Category = "Camera")
 	class USpringArmComponent* SpringArm;
 
 	UPROPERTY(VisibleAnywhere, BlueprintReadWrite, Category = "Camera")
+	class USpringArmComponent* SpringArm_Sprinting;
+
+	UPROPERTY(VisibleAnywhere, BlueprintReadWrite, Category = "Camera")
+	class USpringArmComponent* SpringArm_Attacking;
+
+	UPROPERTY(VisibleAnywhere, BlueprintReadWrite, Category = "Camera")
+	class USpringArmComponent* SpringArm_Drawing;
+
+	UPROPERTY(VisibleAnywhere, BlueprintReadWrite, Category = "Camera")
+	class USpringArmComponent* SpringArm_Skilling;
+
+	UPROPERTY(VisibleAnywhere, BlueprintReadWrite, Category = "Camera")
 	class UCameraComponent* Camera;
 
-	//Hited Camera Shake
+	/** Hited Camera Shake */
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Camera")
 	TSubclassOf<UMatineeCameraShake> CamShake;
 
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Camera")
 	class APlayerCameraManager* CameraManager;
 private:
-
 	UPROPERTY(EditDefaultsOnly, Category = "Camera", Meta = (AllowPrivateAccess = true))
 	float CameraSpeed = 20.f;
+
+	/** Turn Axis */
+	int TurnAxis = 0;
 
 public:
 	void Lookup(float value);
@@ -91,7 +108,7 @@ public:
 
 	/** If Sprinting end then Zoom the camera and shaking */
 	UFUNCTION()
-	void ZoomInCam(FVector Pos, FRotator Rot = FRotator(0.f));
+	void ZoomInCam(USpringArmComponent* Arm, FRotator Rot = FRotator(0.f));
 
 	UFUNCTION()
 	void ZoomOutCam();
@@ -102,11 +119,14 @@ public:
 	UFUNCTION()
 	void RunCamShake();
 
-	/** Turn Axis */
-	int TurnAxis = 0;	// Left(-1)/Idle(0)/Right(1)
-
 	UFUNCTION()
 	void TurnInPlace(float value);
+
+	UFUNCTION()
+	FORCEINLINE int GetTurnAxis() {return TurnAxis; }
+
+	UFUNCTION()
+	void SetArms(USpringArmComponent* Arm);
 #pragma endregion
 
 #pragma region MOVEMENT
@@ -451,6 +471,5 @@ public:
 
 	UFUNCTION(BlueprintCallable)
 	void LoadData();
-
 #pragma endregion
 };

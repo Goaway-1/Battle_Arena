@@ -28,6 +28,6 @@ void UMainPlayerAnim::NativeUpdateAnimation(float DeltaSeconds){
 		ViewPitch = ViewRotator.Pitch;
 
 		/** Turn In Place*/
-		TurnAxis = MainPlayer->TurnAxis;
+		TurnAxis = MainPlayer->GetTurnAxis();
 	}
 }
