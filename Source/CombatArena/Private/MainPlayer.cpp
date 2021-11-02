@@ -229,7 +229,8 @@ void AMainPlayer::Lookup(float value) {
 	AddControllerYawInput(value * CameraSpeed * GetWorld()->GetDeltaSeconds());
 
 	/* TurnInPlace */
-	if(GetMovementStatus() != EMovementStatus::EMS_Drawing) TurnInPlace(value);
+	//if(GetMovementStatus() != EMovementStatus::EMS_Drawing) TurnInPlace(value);
+	TurnInPlace(value);
 }
 void AMainPlayer::Turn(float value) {
 	AddControllerPitchInput(value * CameraSpeed * GetWorld()->GetDeltaSeconds());
@@ -246,7 +247,7 @@ void AMainPlayer::TurnInPlace(float value) {
 		GetCharacterMovement()->bUseControllerDesiredRotation = false;
 		TurnAxis = 0;
 	}
-	else if (calculationY >= 90.f) {
+	else if (calculationY >= 90.f || (DirX != 0 || DirY != 0)) {
 		GetCharacterMovement()->bUseControllerDesiredRotation = true;
 		if (GetVelocity().Size() == 0) {
 			if (value > 0.1f) TurnAxis = 1;

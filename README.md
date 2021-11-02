@@ -6740,3 +6740,28 @@
 
 > **<h3>Realization</h3>**
   - null
+
+
+## **11.02**
+> **<h3>Today Dev Story</h3>**
+- ## <span style = "color:yellow;">잡다한 것</span>
+  1. 방어 중, 활시위 당기는 중의 회전은 몸이 올라간 후 회전하는 현상 발생
+    - 이를 해결하기 위해 Bone마다 Bending한 Blend Depth를 아래와 같이 수정
+    - Pelvis : 10 , thigh_r/l : -3
+  2. 플레이어와 캐릭터 간의 시점차이가 40.f밖에 차이가 나지 않을때 이상현상.
+    - 시점의 회전되지 않는 상태로 전진. 이렇게 되면 이상함을 느낌
+    - 이동할때는 자동으로 회전하도록 속도를 입력받아 다음과 같이 조건을 변경.
+
+      <details><summary>cpp 코드</summary> 
+
+      ```c++
+      void AMainPlayer::TurnInPlace(float value) {
+        if (calculationY <= 0.5f) {
+          ...
+        }
+        else if (calculationY >= 90.f || (DirX != 0 || DirY != 0)) {
+          ...
+        }
+      } 
+      ```
+      </details>
