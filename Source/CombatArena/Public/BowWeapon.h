@@ -51,13 +51,10 @@ public:
 	void BeginCharge();
 
 	UFUNCTION(BlueprintNativeEvent, BlueprintCallable)
-	void StopCharge();
-
-	UFUNCTION(BlueprintNativeEvent, BlueprintCallable)
 	void EndCharge();
 
 	UFUNCTION()
-	void Fire();	
+	void Fire();
 	
 	UFUNCTION()
 	void Reload();

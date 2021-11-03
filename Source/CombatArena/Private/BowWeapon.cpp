@@ -44,22 +44,25 @@ void ABowWeapon::Equip(class AMainPlayer* Player) {
 void ABowWeapon::BeginCharge_Implementation() {
 	if(!Arrow) return;
 }
-void ABowWeapon::StopCharge_Implementation() {
-}
 void ABowWeapon::EndCharge_Implementation() {
 	if (!Arrow) return;
+	//Arrow->Destroy();
+	Arrow = nullptr;
 }
 void ABowWeapon::Fire() {
 	if(!Arrow) return;
 
 	Arrow->Fire(ChargeAmount);
-	StopCharge();
+	Arrow = nullptr;
+	EndCharge();
 }
 void ABowWeapon::Reload() {
 	FActorSpawnParameters SpawnParams;
 	SpawnParams.Owner = this;
 	SpawnParams.Instigator = GetInstigator();
 
-	Arrow = GetWorld()->SpawnActor<AArrow>(ArrowClass, FVector(0.f), FRotator(0.f), SpawnParams);
-	Arrow->AttachToComponent(SkeletalMesh,FAttachmentTransformRules::SnapToTargetNotIncludingScale,FName("arrow_attach_socket"));
+	if (!Arrow) {
+		Arrow = GetWorld()->SpawnActor<AArrow>(ArrowClass, FVector(0.f), FRotator(0.f), SpawnParams);
+		Arrow->AttachToComponent(SkeletalMesh, FAttachmentTransformRules::SnapToTargetNotIncludingScale, FName("arrow_attach_socket"));
+	}
 }

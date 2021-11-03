@@ -393,12 +393,10 @@ void AMainPlayer::LMBDown() {
 	//Bow
 	if (GetAttackCurrentWeapon() != nullptr && GetAttackCurrentWeapon()->GetWeaponPos() == EWeaponPos::EWP_Bow) {
 		Bow = Cast<ABowWeapon>(CurrentAttackWeapon);
-		if (Bow) {
-			Bow->Fire();
-			EndCharge();
-
+		if (Bow && ChargeAmount >= 0.7f) {
+			Bow->Fire(); 
 			bBowCharging = false;
-			ChargeAmount = 0;
+			EndCharge();
 		}
 	}
 	else if (!bAttacking) Attack();
@@ -572,8 +570,17 @@ void AMainPlayer::EndCharge() {
 		Bow = Cast<ABowWeapon>(CurrentAttackWeapon);
 		if (Bow) {
 			Bow->EndCharge();
-			SetMovementStatus(EMovementStatus::EMS_Normal);
-			ZoomOutCam();
+			/** 1. 쐇는데 당기고 있을 경우 */
+			if(!bBowCharging && (MovementStatus == EMovementStatus::EMS_Drawing)) {
+				ChargeAmount = 0;
+				BeginCharge();
+			}
+			/** 2. 당기다가 놨을 경우 */
+			else {
+				SetMovementStatus(EMovementStatus::EMS_Normal);
+				bBowCharging = false;
+				ZoomOutCam();
+			}
 		}
 	}
 }

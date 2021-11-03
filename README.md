@@ -6765,3 +6765,62 @@
       } 
       ```
       </details>
+
+> **<h3>Realization</h3>**
+  - null
+
+## **11.03**
+> **<h3>Today Dev Story</h3>**
+- ## <span style = "color:yellow;">활 수정</span>
+  - <img src="Image/" height="300" title="">
+  - 활을 연속으로 발사하기 위해서 EndCharge()메서드 수정.
+    - 경우는 2가지로 화살을 발사하였는데도 당기고 있는 경우, 당기다가 활시위를 놓았을 경우.
+    - 활시위를 놓았을때만 카메라의 줌이 밖으로 나가도록 수정. 
+    - 또한 일정량 만큼 활시위를 당겼을 경우만 발사 가능.
+  - 활시위를 당기다가 취소할 경우 활시위가 앞으로 밀리는 것이 아닌 초기 상태로 돌아가도록 변경.
+    - BowWeapon클래스의 EndCharge를 삭제하고 StopCharge()를 EndCharge()로 변경.
+
+    <details><summary>cpp 코드</summary> 
+    
+    ```c++
+    void AMainPlayer::LMBDown() {
+      bLMBDown = true;
+      
+      if (GetAttackCurrentWeapon() != nullptr && GetAttackCurrentWeapon()->GetWeaponPos() == EWeaponPos::EWP_Bow) {
+        Bow = Cast<ABowWeapon>(CurrentAttackWeapon);
+        if (Bow && ChargeAmount >= 0.7f) {
+          Bow->Fire(); 
+          bBowCharging = false;
+          EndCharge();
+        }
+      }
+    }
+    void AMainPlayer::EndCharge() {
+      ...
+      if (Bow) {
+        Bow->EndCharge();
+        /** 1. 쐇는데 당기고 있을 경우 */
+        if(!bBowCharging && (MovementStatus == EMovementStatus::EMS_Drawing)) {
+          ChargeAmount = 0;
+          BeginCharge();
+        }
+        /** 2. 당기다가 놨을 경우 */
+        else {
+          SetMovementStatus(EMovementStatus::EMS_Normal);
+          bBowCharging = false;
+          ZoomOutCam();
+        }
+      }
+    }
+    ```
+    </details>
+- ## <span style = "color:yellow;">활 수정_2</span>
+  - 화살의 삭제. EndCharge_Implementation()
+
+
+- ## <span style = "color:yellow;">잡다한 것</span>
+  1. Bow Drawing시 이미 화살이 있는데도 다시 로드되는 오류 수정.
+    - 이미 있다면 생성하지 않고, 발사 후에는 Arrow를 nullptr로 변경.
+
+> **<h3>Realization</h3>**
+  - null
