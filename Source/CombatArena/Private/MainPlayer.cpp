@@ -229,7 +229,6 @@ void AMainPlayer::Lookup(float value) {
 	AddControllerYawInput(value * CameraSpeed * GetWorld()->GetDeltaSeconds());
 
 	/* TurnInPlace */
-	//if(GetMovementStatus() != EMovementStatus::EMS_Drawing) TurnInPlace(value);
 	TurnInPlace(value);
 }
 void AMainPlayer::Turn(float value) {
@@ -561,7 +560,7 @@ void AMainPlayer::BeginCharge() {
 			Bow->BeginCharge();
 			bBowCharging = true;
 			SetMovementStatus(EMovementStatus::EMS_Drawing);
-			ZoomInCam(SpringArm_Drawing);
+			ZoomInCam(SpringArm_Drawing, FRotator(0.f,-20.f,0.f));
 		}
 	}
 }

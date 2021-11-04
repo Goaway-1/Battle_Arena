@@ -22,12 +22,17 @@ AArrow::AArrow()
 	RadiaForce->ForceStrength = 1000.f;			//힘의 강도
 	RadiaForce->DestructibleDamage = 1000.f;	//디스트럭티블 메쉬에 손상을 입히는 데미지량.
 
+	/** ArrowCollision */
+	/*ArrowCollision = CreateDefaultSubobject<USphereComponent>(TEXT("ArrowCollision"));
+	ArrowCollision->SetSphereRadius(4.f);
+	ArrowCollision->AddRelativeLocation(FVector(80.f,0.f,0.f));
+
+	ArrowCollision->OnComponentBeginOverlap.AddDynamic(this, &AArrow::OnOverlapBegin);*/
 }
 
 void AArrow::BeginPlay()
 {
 	Super::BeginPlay();
-	
 }
 
 void AArrow::Tick(float DeltaTime)
@@ -71,4 +76,12 @@ void AArrow::Fire(float Amount) {
 	DetachFromActor(FDetachmentTransformRules::KeepWorldTransform);
 	SetArrowStatus(EArrowStatus::EAS_InArrow);
 	FirePower = Amount;
+}
+
+void AArrow::OnOverlapBegin(UPrimitiveComponent* OverlappedComponent, AActor* OtherActor, UPrimitiveComponent* OtherComp, int32 OtherBodyIndex, bool bFromSweep, const FHitResult& SweepResult) {
+	UE_LOG(LogTemp, Warning, TEXT("ShootDown"));
+	if (OtherActor) {
+		UE_LOG(LogTemp, Warning, TEXT("ShootDown2"));
+		OtherActor->AttachToActor(this, FAttachmentTransformRules::KeepWorldTransform);
+	}
 }

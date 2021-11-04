@@ -45,9 +45,10 @@ void ABowWeapon::BeginCharge_Implementation() {
 	if(!Arrow) return;
 }
 void ABowWeapon::EndCharge_Implementation() {
-	if (!Arrow) return;
-	//Arrow->Destroy();
-	Arrow = nullptr;
+	if (Arrow) {
+		Arrow->Destroy();
+		Arrow = nullptr;
+	}
 }
 void ABowWeapon::Fire() {
 	if(!Arrow) return;

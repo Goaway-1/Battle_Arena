@@ -6755,6 +6755,7 @@
       <details><summary>cpp 코드</summary> 
 
       ```c++
+      //AMainPlayer.cpp
       void AMainPlayer::TurnInPlace(float value) {
         if (calculationY <= 0.5f) {
           ...
@@ -6772,17 +6773,19 @@
 ## **11.03**
 > **<h3>Today Dev Story</h3>**
 - ## <span style = "color:yellow;">활 수정</span>
-  - <img src="Image/" height="300" title="">
+  - <img src="Image/Bow_Shoot_Edit_1.gif" height="300" title="Bow_Shoot_Edit_1">
   - 활을 연속으로 발사하기 위해서 EndCharge()메서드 수정.
     - 경우는 2가지로 화살을 발사하였는데도 당기고 있는 경우, 당기다가 활시위를 놓았을 경우.
     - 활시위를 놓았을때만 카메라의 줌이 밖으로 나가도록 수정. 
     - 또한 일정량 만큼 활시위를 당겼을 경우만 발사 가능.
   - 활시위를 당기다가 취소할 경우 활시위가 앞으로 밀리는 것이 아닌 초기 상태로 돌아가도록 변경.
     - BowWeapon클래스의 EndCharge를 삭제하고 StopCharge()를 EndCharge()로 변경.
+    - 각종 애니메이션 또한 수정.
 
     <details><summary>cpp 코드</summary> 
     
     ```c++
+    //AMainplayer.cpp
     void AMainPlayer::LMBDown() {
       bLMBDown = true;
       
@@ -6814,9 +6817,6 @@
     }
     ```
     </details>
-- ## <span style = "color:yellow;">활 수정_2</span>
-  - 화살의 삭제. EndCharge_Implementation()
-
 
 - ## <span style = "color:yellow;">잡다한 것</span>
   1. Bow Drawing시 이미 화살이 있는데도 다시 로드되는 오류 수정.
@@ -6824,3 +6824,23 @@
 
 > **<h3>Realization</h3>**
   - null
+
+## **11.04**
+> **<h3>Today Dev Story</h3>**
+  - ## <span style = "color:yellow;">활 수정_2</span>
+  - 활 시위를 당기다가 취소했을 때 화살을 사라지도록 구현.
+    - EndCharge_Implementation()메서드가 애초에 잘못되었으며 Arrow가 있을 시 Destroy하고 nullptr로 전환.
+    - 추후 화살은 싱글톤 패턴을 사용하여 메모리 관리에 효과적으로 사용할 예정
+
+    <details><summary>cpp 코드</summary> 
+    
+    ```c++
+    //ABowWeapon.cpp
+    void ABowWeapon::EndCharge_Implementation() {
+      if (Arrow) {
+        Arrow->Destroy();
+        Arrow = nullptr;
+      }
+    }
+    ```
+    </details>

@@ -1,6 +1,6 @@
 #pragma once
 
-#include "CoreMinimal.h"
+#include "EngineMinimal.h"
 #include "GameFramework/Actor.h"
 #include "Arrow.generated.h"
 
@@ -52,4 +52,11 @@ public:
 	/** For Destructible Mesh */
 	UPROPERTY(VisibleAnywhere, BlueprintReadWrite, Category = "Physic")
 	class URadialForceComponent* RadiaForce;
+
+	/** Collsion */
+	//UPROPERTY(VisibleAnywhere, BlueprintReadWrite, Category = "Physic")
+	//USphereComponent* ArrowCollision;
+
+	UFUNCTION()
+	virtual void OnOverlapBegin(UPrimitiveComponent* OverlappedComponent, AActor* OtherActor, UPrimitiveComponent* OtherComp, int32 OtherBodyIndex, bool bFromSweep, const FHitResult& SweepResult);
 };
