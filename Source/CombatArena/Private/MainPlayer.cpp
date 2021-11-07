@@ -331,7 +331,7 @@ void AMainPlayer::AnimDodge() {
 	if(!AnimInstance) AnimInstance = GetMesh()->GetAnimInstance();
 	if (AnimInstance && DodgeMontage) {
 		AnimInstance->Montage_Play(DodgeMontage);
-		if(bTargeting)AnimInstance->Montage_JumpToSection(GetAttackMontageSection("Dodge", Value), DodgeMontage);
+		AnimInstance->Montage_JumpToSection(GetAttackMontageSection("Dodge", Value), DodgeMontage);
 	}
 }
 bool AMainPlayer::IsCanMove() {

@@ -1,20 +1,29 @@
 #include "Arrow.h"
 #include "Kismet/KismetMathLibrary.h"
 #include "PhysicsEngine/RadialForceComponent.h"
+#include "Enemy.h"
 
 AArrow::AArrow()
 {
  	PrimaryActorTick.bCanEverTick = true;
 
-	ArrowMesh = CreateDefaultSubobject<USkeletalMeshComponent>(TEXT("ArrowMesh"));
-	RootComponent = ArrowMesh;
-
-	ArrowMesh->SetRelativeScale3D(FVector(1.f,5.f,5.f));
+	/** ArrowCollision */
+	ArrowCollision = CreateDefaultSubobject<USphereComponent>(TEXT("ArrowCollision"));
+	RootComponent = ArrowCollision;
+	ArrowCollision->OnComponentBeginOverlap.AddDynamic(this, &AArrow::OnOverlapBegin);
 	SetArrowStatus(EArrowStatus::EAS_InBow);
 
-	FirePower = 0;
+	/** Mesh */
+	ArrowMesh = CreateDefaultSubobject<USkeletalMeshComponent>(TEXT("ArrowMesh"));
+	ArrowMesh->SetupAttachment(GetRootComponent());
+	ArrowMesh->SetRelativeScale3D(FVector(1.f,5.f,5.f));
+	ArrowMesh->SetSimulatePhysics(false);
+	ArrowMesh->OnComponentBeginOverlap.AddDynamic(this, &AArrow::OnOverlapBegin);
 
-	/** Destructible Mesh */
+	FirePower = 0;
+	bisFire = false;
+
+	/** For Destructible Mesh */
 	RadiaForce = CreateDefaultSubobject<URadialForceComponent>(TEXT("RadiaForce"));
 	RadiaForce->SetupAttachment(GetRootComponent());
 
@@ -22,12 +31,7 @@ AArrow::AArrow()
 	RadiaForce->ForceStrength = 1000.f;			//힘의 강도
 	RadiaForce->DestructibleDamage = 1000.f;	//디스트럭티블 메쉬에 손상을 입히는 데미지량.
 
-	/** ArrowCollision */
-	/*ArrowCollision = CreateDefaultSubobject<USphereComponent>(TEXT("ArrowCollision"));
-	ArrowCollision->SetSphereRadius(4.f);
-	ArrowCollision->AddRelativeLocation(FVector(80.f,0.f,0.f));
-
-	ArrowCollision->OnComponentBeginOverlap.AddDynamic(this, &AArrow::OnOverlapBegin);*/
+	Damage = 20.f;
 }
 
 void AArrow::BeginPlay()
@@ -39,30 +43,32 @@ void AArrow::Tick(float DeltaTime)
 {
 	Super::Tick(DeltaTime);
 
-	OnStateBegine();
+	OnStateBegin();
 }
 
-void AArrow::OnStateBegine() {
+void AArrow::InitalArrow(AActor* AOwner, AController* AController) {
+	ArrowOwner = AOwner;
+	ArrowController = AController;
+}
+
+void AArrow::OnStateBegin() {
 	switch (ArrowStatus)
 	{
-	case EArrowStatus::EAS_Normal:
-		break;
-	case EArrowStatus::EAS_Unobtained:
-		ArrowMesh->SetCollisionProfileName(FName("OverlapAllDynamic"));
-		ArrowMesh->SetSimulatePhysics(true);
-		break;
 	case EArrowStatus::EAS_InBow:
-		ArrowMesh->SetCollisionProfileName(FName("NoCollision"));
-		ArrowMesh->SetSimulatePhysics(false);
+		ArrowCollision->SetCollisionProfileName(FName("NoCollision"));
+		ArrowCollision->SetSimulatePhysics(false);
 		break;
 	case EArrowStatus::EAS_InArrow:
-		ArrowMesh->SetCollisionProfileName(FName("Arrow"));
-		ArrowMesh->SetSimulatePhysics(true);
+		ArrowCollision->SetCollisionProfileName(FName("Arrow"));
+		ArrowCollision->SetSimulatePhysics(true);
 		if(!bisFire){
-			ArrowMesh->AddImpulse(GetActorForwardVector() * UKismetMathLibrary::Lerp(7000, 50000, FirePower));	
+			ArrowCollision->AddImpulse(GetActorForwardVector() * UKismetMathLibrary::Lerp(50000, 1000000, FirePower));
+			bisFire = true;
 		}
-		bisFire = true;
 		break;
+	case EArrowStatus::EAS_Destroy:
+		break;
+
 	default:
 		break;
 	}
@@ -79,9 +85,15 @@ void AArrow::Fire(float Amount) {
 }
 
 void AArrow::OnOverlapBegin(UPrimitiveComponent* OverlappedComponent, AActor* OtherActor, UPrimitiveComponent* OtherComp, int32 OtherBodyIndex, bool bFromSweep, const FHitResult& SweepResult) {
-	UE_LOG(LogTemp, Warning, TEXT("ShootDown"));
 	if (OtherActor) {
-		UE_LOG(LogTemp, Warning, TEXT("ShootDown2"));
-		OtherActor->AttachToActor(this, FAttachmentTransformRules::KeepWorldTransform);
+		SetArrowStatus(EArrowStatus::EAS_Destroy);
+
+		AEnemy* Enemy = Cast<AEnemy>(OtherActor);
+		if (Enemy) {
+			UGameplayStatics::ApplyDamage(Enemy, 10.f, ArrowController, ArrowOwner, DamageType);
+			ArrowCollision->SetSimulatePhysics(false);
+			SetActorLocation(GetActorLocation());
+			OtherActor->AttachToActor(this, FAttachmentTransformRules::KeepWorldTransform);
+		}
 	}
 }

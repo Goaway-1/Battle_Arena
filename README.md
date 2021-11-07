@@ -6844,3 +6844,159 @@
     }
     ```
     </details>
+
+> **<h3>Realization</h3>**
+  - null
+
+## **11.07**
+> **<h3>Today Dev Story</h3>**
+  - ## <span style = "color:yellow;">화살의 발사 수정 및 오버랩</span>
+  - <img src="Image/ArrowAttached.gif" height="300" title="ArrowAttached">
+  - Arrow클래스에서 Overlap을 위해 SphereComponent를 추가하고 Overlap시 상호작용.
+    - 일단 Overlap만의 판정을 위해 ArrowCollision을 RootComponent로 전환하고 AddDynamic 설정.
+    - 발사 시 Collsion의 이름은 Arrow로 설정하여 바꾸고 발사. (기존과 동일)
+    - Overlap 되면 Actor에 Attach 되도록 AttachToActor()메서드 사용.
+    - 기존 EArrowStatus의 종류를 EAS_InBow, EAS_InArrow, EAS_Destroy로 수정.
+
+    <details><summary>cpp 코드</summary> 
+    
+    ```c++
+    //Arrow.cpp
+    AArrow::AArrow()
+    {
+      PrimaryActorTick.bCanEverTick = true;
+
+      /** ArrowCollision */
+      ArrowCollision = CreateDefaultSubobject<USphereComponent>(TEXT("ArrowCollision"));
+      RootComponent = ArrowCollision;
+      ArrowCollision->OnComponentBeginOverlap.AddDynamic(this, &AArrow::OnOverlapBegin);
+      SetArrowStatus(EArrowStatus::EAS_InBow);
+
+      /** Mesh */
+      ArrowMesh = CreateDefaultSubobject<USkeletalMeshComponent>(TEXT("ArrowMesh"));
+      ArrowMesh->SetupAttachment(GetRootComponent());
+      ArrowMesh->SetRelativeScale3D(FVector(1.f,5.f,5.f));
+      ArrowMesh->SetSimulatePhysics(false);
+      ArrowMesh->OnComponentBeginOverlap.AddDynamic(this, &AArrow::OnOverlapBegin);
+      ....
+    }
+    void AArrow::OnStateBegin() {
+      switch (ArrowStatus)
+      {
+      case EArrowStatus::EAS_InBow:
+        ArrowCollision->SetCollisionProfileName(FName("NoCollision"));
+        ArrowCollision->SetSimulatePhysics(false);
+        break;
+      case EArrowStatus::EAS_InArrow:
+        ArrowCollision->SetCollisionProfileName(FName("Arrow"));
+        ArrowCollision->SetSimulatePhysics(true);
+        if(!bisFire){
+          ArrowCollision->AddImpulse(GetActorForwardVector() * UKismetMathLibrary::Lerp(50000, 1000000, FirePower));
+          bisFire = true;
+        }
+        break;
+      case EArrowStatus::EAS_Destroy:
+
+        break;
+
+      default:
+        break;
+      }
+    }
+    void AArrow::OnOverlapBegin(UPrimitiveComponent* OverlappedComponent, AActor* OtherActor, UPrimitiveComponent* OtherComp, int32 OtherBodyIndex, bool bFromSweep, const FHitResult& SweepResult) {
+      if (OtherActor) {
+        UE_LOG(LogTemp, Warning, TEXT("Attach to %s"), *OtherActor->GetName());
+        SetArrowStatus(EArrowStatus::EAS_Destroy);
+        OtherActor->AttachToActor(this, FAttachmentTransformRules::KeepWorldTransform);
+      }
+    }
+    ```
+    </details>
+    <details><summary>h 코드</summary> 
+    
+    ```c++
+    //Arrow.h
+    UENUM(BlueprintType)
+    enum class EArrowStatus : uint8 {
+      EAS_InBow		UMETA(DisplayName = "InBow"),
+      EAS_InArrow		UMETA(DisplayName = "InArrow"),
+      EAS_Destroy		UMETA(DisplayName = "Destroy")
+    };
+    public:
+      UPROPERTY(VisibleAnywhere, BlueprintReadWrite, Category = "Physic")
+      USphereComponent* ArrowCollision;
+      
+      UFUNCTION()
+      void OnOverlapBegin(UPrimitiveComponent* OverlappedComponent, AActor* OtherActor, UPrimitiveComponent* OtherComp, int32 OtherBodyIndex, bool bFromSweep, const FHitResult& SweepResult);
+    ```
+    </details>
+  
+  - ## <span style = "color:yellow;">화살의 오버랩시 판정</span>
+  - <img src="Image/ArrowDamaged.gif" height="300" title="ArrowDamaged">
+  - Bow과 Arrow클래스 모두에서 InitalBow/Arrow()메서드를 생성하고 ApplyDamage()메서드를 위한 변수 참조.
+    - BowWeapon클래스에서는 Reload()메서드에서 Arrow를 생성할때 InitalArrow()메서드 호출.
+    - Arrow가 Overlap될때 Enemy가 맞았다면 SetSimulayePhysics를 끄고 Location또한 고정, 데미지를 입힘.
+
+    <details><summary>cpp 코드</summary> 
+    
+    ```c++
+    //BowWeapon.cpp
+    void ABowWeapon::InitalBow(AActor* BOwner, AController* BController) {
+      BowOwner = BOwner;
+      BowController = BController;
+    }
+    void ABowWeapon::Reload() {
+      ...
+      if (!Arrow) {
+        ...
+        Arrow->InitalArrow(BowOwner,BowController);
+      }
+    }
+    //Arrow.cpp
+    void AArrow::InitalArrow(AActor* AOwner, AController* AController) {
+      ArrowOwner = AOwner;
+      ArrowController = AController;
+    }
+    void AArrow::OnOverlapBegin(UPrimitiveComponent* OverlappedComponent, AActor* OtherActor, UPrimitiveComponent* OtherComp, int32 OtherBodyIndex, bool bFromSweep, const FHitResult& SweepResult) {
+      if (OtherActor) {
+        ...
+        AEnemy* Enemy = Cast<AEnemy>(OtherActor);
+        if (Enemy) {
+          UGameplayStatics::ApplyDamage(Enemy, 10.f, ArrowController, ArrowOwner, DamageType);
+          ArrowCollision->SetSimulatePhysics(false);
+          SetActorLocation(GetActorLocation());
+          OtherActor->AttachToActor(this, FAttachmentTransformRules::KeepWorldTransform);
+        }
+      }
+    }
+    ```
+    </details>
+    <details><summary>h 코드</summary> 
+    
+    ```c++
+    //BowWeapon.h
+      UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Owner")
+      class AActor* BowOwner;
+
+      UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Owner")
+      class AController* BowController;
+
+      UFUNCTION()
+	    void InitalBow(AActor* BOwner, AController* BController);
+    //Arrow.h
+      UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Arrow | Damage")
+      TSubclassOf<UDamageType> DamageType;
+
+      UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Arrow | Damage")
+      class AActor* ArrowOwner;
+
+      UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Arrow | Damage")
+      class AController* ArrowController;
+
+      UPROPERTY(EditAnyWhere, BlueprintReadWrite, Category = "Arrow | Damage")
+      float Damage;
+
+      UFUNCTION()
+      void InitalArrow(AActor* AOwner, AController* AController);
+    ```
+    </details>

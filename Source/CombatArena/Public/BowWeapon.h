@@ -30,12 +30,6 @@ public:
 
 	FORCEINLINE float GetAttackRange() { return AttackRange; }
 
-	UPROPERTY(EditAnyWhere, BlueprintReadWrite, Category = "Combat")
-	float Damage;
-
-	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Combat")
-	TSubclassOf<UDamageType> DamageTypeClass;
-
 	/** Arrow */
 	UPROPERTY(EditDefaultsOnly, BlueprintReadWrite, Category = "Arrow", meta = (AllowPrivateAccess = "true"))
 	class AArrow* Arrow;
@@ -46,6 +40,12 @@ public:
 	/** Charge & Shoot */
 	UPROPERTY(EditAnyWhere, BlueprintReadWrite, Category = "Arrow")
 	float ChargeAmount;
+
+	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Owner")
+	class AActor* BowOwner;
+
+	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Owner")
+	class AController* BowController;
 
 	UFUNCTION(BlueprintNativeEvent, BlueprintCallable)
 	void BeginCharge();
@@ -58,4 +58,8 @@ public:
 	
 	UFUNCTION()
 	void Reload();
+
+	UFUNCTION()
+	void InitalBow(AActor* BOwner, AController* BController);
+
 };

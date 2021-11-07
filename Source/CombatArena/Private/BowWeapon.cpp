@@ -3,15 +3,17 @@
 
 ABowWeapon::ABowWeapon() {
 	WeaponPos = EWeaponPos::EWP_Bow;
-	Damage = 20.f;
-	AttackRange = 200.f;
 }
-
 void ABowWeapon::BeginPlay() {
 	Super::BeginPlay();
 }
 void ABowWeapon::Tick(float DeltaTime) {
 	Super::Tick(DeltaTime);
+}
+
+void ABowWeapon::InitalBow(AActor* BOwner, AController* BController) {
+	BowOwner = BOwner;
+	BowController = BController;
 }
 void ABowWeapon::Equip(class AMainPlayer* Player) {
 	Super::Equip(Player);
@@ -31,16 +33,13 @@ void ABowWeapon::Equip(class AMainPlayer* Player) {
 		if (HandSocket) {
 			HandSocket->AttachActor(this, Player->GetMesh());
 			Player->SetWeaponStatus(EWeaponStatus::EWS_Bow);
-
-			Player->AttackRange = GetAttackRange();		//오른쪽 무기만 거리 지정
 			Player->SetAttackCurrentWeapon(this);
-
-			Player->SetAttackDamage(Damage);
 			CollisionVolume->SetCollisionEnabled(ECollisionEnabled::NoCollision);
+
+			InitalBow(Player,Player->Controller);
 		}
 	}
 }
-
 void ABowWeapon::BeginCharge_Implementation() {
 	if(!Arrow) return;
 }
@@ -65,5 +64,6 @@ void ABowWeapon::Reload() {
 	if (!Arrow) {
 		Arrow = GetWorld()->SpawnActor<AArrow>(ArrowClass, FVector(0.f), FRotator(0.f), SpawnParams);
 		Arrow->AttachToComponent(SkeletalMesh, FAttachmentTransformRules::SnapToTargetNotIncludingScale, FName("arrow_attach_socket"));
+		Arrow->InitalArrow(BowOwner,BowController);
 	}
 }
