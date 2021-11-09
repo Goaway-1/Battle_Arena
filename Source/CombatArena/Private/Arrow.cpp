@@ -6,11 +6,16 @@
 AArrow::AArrow()
 {
  	PrimaryActorTick.bCanEverTick = true;
+	FirePower = 0;
+	bisFire = false;
+	Damage = 20.f;
+	DestroyTime = 3.f;
 
 	/** ArrowCollision */
 	ArrowCollision = CreateDefaultSubobject<USphereComponent>(TEXT("ArrowCollision"));
 	RootComponent = ArrowCollision;
 	ArrowCollision->OnComponentBeginOverlap.AddDynamic(this, &AArrow::OnOverlapBegin);
+	ArrowCollision->SetSphereRadius(10.f);
 	SetArrowStatus(EArrowStatus::EAS_InBow);
 
 	/** Mesh */
@@ -20,9 +25,6 @@ AArrow::AArrow()
 	ArrowMesh->SetSimulatePhysics(false);
 	ArrowMesh->OnComponentBeginOverlap.AddDynamic(this, &AArrow::OnOverlapBegin);
 
-	FirePower = 0;
-	bisFire = false;
-
 	/** For Destructible Mesh */
 	RadiaForce = CreateDefaultSubobject<URadialForceComponent>(TEXT("RadiaForce"));
 	RadiaForce->SetupAttachment(GetRootComponent());
@@ -30,8 +32,6 @@ AArrow::AArrow()
 	RadiaForce->ImpulseStrength = 5000.f;		//충돌힘
 	RadiaForce->ForceStrength = 1000.f;			//힘의 강도
 	RadiaForce->DestructibleDamage = 1000.f;	//디스트럭티블 메쉬에 손상을 입히는 데미지량.
-
-	Damage = 20.f;
 }
 
 void AArrow::BeginPlay()
@@ -62,7 +62,7 @@ void AArrow::OnStateBegin() {
 		ArrowCollision->SetCollisionProfileName(FName("Arrow"));
 		ArrowCollision->SetSimulatePhysics(true);
 		if(!bisFire){
-			ArrowCollision->AddImpulse(GetActorForwardVector() * UKismetMathLibrary::Lerp(50000, 1000000, FirePower));
+			ArrowCollision->AddImpulse(GetActorForwardVector() * UKismetMathLibrary::Lerp(600, 15000, FirePower));
 			bisFire = true;
 		}
 		break;
@@ -82,8 +82,12 @@ void AArrow::Fire(float Amount) {
 	DetachFromActor(FDetachmentTransformRules::KeepWorldTransform);
 	SetArrowStatus(EArrowStatus::EAS_InArrow);
 	FirePower = Amount;
-}
 
+	GetWorldTimerManager().SetTimer(DestroyHandle, this, &AArrow::DestroyArrow, DestroyTime, false);
+}
+void AArrow::DestroyArrow() {
+	Destroy();
+}
 void AArrow::OnOverlapBegin(UPrimitiveComponent* OverlappedComponent, AActor* OtherActor, UPrimitiveComponent* OtherComp, int32 OtherBodyIndex, bool bFromSweep, const FHitResult& SweepResult) {
 	if (OtherActor) {
 		SetArrowStatus(EArrowStatus::EAS_Destroy);

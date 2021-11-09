@@ -6827,7 +6827,7 @@
 
 ## **11.04**
 > **<h3>Today Dev Story</h3>**
-  - ## <span style = "color:yellow;">활 수정_2</span>
+- ## <span style = "color:yellow;">활 수정_2</span>
   - 활 시위를 당기다가 취소했을 때 화살을 사라지도록 구현.
     - EndCharge_Implementation()메서드가 애초에 잘못되었으며 Arrow가 있을 시 Destroy하고 nullptr로 전환.
     - 추후 화살은 싱글톤 패턴을 사용하여 메모리 관리에 효과적으로 사용할 예정
@@ -6850,7 +6850,7 @@
 
 ## **11.07**
 > **<h3>Today Dev Story</h3>**
-  - ## <span style = "color:yellow;">화살의 발사 수정 및 오버랩</span>
+- ## <span style = "color:yellow;">화살의 발사 수정 및 오버랩</span>
   - <img src="Image/ArrowAttached.gif" height="300" title="ArrowAttached">
   - Arrow클래스에서 Overlap을 위해 SphereComponent를 추가하고 Overlap시 상호작용.
     - 일단 Overlap만의 판정을 위해 ArrowCollision을 RootComponent로 전환하고 AddDynamic 설정.
@@ -6931,8 +6931,8 @@
     ```
     </details>
   
-  - ## <span style = "color:yellow;">화살의 오버랩시 판정</span>
-  - <img src="Image/ArrowDamaged.gif" height="300" title="ArrowDamaged">
+- ## <span style = "color:yellow;">화살의 오버랩시 판정</span>
+- <img src="Image/ArrowDamaged.gif" height="300" title="ArrowDamaged">
   - Bow과 Arrow클래스 모두에서 InitalBow/Arrow()메서드를 생성하고 ApplyDamage()메서드를 위한 변수 참조.
     - BowWeapon클래스에서는 Reload()메서드에서 Arrow를 생성할때 InitalArrow()메서드 호출.
     - Arrow가 Overlap될때 Enemy가 맞았다면 SetSimulayePhysics를 끄고 Location또한 고정, 데미지를 입힘.
@@ -7000,3 +7000,167 @@
       void InitalArrow(AActor* AOwner, AController* AController);
     ```
     </details>
+
+> **<h3>Realization</h3>**
+  - 화살의 오버랩판정 기준 정하기가 너무 어려웠다.
+
+## **11.07**
+> **<h3>Today Dev Story</h3>**
+- ## <span style = "color:yellow;">화살의 파괴</span>
+  - <img src="Image/Arrow_Destroy.gif" height="300" title="Arrow_Destroy">
+  - 발사 후 3초가 지나면 화살의 파괴. (추후 싱글톤 패턴을 사용하여 처리.)
+    
+    <details><summary>cpp 코드</summary> 
+    
+    ```c++
+    //Arrow.cpp
+    AArrow::AArrow()
+    {
+      DestroyTime = 3.f;
+    }
+    void AArrow::Fire(float Amount) {
+      DetachFromActor(FDetachmentTransformRules::KeepWorldTransform);
+      SetArrowStatus(EArrowStatus::EAS_InArrow);
+      FirePower = Amount;
+
+      GetWorldTimerManager().SetTimer(DestroyHandle, this, &AArrow::DestroyArrow, DestroyTime, false);
+    }
+    void AArrow::DestroyArrow() {
+      Destroy();
+    }
+    ```
+    </details>
+    <details><summary>h 코드</summary> 
+    
+    ```c++
+    //Arrow.h
+    public:
+    	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "Arrow | Destory")
+      FTimerHandle DestroyHandle;
+
+      UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Arrow | Destory")
+      float DestroyTime;
+
+      UFUNCTION()
+      void DestroyArrow();
+    ```
+    </details>
+
+> **<h3>Realization</h3>**
+  - null
+
+## **11.09**
+> **<h3>Today Dev Story</h3>**
+- ## <span style = "color:yellow;">연막 마법(탄)</span>
+  - <img src="Image/New_Grenade.gif" height="300" title="New_Grenade">
+  - 연막의 이동은 기존 화살의 AddImpulse와 다르게 Projectile Movement를 사용하여 처리.
+    - 생성시 바로 이동하며, GetWorldTimeManage()메서드를 사용하여 일정 시간 경과 후 연막을 뿌리고, 또 일정 시간 후 Collision의 반경을 넓힘.
+    <details><summary>cpp 코드</summary> 
+    
+    ```c++
+    //Grenade.cpp
+    #include "GameFramework/ProjectileMovementComponent.h"
+    AGrenade::AGrenade()
+    {
+      PrimaryActorTick.bCanEverTick = true;
+      SpawnSmokeTime = 1.0f;
+
+      Mesh = CreateDefaultSubobject<UStaticMeshComponent>(TEXT("Mesh"));
+      RootComponent = Mesh;
+
+      Collision = CreateDefaultSubobject<USphereComponent>(TEXT("Collision"));
+      Collision->SetupAttachment(Mesh);
+      Collision->OnComponentBeginOverlap.AddDynamic(this, &AGrenade::OnOverlapBegin);
+      Collision->SetSphereRadius(160.0f);
+
+      Projectile = CreateDefaultSubobject<UProjectileMovementComponent>(TEXT("Projectile"));
+      Projectile->SetUpdatedComponent(Mesh);		//Collision의 Rotation에 영향
+    }
+
+    void AGrenade::BeginPlay()
+    {
+      Super::BeginPlay();	
+      GetWorldTimerManager().SetTimer(SpawnSmokeHandle, this, &AGrenade::SpawnSmoke, SpawnSmokeTime, false);
+    }
+
+    void AGrenade::Tick(float DeltaTime)
+    {
+      Super::Tick(DeltaTime);
+      if (isGrowing) {
+        float tmp = Collision->GetUnscaledSphereRadius();
+        tmp += DeltaTime;
+        UE_LOG(LogTemp, Warning, TEXT("%f"),tmp);
+        Collision->SetSphereRadius(tmp);
+        if(tmp > 300.f) isGrowing = false;
+      }
+    }
+
+    void AGrenade::SpawnSmoke() {
+      UE_LOG(LogTemp, Warning, TEXT("Active Smoke"));
+      if(SmokeParticle) {
+        UGameplayStatics::SpawnEmitterAtLocation(GetWorld(), SmokeParticle, GetActorLocation(), FRotator(0.f));
+        GetWorldTimerManager().ClearTimer(SpawnSmokeHandle);
+        GetWorldTimerManager().SetTimer(SpawnSmokeHandle, this, &AGrenade::GrowingSmoke, SpawnSmokeTime, false);
+      }
+    }
+
+    void AGrenade::GrowingSmoke() {
+      UE_LOG(LogTemp, Warning, TEXT("Growing Smoke"));
+      isGrowing = true;
+    }
+    void AGrenade::OnOverlapBegin(UPrimitiveComponent* OverlappedComponent, AActor* OtherActor, UPrimitiveComponent* OtherComp, int32 OtherBodyIndex, bool bFromSweep, const FHitResult& SweepResult) {
+      UE_LOG(LogTemp, Warning, TEXT("Overlaped Actor. Noe The Actor Can not see Anything"));
+    }
+    ```
+    </details>
+    <details><summary>h 코드</summary> 
+    
+    ```c++
+    //Grenade.h
+    public:	
+      UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Mesh")
+      USceneComponent* Root;
+
+      UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Mesh")
+      UStaticMeshComponent* Mesh;
+
+      UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Mesh")
+      class USphereComponent* Collision;
+
+      UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Mesh")
+      class UProjectileMovementComponent* Projectile;
+
+      /** Time */
+      UPROPERTY(VisibleAnywhere, Category = "Smoke")
+      FTimerHandle SpawnSmokeHandle;
+
+      UPROPERTY(VisibleAnywhere, Category = "Smoke")
+      float SpawnSmokeTime;
+
+      /** Smoke Growing Check*/
+      UPROPERTY(VisibleAnywhere, Category = "Smoke")
+      bool isGrowing = false;
+
+      UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Smoke")
+      class UParticleSystem* SmokeParticle;
+    public:
+      UFUNCTION()
+      void SpawnSmoke();
+
+      UFUNCTION()
+      void GrowingSmoke();
+
+      UFUNCTION()
+      void OnOverlapBegin(UPrimitiveComponent* OverlappedComponent, AActor* OtherActor, UPrimitiveComponent* OtherComp, int32 OtherBodyIndex, bool bFromSweep, const FHitResult& SweepResult);
+    ```
+    </details>
+
+> **<h3>Realization</h3>**
+  - __Projectile Movement__
+    - 발사속도 및 반동지정에 사용하는 컴포넌트
+    - Should Bunce를 사용하여 반동 여부 판단하고 On Projectile Stop()메서드를 통해 멈춤시 이벤트 지정.
+    - __SetUpdatedComponent()메서드를__ 사용하여 부착하고 싶은 Component에 부착하여 각도에 영향을 받도록 지정.
+  - __Get All Actors With Tag__
+    - 태그를 사용하여 액터를 검색
+
+  - 왜 콜리전 요즘 안되는지 미지수...
