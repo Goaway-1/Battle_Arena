@@ -7164,3 +7164,86 @@
     - 태그를 사용하여 액터를 검색
 
   - 왜 콜리전 요즘 안되는지 미지수...
+    - __해결! -> BeginPlay()메서드에서 OnComponentBeginOverlap.AddDynamic()메서드 해야됌.__
+    - Simulation Generates Hit Events를 On할 필요 X
+
+## **11.10**
+> **<h3>Today Dev Story</h3>**
+- ## <span style = "color:yellow;">연막 마법(탄)_2</span>
+  - <img src="Image/Grenade_Logic.gif" height="300" title="Grenade_Logic">
+  - 기존 Collision의 Size가 커지면 사라지는 오류 수정.
+    - Mesh를 Root로 설정하고 자식 컴포넌트로 Collision을 설정. 
+    - Collision은 1200.f까지 커지며 그 이상 커지게 되면 연막을 파괴
+  - 추후 커지는 도중 Overlap되면 Player는 시야가 어두워지며, Enemy는 신경을 죽일것.
+    
+    <details><summary>cpp 코드</summary> 
+    
+    ```c++
+    //Grenade.cpp
+    void AGrenade::BeginPlay()
+    {
+      ...
+      Collision->OnComponentBeginOverlap.AddDynamic(this, &AGrenade::OnOverlapBegin);		
+      Collision->OnComponentEndOverlap.AddDynamic(this, &AGrenade::OnOverlapEnd);		
+    }
+    void AGrenade::Tick(float DeltaTime)
+    {
+      Super::Tick(DeltaTime);
+
+      if (isGrowing) {
+        ...
+        if(tmp > 1200.f) {	
+          isGrowing = false;
+          GetWorldTimerManager().ClearTimer(SpawnSmokeHandle);
+          GetWorldTimerManager().SetTimer(SpawnSmokeHandle, this, &AGrenade::GrowingSmoke, SpawnSmokeTime, false);
+        }
+      }
+    }
+    void AGrenade::DestorySmoke() {
+      UE_LOG(LogTemp, Warning, TEXT("Destory Smoke"));
+      Destroy();
+    }
+
+    void AGrenade::OnOverlapBegin(UPrimitiveComponent* OverlappedComponent, AActor* OtherActor, UPrimitiveComponent* OtherComp, int32 OtherBodyIndex, bool bFromSweep, const FHitResult& SweepResult) {
+      if (OtherActor) {
+        AMainPlayer* Player = Cast<AMainPlayer>(OtherActor);
+        AEnemy* Enemy = Cast<AEnemy>(OtherActor);
+        if (Player) {
+          UE_LOG(LogTemp, Warning, TEXT("Player : %s Can not See Forward!"), *Player->GetName());
+        }
+        if (Enemy) {
+          UE_LOG(LogTemp, Warning, TEXT("Enemy : %s Can not See Forward!"),*Enemy->GetName());
+        }
+      }
+    }
+
+    void AGrenade::OnOverlapEnd(UPrimitiveComponent* OverlappedComponent, AActor* OtherActor, UPrimitiveComponent* OtherComp, int32 OtherBodyIndex) {
+      if (OtherActor) {
+        AMainPlayer* Player = Cast<AMainPlayer>(OtherActor);
+        AEnemy* Enemy = Cast<AEnemy>(OtherActor);
+        if (Player) {
+          UE_LOG(LogTemp, Warning, TEXT("Player : %s Can See"), *Player->GetName());
+        }
+        if (Enemy) {
+          UE_LOG(LogTemp, Warning, TEXT("Enemy : %s Can See"), *Enemy->GetName());
+        }
+      }
+    }
+    ```
+    </details>
+    <details><summary>h 코드</summary> 
+    
+    ```c++
+    //Grenade.h
+    public:
+    	UFUNCTION() 
+      void DestorySmoke();
+
+    	UFUNCTION()
+	    void OnOverlapEnd(UPrimitiveComponent* OverlappedComponent, AActor* OtherActor, UPrimitiveComponent* OtherComp, int32 OtherBodyIndex);
+
+    ```
+    </details>
+    
+> **<h3>Realization</h3>**
+  - null
