@@ -16,6 +16,7 @@
 #include "Components/DecalComponent.h"
 #include "PlayerSkillFunction.h"
 #include "BowWeapon.h"
+#include "Grenade.h"
 
 AMainPlayer::AMainPlayer()
 {
@@ -222,6 +223,9 @@ void AMainPlayer::SetupPlayerInputComponent(UInputComponent* PlayerInputComponen
 	/** Charge & Fire */
 	PlayerInputComponent->BindAction("Charge",EInputEvent::IE_Pressed,this, &AMainPlayer::BeginCharge);
 	PlayerInputComponent->BindAction("Charge",EInputEvent::IE_Released,this, &AMainPlayer::EndCharge);
+
+	/** Throwing */
+	PlayerInputComponent->BindAction("Throwing", EInputEvent::IE_Pressed, this, &AMainPlayer::Throw);
 }
 
 #pragma region CAMERA
@@ -389,8 +393,11 @@ void AMainPlayer::RunCamShake() {
 void AMainPlayer::LMBDown() {
 	bLMBDown = true;
 	
-	//Bow
-	if (GetAttackCurrentWeapon() != nullptr && GetAttackCurrentWeapon()->GetWeaponPos() == EWeaponPos::EWP_Bow) {
+	//Action
+	if (GetMovementStatus() == EMovementStatus::EMS_Throwing) {
+		Throwing();
+	}
+	else if (GetAttackCurrentWeapon() != nullptr && GetAttackCurrentWeapon()->GetWeaponPos() == EWeaponPos::EWP_Bow) {
 		Bow = Cast<ABowWeapon>(CurrentAttackWeapon);
 		if (Bow && ChargeAmount >= 0.7f) {
 			Bow->Fire(); 
@@ -615,6 +622,40 @@ void AMainPlayer::SkillEnd() {
 	/** Use Skill */
 	//SkillFunction->LazerEnd();		
 	SkillFunction->GroundAttack();
+}
+#pragma endregion
+
+#pragma region THROW
+void AMainPlayer::Throw() {
+	(GetMovementStatus() == EMovementStatus::EMS_Throwing) ? EndThrow() : StartThrow();
+}
+void AMainPlayer::StartThrow() {
+	if(!GrenadeClass) return;
+
+	SetMovementStatus(EMovementStatus::EMS_Throwing);
+	UE_LOG(LogTemp, Warning, TEXT("StartThrow"));
+
+	/** 애니메이션을 추가 */
+	FActorSpawnParameters SpawnParams;
+	SpawnParams.Owner = this;
+	SpawnParams.Instigator = GetInstigator();
+	Grenade = GetWorld()->SpawnActor<AGrenade>(GrenadeClass,FVector(0.f) , FRotator(0.f), SpawnParams);
+	Grenade->SetActorScale3D(FVector(0.1f));
+	Grenade->AttachToComponent(GetMesh(), FAttachmentTransformRules(EAttachmentRule::SnapToTarget, false), FName("Throw"));
+}
+void AMainPlayer::Throwing() {
+	UE_LOG(LogTemp, Warning, TEXT("Throwing"));
+
+	/** 애니메이션 추가 */
+	Grenade->SetFire(GetActorRotation());
+	Grenade = nullptr;
+	EndThrow();
+}
+void AMainPlayer::EndThrow() {
+	if(GetMovementStatus() != EMovementStatus::EMS_Throwing) return;
+	SetMovementStatus(EMovementStatus::EMS_Normal);
+	if(Grenade) Grenade->Destroy();
+	UE_LOG(LogTemp, Warning, TEXT("EndThrow"));
 }
 #pragma endregion
 

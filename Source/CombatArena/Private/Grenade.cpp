@@ -2,6 +2,7 @@
 #include "GameFramework/ProjectileMovementComponent.h"
 #include "MainPlayer.h"
 #include "Enemy.h"
+#include "Kismet/KismetMathLibrary.h"
 
 AGrenade::AGrenade()
 {
@@ -13,18 +14,18 @@ AGrenade::AGrenade()
 
 	Collision = CreateDefaultSubobject<USphereComponent>(TEXT("Collision"));
 	Collision->SetupAttachment(GetRootComponent());
-	Collision->SetSphereRadius(160.0f);
-	Collision->SetRelativeLocation(FVector(0.f));
+	Collision->SetSphereRadius(30.0f);
+	Collision->SetCollisionEnabled(ECollisionEnabled::NoCollision);
 
 	Projectile = CreateDefaultSubobject<UProjectileMovementComponent>(TEXT("Projectile"));
 	Projectile->SetUpdatedComponent(GetRootComponent());		//Collision의 Rotation에 영향
+	Projectile->bSimulationEnabled = false;
 }
 
 void AGrenade::BeginPlay()
 {
 	Super::BeginPlay();	
 
-	GetWorldTimerManager().SetTimer(SpawnSmokeHandle, this, &AGrenade::SpawnSmoke, SpawnSmokeTime, false);
 	Collision->OnComponentBeginOverlap.AddDynamic(this, &AGrenade::OnOverlapBegin);		
 	Collision->OnComponentEndOverlap.AddDynamic(this, &AGrenade::OnOverlapEnd);		
 }
@@ -37,7 +38,7 @@ void AGrenade::Tick(float DeltaTime)
 		float tmp = Collision->GetUnscaledSphereRadius();
 		tmp += (DeltaTime * 100.0f);
 		Collision->SetSphereRadius(tmp);
-		if(tmp > 1200.f) {	
+		if(tmp > 700.f) {	
 			isGrowing = false;
 			GetWorldTimerManager().ClearTimer(SpawnSmokeHandle);
 			GetWorldTimerManager().SetTimer(SpawnSmokeHandle, this, &AGrenade::GrowingSmoke, SpawnSmokeTime, false);
@@ -45,9 +46,24 @@ void AGrenade::Tick(float DeltaTime)
 	}
 }
 
+void AGrenade::SetFire(FRotator Rot) {
+	DetachFromActor(FDetachmentTransformRules::KeepWorldTransform);
+	SetActorLocation(GetActorLocation());
+	
+	/** Set Rotation */
+	/** 회전 값만 추가 */
+	//FRotator rot = UKismetMathLibrary::FindLookAtRotation(Loc, Projectile->Velocity + Loc);
+	Mesh->SetRelativeRotation(Rot);
+	Projectile->bSimulationEnabled = true;
+	Projectile->SetUpdatedComponent(Mesh);
+
+	GetWorldTimerManager().SetTimer(SpawnSmokeHandle, this, &AGrenade::SpawnSmoke, SpawnSmokeTime, false);
+}
+
 void AGrenade::SpawnSmoke() {
 	UE_LOG(LogTemp, Warning, TEXT("Active Smoke"));
 	if(SmokeParticle) {
+		Collision->SetCollisionEnabled(ECollisionEnabled::QueryOnly);//
 		UGameplayStatics::SpawnEmitterAtLocation(GetWorld(), SmokeParticle, GetActorLocation(), FRotator(0.f));
 		GetWorldTimerManager().ClearTimer(SpawnSmokeHandle);
 		GetWorldTimerManager().SetTimer(SpawnSmokeHandle, this, &AGrenade::GrowingSmoke, SpawnSmokeTime, false);

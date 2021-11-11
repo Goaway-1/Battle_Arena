@@ -13,6 +13,7 @@ enum class EMovementStatus : uint8 {
 	EMS_Walk		UMETA(DisplayName = "Walk"),
 	EMS_Sprinting	UMETA(DisplayName = "Sprinting"),
 	EMS_Drawing		UMETA(DisplayName = "Drawing"),
+	EMS_Throwing	UMETA(DisplayName = "Throwing"),
 	EMS_Death		UMETA(DisplayName = "Death"),
 
 	EMS_Default		UMETA(DisplayName = "Default")
@@ -63,7 +64,6 @@ public:
 	UPROPERTY(EditAnywhere,BlueprintReadOnly, Category = "AIPERCEPTION")
 	class UAIPerceptionStimuliSourceComponent* AIPerceptionSource;
 #pragma endregion
-
 
 #pragma region CAMERA
 	/** SpringArms */ 
@@ -349,6 +349,7 @@ public:
 	void BowAnimCharge();
 
 #pragma endregion
+
 #pragma region SKILL
 	/** Skill */
 	UFUNCTION()
@@ -363,6 +364,27 @@ public:
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Skill")
 	class UPlayerSkillFunction* SkillFunction;
 #pragma endregion
+
+#pragma region THROW
+	UPROPERTY(EditDefaultsOnly, BlueprintReadWrite, Category = "Throw | Grenade")
+	TSubclassOf<class AGrenade> GrenadeClass;
+
+	UPROPERTY(EditAnyWhere, BlueprintReadWrite, Category = "Throw | Grenade")
+	class AGrenade* Grenade;
+
+	UFUNCTION()
+	void Throw();
+
+	UFUNCTION()
+	void StartThrow();
+
+	UFUNCTION()
+	void Throwing();
+
+	UFUNCTION()
+	void EndThrow();
+#pragma endregion
+
 #pragma region HEALTH
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Health")
 	float MaxHealth;
@@ -404,6 +426,7 @@ public:
 	FORCEINLINE float GetStaminaRatio() { return StaminaRatio; }
 
 #pragma endregion
+
 #pragma region ACTIVE
 
 	//현재 겹친 아이템
@@ -436,6 +459,7 @@ public:
 
 	FORCEINLINE UParticleSystem* GetHitParticle() { return HitParticle; }
 #pragma endregion
+
 #pragma region HUD
 
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "HUD")
@@ -464,6 +488,7 @@ public:
 	UFUNCTION()
 	void ESCDown();
 #pragma endregion
+
 #pragma region SAVE&LOAD
 public:
 	UFUNCTION(BlueprintCallable)

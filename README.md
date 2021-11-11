@@ -7247,3 +7247,136 @@
     
 > **<h3>Realization</h3>**
   - null
+
+## **11.11**
+> **<h3>Today Dev Story</h3>**
+- ## <span style = "color:yellow;">연막 마법(탄)_3</span>
+  - <img src="Image/Grenade_Active.gif" height="300" title="Grenade_Active">  
+  - Grenade클래스에 새로운 메서드 SetFire()를 생성하고 이는 Player가 클릭하여 던질때 활성화.
+    - 기존 Begin()메서드에서의 SetTimer를 SetFire()로 이전하여 던지고 일정 시간 이후부터 로직 활성화.
+    - Projectile의 SimulationEnabled를 false 해놓고 SetFire()에서 True로 전환하여 발사. 
+  - MainPlayer클래스의 EMovementStatus에 새로운 상태 Throwing을 추가하고 키패드 3번과 연동하여 상태 변경.
+    - 3번 키를 누르면 오른쪽 손에 Grenade를 인스턴스화 하고 다시 누르면 삭제. 이때 마우스 왼쪽 클릭 시 던짐.
+    - 이 모든 로직은 Throw/StartThrow/Throwing/EndThrow()메서드에서 진행.
+  - 애니메이션과 Projectile의 회전값만 변경해주면 완료.
+
+    <details><summary>cpp 코드</summary> 
+    
+    ```c++
+    //Grenade.cpp
+    void AGrenade::SetFire(FVector Loc) {
+      DetachFromActor(FDetachmentTransformRules::KeepWorldTransform);
+      SetActorLocation(GetActorLocation());
+      
+      /** Set Rotation */
+      //FRotator rot = UKismetMathLibrary::FindLookAtRotation(Loc, Projectile->Velocity + Loc);
+      //Mesh->SetRelativeRotation(rot);
+
+      GetWorldTimerManager().SetTimer(SpawnSmokeHandle, this, &AGrenade::SpawnSmoke, SpawnSmokeTime, false);
+      Projectile->bSimulationEnabled = true;
+      Projectile->SetUpdatedComponent(GetRootComponent());
+    }
+
+    void AGrenade::SpawnSmoke() {
+      UE_LOG(LogTemp, Warning, TEXT("Active Smoke"));
+      if(SmokeParticle) {
+        Collision->SetCollisionEnabled(ECollisionEnabled::QueryOnly);
+        ...
+      }
+    }
+    ```
+    ```c++
+    //MainPlayer.cpp
+    #include "Grenade.h"
+    void AMainPlayer::SetupPlayerInputComponent(UInputComponent* PlayerInputComponent)
+    {
+      /** Throwing */
+      PlayerInputComponent->BindAction("Throwing", EInputEvent::IE_Pressed, this, &AMainPlayer::Throw);
+    }
+    void AMainPlayer::LMBDown() {
+      bLMBDown = true;
+      
+      //Action 
+      if (GetMovementStatus() == EMovementStatus::EMS_Throwing) {
+        Throwing();
+      }
+      ...
+    }
+    void AMainPlayer::Throw() {
+      (GetMovementStatus() == EMovementStatus::EMS_Throwing) ? EndThrow() : StartThrow();
+    }
+    void AMainPlayer::StartThrow() {
+      if(!GrenadeClass) return;
+
+      SetMovementStatus(EMovementStatus::EMS_Throwing);
+      UE_LOG(LogTemp, Warning, TEXT("StartThrow"));
+
+      /** 애니메이션을 취하고 생성하고 Attach */
+      FActorSpawnParameters SpawnParams;
+      SpawnParams.Owner = this;
+      SpawnParams.Instigator = GetInstigator();
+      Grenade = GetWorld()->SpawnActor<AGrenade>(GrenadeClass, FVector(0.f), FRotator(0.f), SpawnParams);
+      Grenade->SetActorScale3D(FVector(0.1f));
+      Grenade->AttachToComponent(GetMesh(), FAttachmentTransformRules(EAttachmentRule::SnapToTarget, false), FName("Throw"));
+    }
+    void AMainPlayer::Throwing() {
+      UE_LOG(LogTemp, Warning, TEXT("Throwing"));
+
+      /** 애니메이션을 취하고 Grenade를 활성화 */
+      Grenade->SetFire(GetActorLocation());
+      Grenade = nullptr;
+      EndThrow();
+    }
+    void AMainPlayer::EndThrow() {
+      if(GetMovementStatus() != EMovementStatus::EMS_Throwing) return;
+      SetMovementStatus(EMovementStatus::EMS_Normal);
+      if(Grenade) Grenade->Destroy();
+      UE_LOG(LogTemp, Warning, TEXT("EndThrow"));
+    }
+    ```
+    </details>
+
+    <details><summary>h 코드</summary> 
+    
+    ```c++
+    //Grenade.h
+    public:
+    	UFUNCTION()
+	    void SetFire(FVector Loc);
+    ```
+    ```c++
+    //MainPlayer.h
+    UENUM(BlueprintType)
+    enum class EMovementStatus : uint8 {
+      EMS_Normal		UMETA(DisplayName = "Normal"),
+      EMS_Walk		UMETA(DisplayName = "Walk"),
+      EMS_Sprinting	UMETA(DisplayName = "Sprinting"),
+      EMS_Drawing		UMETA(DisplayName = "Drawing"),
+      EMS_Throwing	UMETA(DisplayName = "Throwing"),
+      EMS_Death		UMETA(DisplayName = "Death"),
+
+      EMS_Default		UMETA(DisplayName = "Default")
+    }; 
+    public:
+    	UPROPERTY(EditDefaultsOnly, BlueprintReadWrite, Category = "Throw | Grenade")
+      TSubclassOf<class AGrenade> GrenadeClass;
+
+      UPROPERTY(EditAnyWhere, BlueprintReadWrite, Category = "Throw | Grenade")
+      class AGrenade* Grenade;
+
+      UFUNCTION()
+      void Throw();
+
+      UFUNCTION()
+      void StartThrow();
+
+      UFUNCTION()
+      void Throwing();
+
+      UFUNCTION()
+      void EndThrow();
+    ```
+    </details>
+
+> **<h3>Realization</h3>**
+  - 회전 방향은 아마 Player의 방향으로 설정하여.///
