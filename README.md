@@ -7267,10 +7267,6 @@
     void AGrenade::SetFire(FVector Loc) {
       DetachFromActor(FDetachmentTransformRules::KeepWorldTransform);
       SetActorLocation(GetActorLocation());
-      
-      /** Set Rotation */
-      //FRotator rot = UKismetMathLibrary::FindLookAtRotation(Loc, Projectile->Velocity + Loc);
-      //Mesh->SetRelativeRotation(rot);
 
       GetWorldTimerManager().SetTimer(SpawnSmokeHandle, this, &AGrenade::SpawnSmoke, SpawnSmokeTime, false);
       Projectile->bSimulationEnabled = true;
@@ -7379,4 +7375,64 @@
     </details>
 
 > **<h3>Realization</h3>**
-  - 회전 방향은 아마 Player의 방향으로 설정하여.///
+  - 회전 방향은 아마 Player의 방향으로 설정하여.
+    - 아님 Active 안해서 그래
+
+## **11.13**
+> **<h3>Today Dev Story</h3>**
+- ## <span style = "color:yellow;">연막 마법(탄)_4</span>
+  - <img src="Image/Grenade_Fire_Rotation.gif" height="300" title="Grenade_Fire_Rotation">
+  - 이전 플레이어의 전면으로 던지는 것이 아닌 다른 방향으로 던저지는 오류 수정.
+  - Grenade클래스의 생성자 메서드에서 bAutoActivate를 Flase로 하고 던질때 true로 전환 및 Velocity지정.
+
+    <details><summary>cpp 코드</summary> 
+    
+    ```c++
+    //Grenade.cpp
+    AGrenade::AGrenade()
+    {   
+   	  Smoke = CreateDefaultSubobject<UParticleSystemComponent>(TEXT("Smoke"));
+      Smoke->SetupAttachment(GetRootComponent());
+
+      ...
+      Projectile->bAutoActivate = false;
+    }
+    void AGrenade::SetFire(FRotator Rot) {
+      ...
+      /** Set Rotation */
+      Mesh->SetRelativeRotation(Rot);
+      Projectile->SetVelocityInLocalSpace(FVector::ForwardVector * 5000);
+      Projectile->Activate();
+      ...
+    }
+    void AGrenade::SpawnSmoke() {
+      UE_LOG(LogTemp, Warning, TEXT("Active Smoke"));
+      if(SmokeParticle) {
+        Collision->SetCollisionEnabled(ECollisionEnabled::QueryOnly);
+        Smoke = UGameplayStatics::SpawnEmitterAtLocation(GetWorld(), SmokeParticle, GetActorLocation(), FRotator(0.f));
+        GetWorldTimerManager().ClearTimer(SpawnSmokeHandle);
+        GetWorldTimerManager().SetTimer(SpawnSmokeHandle, this, &AGrenade::GrowingSmoke, SpawnSmokeTime, false);
+      }
+    }
+    void AGrenade::DestorySmoke() {
+      UE_LOG(LogTemp, Warning, TEXT("Destory Smoke"));
+      Smoke->DestroyComponent();
+      Destroy();
+    }
+    ```
+    </details>
+    <details><summary>h 코드</summary> 
+      
+    ```c++
+    //Grenade.h
+   	public:
+      UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Smoke")
+      class UParticleSystem* SmokeParticle;
+
+      UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Smoke")
+      class UParticleSystemComponent* Smoke;
+    ```
+    </details>
+
+> **<h3>Realization</h3>**
+  - null

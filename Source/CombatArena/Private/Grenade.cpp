@@ -18,8 +18,12 @@ AGrenade::AGrenade()
 	Collision->SetCollisionEnabled(ECollisionEnabled::NoCollision);
 
 	Projectile = CreateDefaultSubobject<UProjectileMovementComponent>(TEXT("Projectile"));
-	Projectile->SetUpdatedComponent(GetRootComponent());		//Collision의 Rotation에 영향
-	Projectile->bSimulationEnabled = false;
+	Projectile->SetUpdatedComponent(Mesh);		
+	Projectile->bAutoActivate = false;
+
+	/** ParticleSystem (Setup Plz) */
+	Smoke = CreateDefaultSubobject<UParticleSystemComponent>(TEXT("Smoke"));
+	Smoke->SetupAttachment(GetRootComponent());
 }
 
 void AGrenade::BeginPlay()
@@ -34,14 +38,15 @@ void AGrenade::Tick(float DeltaTime)
 {
 	Super::Tick(DeltaTime);
 
-	if (isGrowing) {
+	if (isGrowing && Smoke) {
 		float tmp = Collision->GetUnscaledSphereRadius();
 		tmp += (DeltaTime * 100.0f);
 		Collision->SetSphereRadius(tmp);
+		
 		if(tmp > 700.f) {	
 			isGrowing = false;
 			GetWorldTimerManager().ClearTimer(SpawnSmokeHandle);
-			GetWorldTimerManager().SetTimer(SpawnSmokeHandle, this, &AGrenade::GrowingSmoke, SpawnSmokeTime, false);
+			GetWorldTimerManager().SetTimer(SpawnSmokeHandle, this, &AGrenade::DestorySmoke, SpawnSmokeTime, false);
 		}
 	}
 }
@@ -51,11 +56,9 @@ void AGrenade::SetFire(FRotator Rot) {
 	SetActorLocation(GetActorLocation());
 	
 	/** Set Rotation */
-	/** 회전 값만 추가 */
-	//FRotator rot = UKismetMathLibrary::FindLookAtRotation(Loc, Projectile->Velocity + Loc);
 	Mesh->SetRelativeRotation(Rot);
-	Projectile->bSimulationEnabled = true;
-	Projectile->SetUpdatedComponent(Mesh);
+	Projectile->SetVelocityInLocalSpace(FVector::ForwardVector * 5000);
+	Projectile->Activate();
 
 	GetWorldTimerManager().SetTimer(SpawnSmokeHandle, this, &AGrenade::SpawnSmoke, SpawnSmokeTime, false);
 }
@@ -63,8 +66,8 @@ void AGrenade::SetFire(FRotator Rot) {
 void AGrenade::SpawnSmoke() {
 	UE_LOG(LogTemp, Warning, TEXT("Active Smoke"));
 	if(SmokeParticle) {
-		Collision->SetCollisionEnabled(ECollisionEnabled::QueryOnly);//
-		UGameplayStatics::SpawnEmitterAtLocation(GetWorld(), SmokeParticle, GetActorLocation(), FRotator(0.f));
+		Collision->SetCollisionEnabled(ECollisionEnabled::QueryOnly);
+		Smoke = UGameplayStatics::SpawnEmitterAtLocation(GetWorld(), SmokeParticle, GetActorLocation(), FRotator(0.f));
 		GetWorldTimerManager().ClearTimer(SpawnSmokeHandle);
 		GetWorldTimerManager().SetTimer(SpawnSmokeHandle, this, &AGrenade::GrowingSmoke, SpawnSmokeTime, false);
 	}
@@ -77,6 +80,7 @@ void AGrenade::GrowingSmoke() {
 
 void AGrenade::DestorySmoke() {
 	UE_LOG(LogTemp, Warning, TEXT("Destory Smoke"));
+	Smoke->DestroyComponent();
 	Destroy();
 }
 
