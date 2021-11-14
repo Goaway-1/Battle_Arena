@@ -40,11 +40,7 @@ public:
 
 	/** UParticleSystem */
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Smoke")
-	class UParticleSystem* SmokeParticle;
-
-	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Smoke")
 	class UParticleSystemComponent* Smoke;
-
 public:
 	UFUNCTION()
 	void SpawnSmoke();

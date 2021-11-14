@@ -7436,3 +7436,49 @@
 
 > **<h3>Realization</h3>**
   - null
+
+## **11.14**
+> **<h3>Today Dev Story</h3>**
+- ## <span style = "color:yellow;">연막 마법(탄)_5</span>
+  - <img src="Image/Smoke_Init.gif" height="300" title="Smoke_Init">
+  - 처음 1회 파티클이 생성되어도 Grenade에 생성되지 않는 오류 존재.
+  - ParticleSystem을 제거하고 ParticleSystemComponent만 두고 Visible을 껏다가 키는 방식 전환.
+    - 생성시 Smoke의 SetVisibility()를 false로 SpawnSmoke()메서드에서는 true로 지정.
+    - ParticleSystem의 scale을 DeltaTime에 따라 증가하도록 설정.
+    - 연막은 약 7초간 존재하고 Grenade와 함께 Destory
+
+    <details><summary>cpp 코드</summary> 
+      
+    ```c++
+    //Grenade.cpp
+    AGrenade::AGrenade()
+    {
+   		/** ParticleSystem (Setup Plz) */
+      Smoke = CreateDefaultSubobject<UParticleSystemComponent>(TEXT("Smoke"));
+      Smoke->SetupAttachment(Mesh);
+      Smoke->SetVisibility(false);
+    }
+    void AGrenade::Tick(float DeltaTime)
+    {
+      Super::Tick(DeltaTime);
+
+      if (isGrowing && Smoke) {
+        ...
+        FVector temp = Smoke->GetRelativeScale3D();
+        temp += FVector(DeltaTime * 0.3f);
+        Smoke->SetRelativeScale3D(temp);
+        ...
+      }
+    }
+    void AGrenade::SpawnSmoke() {
+      UE_LOG(LogTemp, Warning, TEXT("Active Smoke"));
+      if(Smoke) {
+        Smoke->SetVisibility(true);
+        ...
+      }
+}
+    ```
+    </details>
+  
+> **<h3>Realization</h3>**
+  - null

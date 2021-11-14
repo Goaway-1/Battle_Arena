@@ -2,7 +2,6 @@
 #include "GameFramework/ProjectileMovementComponent.h"
 #include "MainPlayer.h"
 #include "Enemy.h"
-#include "Kismet/KismetMathLibrary.h"
 
 AGrenade::AGrenade()
 {
@@ -23,7 +22,8 @@ AGrenade::AGrenade()
 
 	/** ParticleSystem (Setup Plz) */
 	Smoke = CreateDefaultSubobject<UParticleSystemComponent>(TEXT("Smoke"));
-	Smoke->SetupAttachment(GetRootComponent());
+	Smoke->SetupAttachment(Mesh);
+	Smoke->SetVisibility(false);
 }
 
 void AGrenade::BeginPlay()
@@ -42,7 +42,11 @@ void AGrenade::Tick(float DeltaTime)
 		float tmp = Collision->GetUnscaledSphereRadius();
 		tmp += (DeltaTime * 100.0f);
 		Collision->SetSphereRadius(tmp);
-		
+
+		FVector temp = Smoke->GetRelativeScale3D();
+		temp += FVector(DeltaTime * 0.3f);
+		Smoke->SetRelativeScale3D(temp);
+
 		if(tmp > 700.f) {	
 			isGrowing = false;
 			GetWorldTimerManager().ClearTimer(SpawnSmokeHandle);
@@ -65,9 +69,9 @@ void AGrenade::SetFire(FRotator Rot) {
 
 void AGrenade::SpawnSmoke() {
 	UE_LOG(LogTemp, Warning, TEXT("Active Smoke"));
-	if(SmokeParticle) {
+	if(Smoke) {
 		Collision->SetCollisionEnabled(ECollisionEnabled::QueryOnly);
-		Smoke = UGameplayStatics::SpawnEmitterAtLocation(GetWorld(), SmokeParticle, GetActorLocation(), FRotator(0.f));
+		Smoke->SetVisibility(true);
 		GetWorldTimerManager().ClearTimer(SpawnSmokeHandle);
 		GetWorldTimerManager().SetTimer(SpawnSmokeHandle, this, &AGrenade::GrowingSmoke, SpawnSmokeTime, false);
 	}
