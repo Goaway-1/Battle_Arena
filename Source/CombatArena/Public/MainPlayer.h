@@ -372,6 +372,12 @@ public:
 	UPROPERTY(EditAnyWhere, BlueprintReadWrite, Category = "Throw | Grenade")
 	class AGrenade* Grenade;
 
+	UPROPERTY(EditAnyWhere, BlueprintReadWrite, Category = "Throw | Grenade")
+	bool bisThrow = false;	//test
+
+	UPROPERTY(EditAnyWhere, BlueprintReadWrite, Category = "Throw | Grenade")
+	FTimerHandle ThrowTimer;	//test
+
 	UFUNCTION()
 	void Throw();
 
@@ -383,6 +389,9 @@ public:
 
 	UFUNCTION()
 	void EndThrow();
+
+	UFUNCTION()
+	void RealEndThrow();
 #pragma endregion
 
 #pragma region HEALTH

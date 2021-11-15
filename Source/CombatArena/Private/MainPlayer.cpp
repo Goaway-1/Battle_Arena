@@ -633,6 +633,7 @@ void AMainPlayer::StartThrow() {
 	if(!GrenadeClass) return;
 
 	SetMovementStatus(EMovementStatus::EMS_Throwing);
+	bisThrow = false;	//test
 	UE_LOG(LogTemp, Warning, TEXT("StartThrow"));
 
 	/** 애니메이션을 추가 */
@@ -646,16 +647,23 @@ void AMainPlayer::StartThrow() {
 void AMainPlayer::Throwing() {
 	UE_LOG(LogTemp, Warning, TEXT("Throwing"));
 
-	/** 애니메이션 추가 */
+	bisThrow = true;	//test
 	Grenade->SetFire(GetActorRotation());
 	Grenade = nullptr;
 	EndThrow();
 }
 void AMainPlayer::EndThrow() {
-	if(GetMovementStatus() != EMovementStatus::EMS_Throwing) return;
-	SetMovementStatus(EMovementStatus::EMS_Normal);
-	if(Grenade) Grenade->Destroy();
 	UE_LOG(LogTemp, Warning, TEXT("EndThrow"));
+	if(Grenade) Grenade->Destroy();
+
+	GetWorldTimerManager().SetTimer(ThrowTimer, this, &AMainPlayer::RealEndThrow, 1.5f, false);
+}
+
+void AMainPlayer::RealEndThrow() {
+	if (GetMovementStatus() != EMovementStatus::EMS_Throwing) return;
+	SetMovementStatus(EMovementStatus::EMS_Normal);
+
+	bisThrow = false;
 }
 #pragma endregion
 
