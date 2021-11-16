@@ -7476,9 +7476,53 @@
         Smoke->SetVisibility(true);
         ...
       }
-}
+    }
     ```
     </details>
   
 > **<h3>Realization</h3>**
   - null
+
+## **11.16**
+> **<h3>Today Dev Story</h3>**
+- ## <span style = "color:yellow;">연막 마법(탄)_6</span>
+  - <img src="Image/Grenade_Done.gif" height="300" title="Grenade_Done">
+  - <img src="Image/Grenade_Anim.png" height="300" title="Grenade_Anim">
+  - MainPlayer클래스의 내용 수정하여 던질때 애니메이션 추가.
+    - ThrowTimer, bisThrow변수들을 생성하고 Throwing()메서드에서 bisThrow를 true로 전환.
+    - 0.3f초 후 Grenade가 플레이어로 부터 unAttach되어 전방으로 던저짐.
+    - 애님인스턴스는 위 그림과 같도록 구현하고 Idle에서 Throw로의 이동은 bisThrow의 값이 true일때 전환
+
+    <details><summary>cpp 코드</summary> 
+      
+    ```c++
+    void AMainPlayer::StartThrow() {
+      ...
+      bisThrow = false;
+      ...
+    }
+    void AMainPlayer::Throwing() {
+      bisThrow = true; 
+      GetWorldTimerManager().SetTimer(ThrowTimer, this, &AMainPlayer::EndThrow, 0.3f, false);
+    }
+    void AMainPlayer::EndThrow() {
+      if (GetMovementStatus() != EMovementStatus::EMS_Throwing) return;
+      Grenade->SetFire(GetActorRotation());
+      Grenade = nullptr;
+      bisThrow = false;
+      SetMovementStatus(EMovementStatus::EMS_Normal);
+    }
+    ```
+    </details>
+
+    <details><summary>h 코드</summary> 
+      
+    ```c++
+    public:
+      UPROPERTY(EditAnyWhere, BlueprintReadWrite, Category = "Throw | Grenade")
+      bool bisThrow = false;	
+
+      UPROPERTY(EditAnyWhere, BlueprintReadWrite, Category = "Throw | Grenade")
+      FTimerHandle ThrowTimer;	
+    ```
+    </details>

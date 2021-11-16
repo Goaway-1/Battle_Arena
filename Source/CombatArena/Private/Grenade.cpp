@@ -61,7 +61,7 @@ void AGrenade::SetFire(FRotator Rot) {
 	
 	/** Set Rotation */
 	Mesh->SetRelativeRotation(Rot);
-	Projectile->SetVelocityInLocalSpace(FVector::ForwardVector * 5000);
+	Projectile->SetVelocityInLocalSpace(FVector::ForwardVector * 8000);
 	Projectile->Activate();
 
 	GetWorldTimerManager().SetTimer(SpawnSmokeHandle, this, &AGrenade::SpawnSmoke, SpawnSmokeTime, false);

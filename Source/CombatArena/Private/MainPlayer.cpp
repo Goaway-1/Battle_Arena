@@ -633,10 +633,8 @@ void AMainPlayer::StartThrow() {
 	if(!GrenadeClass) return;
 
 	SetMovementStatus(EMovementStatus::EMS_Throwing);
-	bisThrow = false;	//test
-	UE_LOG(LogTemp, Warning, TEXT("StartThrow"));
+	bisThrow = false;
 
-	/** 애니메이션을 추가 */
 	FActorSpawnParameters SpawnParams;
 	SpawnParams.Owner = this;
 	SpawnParams.Instigator = GetInstigator();
@@ -645,25 +643,15 @@ void AMainPlayer::StartThrow() {
 	Grenade->AttachToComponent(GetMesh(), FAttachmentTransformRules(EAttachmentRule::SnapToTarget, false), FName("Throw"));
 }
 void AMainPlayer::Throwing() {
-	UE_LOG(LogTemp, Warning, TEXT("Throwing"));
-
-	bisThrow = true;	//test
-	Grenade->SetFire(GetActorRotation());
-	Grenade = nullptr;
-	EndThrow();
+	bisThrow = true; 
+	GetWorldTimerManager().SetTimer(ThrowTimer, this, &AMainPlayer::EndThrow, 0.3f, false);
 }
 void AMainPlayer::EndThrow() {
-	UE_LOG(LogTemp, Warning, TEXT("EndThrow"));
-	if(Grenade) Grenade->Destroy();
-
-	GetWorldTimerManager().SetTimer(ThrowTimer, this, &AMainPlayer::RealEndThrow, 1.5f, false);
-}
-
-void AMainPlayer::RealEndThrow() {
 	if (GetMovementStatus() != EMovementStatus::EMS_Throwing) return;
-	SetMovementStatus(EMovementStatus::EMS_Normal);
-
+	Grenade->SetFire(GetActorRotation());
+	Grenade = nullptr;
 	bisThrow = false;
+	SetMovementStatus(EMovementStatus::EMS_Normal);
 }
 #pragma endregion
 
