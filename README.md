@@ -7496,6 +7496,7 @@
     <details><summary>cpp 코드</summary> 
       
     ```c++
+    //MainPlayer.cpp
     void AMainPlayer::StartThrow() {
       ...
       bisThrow = false;
@@ -7518,6 +7519,7 @@
     <details><summary>h 코드</summary> 
       
     ```c++
+    //MainPlayer.h
     public:
       UPROPERTY(EditAnyWhere, BlueprintReadWrite, Category = "Throw | Grenade")
       bool bisThrow = false;	
@@ -7526,3 +7528,105 @@
       FTimerHandle ThrowTimer;	
     ```
     </details>
+
+> **<h3>Realization</h3>**
+  - null
+
+## **11.17**
+> **<h3>Today Dev Story</h3>**
+- ## <span style = "color:yellow;">연막 마법(탄)_7_indicator</span>
+  - <img src="Image/Grenade_Player_FogSplatter.gif" height="300" title="Grenade_Player_FogSplatter">
+  - <img src="Image/FogSplatter_Animation.png" height="300" title="FogSplatter_Animation">
+  - Grenade에 Overlap되면 Player의 시야를 방해하기 위한 Fog Indicator Interface를 생성.
+    - 이미지를 다운 받아 매터리얼로 변환하고 위젯 인터페이스를 제작.
+    - PlayerController에서 PauseMenu와 동일한 방식으로 생성하고 이벤트 그래프 또한 동일하게 진행.
+      - Display()와 Remove()메서드를 Implementation형식으로 진행하여 Blueprint에서도 접근 가능하게 하여 애니메이션을 수행.
+      - ToggleFogSplatter()메서드를 사용하여 Visible을 설정. 이는 Grenade와 MainPlayer의 GetFogSplatter()메서드를 사용하여 호출.
+    - Grenade와 Overlap되면 Player의 Controller에서 메서드 호출하여 시야를 방해.
+
+    <details><summary>cpp 코드</summary> 
+      
+    ```c++
+    //MainController.cpp
+    void AMainController::DisplayFogSplatter_Implementation() {
+      if (FogSplatter) {
+        bFogSplatterVisible = true;
+        FogSplatter->SetVisibility(ESlateVisibility::Visible);
+      }
+    }
+    void AMainController::RemoveFogSplatter_Implementation() {
+      if (FogSplatter) {
+        bFogSplatterVisible = false;
+        FogSplatter->SetVisibility(ESlateVisibility::Hidden);
+      }
+    }
+    void AMainController::ToggleFogSplatter() {
+      return bFogSplatterVisible ? RemoveFogSplatter() : DisplayFogSplatter();
+    }
+    ```
+    ```c++
+    //Grenade.cpp
+    void AGrenade::OnOverlapBegin(UPrimitiveComponent* OverlappedComponent, AActor* OtherActor, UPrimitiveComponent* OtherComp, int32 OtherBodyIndex, bool bFromSweep, const FHitResult& SweepResult) {
+      if (OtherActor) {
+        AMainPlayer* Player = Cast<AMainPlayer>(OtherActor);
+        if (Player) {
+          UE_LOG(LogTemp, Warning, TEXT("Player : %s Can not See Forward!"), *Player->GetName());
+          Player->SetFogSplatter();
+        }
+        ...
+      }
+    }
+    void AGrenade::OnOverlapEnd(UPrimitiveComponent* OverlappedComponent, AActor* OtherActor, UPrimitiveComponent* OtherComp, int32 OtherBodyIndex) {
+      if (OtherActor) {
+        AMainPlayer* Player = Cast<AMainPlayer>(OtherActor);
+        if (Player) {
+          UE_LOG(LogTemp, Warning, TEXT("Player : %s Can See"), *Player->GetName());
+          Player->SetFogSplatter();
+        }
+        ...
+      }
+    }
+    ```
+    ```c++
+    //MainPlayer.cpp
+    void AMainPlayer::SetFogSplatter() {
+	    (PlayerController->GetFogSplatterVisible()) ? PlayerController->RemoveFogSplatter() : PlayerController->DisplayFogSplatter();
+    }
+    ```
+    </details>
+
+    <details><summary>h 코드</summary> 
+      
+    ```c++
+    //MainController.h
+    public:
+      UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "HUD")
+      TSubclassOf<UUserWidget> WFogSplatter;
+
+      UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "HUD")
+      UUserWidget* FogSplatter;
+
+      UPROPERTY()
+      bool bFogSplatterVisible;
+
+      UFUNCTION()
+      FORCEINLINE bool GetFogSplatterVisible() { return bFogSplatterVisible; }
+
+      UFUNCTION(BlueprintNativeEvent, BlueprintCallable, Category = "HUD")
+      void DisplayFogSplatter();
+
+      UFUNCTION(BlueprintNativeEvent, BlueprintCallable, Category = "HUD")
+      void RemoveFogSplatter();
+
+      void ToggleFogSplatter();
+    ```
+    ```c++
+    //MainPlayer.h
+    public:
+      UFUNCTION()
+      void SetFogSplatter();	
+    ```
+    </details>
+
+> **<h3>Realization</h3>**
+  - null

@@ -720,6 +720,9 @@ void AMainPlayer::ESCDown(){
 		PlayerController->TogglePauseMenu();
 	}
 }
+void AMainPlayer::SetFogSplatter() {
+	(PlayerController->GetFogSplatterVisible()) ? PlayerController->RemoveFogSplatter() : PlayerController->DisplayFogSplatter();
+}
 #pragma endregion
 
 #pragma region SAVE&LOAD

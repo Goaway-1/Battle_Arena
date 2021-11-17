@@ -94,6 +94,7 @@ void AGrenade::OnOverlapBegin(UPrimitiveComponent* OverlappedComponent, AActor* 
 		AEnemy* Enemy = Cast<AEnemy>(OtherActor);
 		if (Player) {
 			UE_LOG(LogTemp, Warning, TEXT("Player : %s Can not See Forward!"), *Player->GetName());
+			Player->SetFogSplatter();
 		}
 		if (Enemy) {
 			UE_LOG(LogTemp, Warning, TEXT("Enemy : %s Can not See Forward!"),*Enemy->GetName());
@@ -107,6 +108,7 @@ void AGrenade::OnOverlapEnd(UPrimitiveComponent* OverlappedComponent, AActor* Ot
 		AEnemy* Enemy = Cast<AEnemy>(OtherActor);
 		if (Player) {
 			UE_LOG(LogTemp, Warning, TEXT("Player : %s Can See"), *Player->GetName());
+			Player->SetFogSplatter();
 		}
 		if (Enemy) {
 			UE_LOG(LogTemp, Warning, TEXT("Enemy : %s Can See"), *Enemy->GetName());

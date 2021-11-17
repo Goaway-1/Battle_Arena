@@ -493,6 +493,9 @@ public:
 	
 	UFUNCTION()
 	void ESCDown();
+
+	UFUNCTION()
+	void SetFogSplatter();	
 #pragma endregion
 
 #pragma region SAVE&LOAD

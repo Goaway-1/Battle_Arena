@@ -53,6 +53,27 @@ public:
 	UFUNCTION(BlueprintNativeEvent, BlueprintCallable,Category = "HUD")
 	void RemovePauseMenu();
 
-	void TogglePauseMenu();
+	void TogglePauseMenu(); 
+
+	/** FogSplatter */
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "HUD")
+	TSubclassOf<UUserWidget> WFogSplatter;
+
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "HUD")
+	UUserWidget* FogSplatter;
+
+	UPROPERTY()
+	bool bFogSplatterVisible;
+
+	UFUNCTION()
+	FORCEINLINE bool GetFogSplatterVisible() { return bFogSplatterVisible; }
+
+	UFUNCTION(BlueprintNativeEvent, BlueprintCallable, Category = "HUD")
+	void DisplayFogSplatter();
+
+	UFUNCTION(BlueprintNativeEvent, BlueprintCallable, Category = "HUD")
+	void RemoveFogSplatter();
+
+	void ToggleFogSplatter();
 #pragma endregion
 };
