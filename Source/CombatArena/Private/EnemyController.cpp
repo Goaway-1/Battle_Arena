@@ -7,6 +7,7 @@
 const FName AEnemyController::HomePosKey(TEXT("HomePosKey"));
 const FName AEnemyController::PatrolPosKey(TEXT("PatrolPosKey"));
 const FName AEnemyController::TargetActor(TEXT("TargetActor"));
+const FName AEnemyController::IsInFog(TEXT("IsInFog")); 
 
 AEnemyController::AEnemyController() {
     AIPerception = CreateDefaultSubobject<UAIPerceptionComponent>(TEXT("AIPerception"));
@@ -44,4 +45,8 @@ FVector AEnemyController::GetTargetVec() {
         return Vec; 
     }
     else return FVector(0.f);
+}
+
+void AEnemyController::SetVisibleInFog(bool bisin) {
+    Blackboard->SetValueAsBool(IsInFog, bisin);
 }

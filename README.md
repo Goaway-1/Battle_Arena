@@ -7630,3 +7630,98 @@
 
 > **<h3>Realization</h3>**
   - null
+
+## **11.19**
+> **<h3>Today Dev Story</h3>**
+- ## <span style = "color:yellow;">연막 마법(탄)_8_Enemy</span>
+  - <img src="Image/Enemy_IsInFog.gif" height="300" title="Enemy_IsInFog"> 
+  - <img src="Image/Enemy_IsInFog_BehaviorTree.png" height="300" title="Enemy_IsInFog_BehaviorTree">
+  - 새로운 TaskNode클래스인 UBTTask_IsInFog클래스 생성하여 Enemy가 Grenade에 영향을 받는다면 실행하는 로직 생성.
+    - Enemy_BB(블랙보드)에 새로운 조건 bool타입의 IsInFog변수 지정하고 const로도 지정하여 True시 UBTTask_IsInFog클래스 실행.
+    - IsInFog 변수의 값 변화는 EnemyController클래스에서 IsInFog()메서드를 통해 전달되며 이는 Enemy와 Grenade클래스에서 호출.
+
+    <details><summary>cpp 코드</summary> 
+      
+    ```c++
+    //BTTask_IsInFog.cpp
+    #include "BehaviorTree/BlackboardComponent.h"
+    UBTTask_IsInFog::UBTTask_IsInFog() {
+      NodeName = TEXT("IsInFog");
+    }
+
+    EBTNodeResult::Type UBTTask_IsInFog::ExecuteTask(UBehaviorTreeComponent& OwnerComp, uint8* NodeMemory) {
+      Super::ExecuteTask(OwnerComp, NodeMemory);
+
+      /*AEnemy* Enemy = Cast<AEnemy>(OwnerComp.GetAIOwner()->GetPawn());
+      if (!Enemy) return EBTNodeResult::Failed;*/
+
+      UE_LOG(LogTemp, Warning, TEXT("Enemy is in fog"));
+      return EBTNodeResult::Succeeded;
+    }
+    ```
+    ```c++
+    //Enemy.cpp
+    public:
+    void AEnemy::SetVisibleInFog(bool bisin) {
+      if (!EnemyController) return;
+      EnemyController->SetVisibleInFog(bisin);
+    }
+    ```
+    ```c++
+    //EnemyController.cpp
+    const FName AEnemyController::IsInFog(TEXT("IsInFog")); 
+
+    void AEnemyController::SetVisibleInFog(bool bisin) {
+      Blackboard->SetValueAsBool(IsInFog, bisin);
+    }
+    ```
+    ```c++
+    //Grenade.cpp
+    void AGrenade::OnOverlapBegin(UPrimitiveComponent* OverlappedComponent, AActor* OtherActor, UPrimitiveComponent* OtherComp, int32 OtherBodyIndex, bool bFromSweep, const FHitResult& SweepResult) {
+      if (OtherActor) {
+        ...
+        if (Enemy) {
+          UE_LOG(LogTemp, Warning, TEXT("Enemy : %s Can not See Forward!"),*Enemy->GetName());
+          Enemy->SetVisibleInFog(true);
+        }
+      }
+    }
+    void AGrenade::OnOverlapEnd(UPrimitiveComponent* OverlappedComponent, AActor* OtherActor, UPrimitiveComponent* OtherComp, int32 OtherBodyIndex) {
+      if (OtherActor) {
+        ...
+        if (Enemy) {
+          UE_LOG(LogTemp, Warning, TEXT("Enemy : %s Can See"), *Enemy->GetName());
+          Enemy->SetVisibleInFog(false);
+        }
+      }
+    }
+    ```
+    </details>
+
+    <details><summary>h 코드</summary> 
+
+    ```c++
+    //BTTask_IsInFog.h
+    public:
+      UBTTask_IsInFog();
+
+      virtual EBTNodeResult::Type ExecuteTask(UBehaviorTreeComponent& OwnerComp, uint8* NodeMemory) override;
+    ```
+    ```c++
+    //Enemy.h
+    public:
+      UFUNCTION()
+      void SetVisibleInFog(bool bisin);
+    ```
+    ```c++
+    //EnemyController.h
+    public:
+	    static const FName IsInFog; 
+    
+    	UFUNCTION()
+	    void SetVisibleInFog(bool bisin);
+    ```
+    </details>
+    
+> **<h3>Realization</h3>**
+  - null

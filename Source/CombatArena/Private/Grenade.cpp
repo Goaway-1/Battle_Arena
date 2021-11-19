@@ -98,6 +98,7 @@ void AGrenade::OnOverlapBegin(UPrimitiveComponent* OverlappedComponent, AActor* 
 		}
 		if (Enemy) {
 			UE_LOG(LogTemp, Warning, TEXT("Enemy : %s Can not See Forward!"),*Enemy->GetName());
+			Enemy->SetVisibleInFog(true);
 		}
 	}
 }
@@ -112,6 +113,7 @@ void AGrenade::OnOverlapEnd(UPrimitiveComponent* OverlappedComponent, AActor* Ot
 		}
 		if (Enemy) {
 			UE_LOG(LogTemp, Warning, TEXT("Enemy : %s Can See"), *Enemy->GetName());
+			Enemy->SetVisibleInFog(false);
 		}
 	}
 }

@@ -56,7 +56,7 @@ AEnemy::AEnemy()
 void AEnemy::PossessedBy(AController* NewController) {
 	Super::PossessedBy(NewController);
 
-	EnemyController = NewController;
+	EnemyController = Cast<AEnemyController>(NewController);
 	AttackFunction->SetOwner(GetMesh(),EnemyController);
 
 #pragma region SKILL
@@ -224,6 +224,10 @@ FName AEnemy::GetAttackMontageSection(FString Type) {
 		return FName(*FString::Printf(TEXT("Attack%d"), range));
 	}
 	else return "Error";
+}
+void AEnemy::SetVisibleInFog(bool bisin) {
+	if (!EnemyController) return;
+	EnemyController->SetVisibleInFog(bisin);
 }
 #pragma endregion
 

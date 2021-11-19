@@ -19,6 +19,7 @@ public:
 	static const FName HomePosKey;
 	static const FName PatrolPosKey;	
 	static const FName TargetActor;
+	static const FName IsInFog; 
 
 	UPROPERTY(EditAnyWhere, BlueprintReadOnly, Category = "AI")
 	class UBehaviorTree* BTree;
@@ -37,4 +38,8 @@ public:
 
 	UFUNCTION()
 	FVector GetTargetVec();
+
+	/** Is In Fog */
+	UFUNCTION()
+	void SetVisibleInFog(bool bisin);
 };

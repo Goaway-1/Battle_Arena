@@ -33,7 +33,7 @@ public:
 	class UEnemyAnim* Anim;
 
 	UPROPERTY()
-	AController* EnemyController;
+	class AEnemyController* EnemyController;
 
 #pragma region ATTACK
 	UPROPERTY()
@@ -113,6 +113,10 @@ public:
 	/** Hited AnimMontage */
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Montage")
 	UAnimMontage* HitedMontage;
+
+	/** Is in fog */
+	UFUNCTION()
+	void SetVisibleInFog(bool bisin);
 #pragma endregion
 #pragma region SKILL
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Skill")
@@ -131,7 +135,6 @@ public:
 	UFUNCTION(BlueprintCallable)
 	void SkillAttackEnd();
 #pragma endregion
-
 #pragma region HEALTH
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Particle")	//피격 효과
 	class UParticleSystem* HitParticle;
@@ -152,7 +155,6 @@ public:
 	UFUNCTION(BlueprintCallable)
 	void DestroyEnemy();
 #pragma endregion
-
 #pragma region HUD
 
 	UPROPERTY(VisibleAnywhere, Category = "Widget | EnemyWidget")
