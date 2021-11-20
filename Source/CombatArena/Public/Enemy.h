@@ -116,7 +116,22 @@ public:
 
 	/** Is in fog */
 	UFUNCTION()
-	void SetVisibleInFog(bool bisin);
+	void SetVisibleInFog(bool bisin, int time = 0);
+
+	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Movement | Grenade")
+	FTimerHandle FogHandle;
+
+	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "Grenade")
+	class UAnimMontage* IsInFogMontage;
+
+	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Grenade")
+	float SmokeTime;
+
+	UFUNCTION()
+	void ActiveFogEvent();
+
+	UFUNCTION()
+	void DeactiveFogEvent();
 #pragma endregion
 #pragma region SKILL
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Skill")

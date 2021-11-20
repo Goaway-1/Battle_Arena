@@ -7725,3 +7725,136 @@
     
 > **<h3>Realization</h3>**
   - null
+
+## **11.20**
+> **<h3>Today Dev Story</h3>**
+- ## <span style = "color:yellow;">연막 마법(탄)_9_Enemy</span>
+  - <img src="Image/Enemy_IsInFog_Anim.gif" height="300" title="Enemy_IsInFog_Anim"> 
+  - Enemy가 Fog안에 있을때의 판정으로 Fog안에 들어가게 되면 몇초가 되었건 6초 동안 애니메이션 실행
+    - BTTask_IsInFog클래스에서 Enemy의 ActiveFogEvent()메서드 호출하고 6초뒤 DeactiveFogEvent()메서드 호출.
+    - 추후 Fog의 남은 시간을 계산하여 넘기는 아 인자값으로...
+
+    <details><summary>cpp 코드</summary> 
+      
+    ```c++
+    //Enemy.cpp
+    void AEnemy::ActiveFogEvent() {
+      UE_LOG(LogTemp, Warning, TEXT("Enemy ActiveFogEvent"));
+      if (IsInFogMontage && Anim) Anim->Montage_Play(IsInFogMontage);
+      GetWorldTimerManager().SetTimer(FogHandle, this, &AEnemy::DeactiveFogEvent, 6.0f, false);
+    }
+
+    void AEnemy::DeactiveFogEvent() {
+      Anim->Montage_Stop(0.1f);
+      UE_LOG(LogTemp, Warning, TEXT("Enemy DeactiveFogEvent"));
+    }
+    ```
+    ```c++
+    //BTTask_IsInFog.cpp
+    EBTNodeResult::Type UBTTask_IsInFog::ExecuteTask(UBehaviorTreeComponent& OwnerComp, uint8* NodeMemory) {
+      Super::ExecuteTask(OwnerComp, NodeMemory);
+
+      if (!bIsinFog) {
+        bIsinFog = true;
+        UE_LOG(LogTemp, Warning, TEXT("Enemy is in fog"));
+
+        /** Set Fog Event */
+        AEnemyController* EnemyController = Cast<AEnemyController>(OwnerComp.GetAIOwner());
+        AEnemy* Enemy = Cast<AEnemy>(EnemyController->GetPawn());
+        if (!Enemy) return EBTNodeResult::Failed;
+
+        Enemy->ActiveFogEvent();
+        return EBTNodeResult::Succeeded;
+      }
+      return EBTNodeResult::Failed;
+    }
+    ```
+    </details>
+
+    <details><summary>h 코드</summary> 
+      
+    ```c++
+    //Enemy.h
+    public:
+   	  UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "Movement | Dodge")
+      FTimerHandle FogHandle;
+
+      UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "Montage")
+      class UAnimMontage* IsInFogMontage;
+
+      UFUNCTION()
+      void ActiveFogEvent();
+
+      UFUNCTION()
+      void DeactiveFogEvent();
+    ```
+    </details>
+
+- ## <span style = "color:yellow;">연막 마법(탄)_10</span>
+  - Fog의 남은 시간을 계산하여 남은 시간을 매게변수로 넘겨 Enemy의 Montage시간 계산.
+    - Grenade클래스와 Enemy클래스에 각각 float타입의 SmokeTime을 생성.
+    - Grenade에서는 6초로 지정해두고 Tick()메서드에서 점점 줄어들도록 설정하고 닿았을때 그 값을 넘김.
+    - 넘겨받은 값을 SetTimer()메서드에 활용하여 몇 초 뒤 애니메이션을 중지.
+
+    <details><summary>cpp 코드</summary> 
+      
+    ```c++
+    //Grenade.cpp
+    void AGrenade::Tick(float DeltaTime)
+    {
+      Super::Tick(DeltaTime);
+
+      if (isGrowing && Smoke) {
+        ...
+        SmokeTime -= DeltaTime;
+        ...
+      }
+    }
+    void AGrenade::OnOverlapBegin(UPrimitiveComponent* OverlappedComponent, AActor* OtherActor, UPrimitiveComponent* OtherComp, int32 OtherBodyIndex, bool bFromSweep, const FHitResult& SweepResult) {
+      if (OtherActor) {
+        ...
+        if (Enemy) {
+          UE_LOG(LogTemp, Warning, TEXT("Enemy : %s Can not See Forward!"),*Enemy->GetName());
+          Enemy->SetVisibleInFog(true, SmokeTime);
+        }
+      }
+    }
+    ```
+    ```c++
+    //Enemy.cpp
+    void AEnemy::SetVisibleInFog(bool bisin, int time) {
+      if (!EnemyController) return;
+      EnemyController->SetVisibleInFog(bisin);
+      SmokeTime = time + 2.f;
+    }
+    void AEnemy::ActiveFogEvent() {
+      UE_LOG(LogTemp, Warning, TEXT("Enemy ActiveFogEvent"));
+      if (IsInFogMontage && Anim) Anim->Montage_Play(IsInFogMontage);
+      GetWorldTimerManager().SetTimer(FogHandle, this, &AEnemy::DeactiveFogEvent, SmokeTime, false);
+    }
+
+    void AEnemy::DeactiveFogEvent() {
+      Anim->Montage_Stop(0.1f);
+      SetVisibleInFog(false);
+      UE_LOG(LogTemp, Warning, TEXT("Enemy DeactiveFogEvent"));
+    }
+    ```
+    </details>
+
+    <details><summary>h 코드</summary> 
+      
+    ```c++
+    //Grenade.h
+      UPROPERTY(VisibleAnywhere, Category = "Smoke")
+      float SmokeTime = 6.0f;	
+    ```
+    ```c++
+    //Enemy.h
+    public:
+      UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Grenade")
+	    float SmokeTime;
+    ```
+    </details>
+    
+> **<h3>Realization</h3>**
+  - null

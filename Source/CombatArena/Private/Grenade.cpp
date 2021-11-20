@@ -46,8 +46,9 @@ void AGrenade::Tick(float DeltaTime)
 		FVector temp = Smoke->GetRelativeScale3D();
 		temp += FVector(DeltaTime * 0.3f);
 		Smoke->SetRelativeScale3D(temp);
+		SmokeTime -= DeltaTime;
 
-		if(tmp > 700.f) {	
+		if(tmp > 700.f && SmokeTime <= 0) {	
 			isGrowing = false;
 			GetWorldTimerManager().ClearTimer(SpawnSmokeHandle);
 			GetWorldTimerManager().SetTimer(SpawnSmokeHandle, this, &AGrenade::DestorySmoke, SpawnSmokeTime, false);
@@ -98,7 +99,7 @@ void AGrenade::OnOverlapBegin(UPrimitiveComponent* OverlappedComponent, AActor* 
 		}
 		if (Enemy) {
 			UE_LOG(LogTemp, Warning, TEXT("Enemy : %s Can not See Forward!"),*Enemy->GetName());
-			Enemy->SetVisibleInFog(true);
+			Enemy->SetVisibleInFog(true, SmokeTime);
 		}
 	}
 }

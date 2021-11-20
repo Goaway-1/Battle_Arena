@@ -34,6 +34,9 @@ public:
 	UPROPERTY(VisibleAnywhere, Category = "Smoke")
 	float SpawnSmokeTime;
 
+	UPROPERTY(VisibleAnywhere, Category = "Smoke")
+	float SmokeTime = 6.0f;		//Smoke가 다 필때까지의 시간.
+
 	/** Smoke Growing Check*/
 	UPROPERTY(VisibleAnywhere, Category = "Smoke")
 	bool isGrowing = false;
