@@ -7858,3 +7858,129 @@
     
 > **<h3>Realization</h3>**
   - null
+
+## **11.21**
+> **<h3>Today Dev Story</h3>**
+- ## <span style = "color:yellow;">Player의 공격 수정</span>
+  - 다크소울의 느낌을 살리기 위해서 공격 중 이동 제한.
+
+    <details><summary>cpp 코드</summary> 
+      
+    ```c++
+    //MainPlayer.cpp
+    bool AMainPlayer::IsCanMove() {
+      if (bAttacking || AttackFunction->bKicking || GetMovementStatus() == EMovementStatus::EMS_Death) return false;
+      else return true;
+    }
+    ```
+    </details>
+
+> **<h3>Realization</h3>**
+  - null
+
+## **11.22**
+> **<h3>Today Dev Story</h3>**
+- ## <span style = "color:yellow;">무기별 모션 수정</span>
+  - <img src="Image/MontageOfWeapon.gif" height="300" title="MontageOfWeapon"> 
+  - AttackWeapon에 새로운 enum클래스인 EWeaponName지정하여 공격시 애니메이션 지정.
+  - MainPlayer클래스의 Attack()메서드에서 지정.
+
+    <details><summary>cpp 코드</summary> 
+      
+    ```c++
+    //MainPlayer.cpp
+    void AMainPlayer::Attack() {
+      ...
+      else {	
+        AAttackWeapon* Weapon = Cast<AAttackWeapon>(GetAttackCurrentWeapon());
+        if (Weapon) {
+          switch (Weapon->GetWeaponName()) {
+            case EWeaponName::EWN_Sword :
+              PlayMontage = SwordAttackMontage;
+              break;
+            case EWeaponName::EWN_Mace:
+              PlayMontage = MaceAttackMontage;
+              break;
+            default:
+              break;
+          }
+        }
+        ....
+      }
+    }
+    ```
+    </details>
+    <details><summary>h 코드</summary> 
+      
+    ```c++
+    //MainPlayer.h
+    public:
+      UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "Anims")
+    	class UAnimMontage* MaceAttackMontage;		
+    ```
+    ```c++
+    //AttackWeapon.h
+    UENUM(BlueprintType)
+    enum class EWeaponName : uint8 {
+      EWN_Normal		UMETA(DisplayName = "Normal"),
+      EWN_Sword		UMETA(DisplayName = "Sword"),
+      EWN_Mace		UMETA(DisplayName = "Mace")
+    };
+    public:
+    	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Combat", Meta = (AllowPrivateAccess = true))
+      EWeaponName WeaponName;
+
+      FORCEINLINE EWeaponName GetWeaponName() { return WeaponName; }
+    ```
+    </details>
+
+- ## <span style = "color:yellow;">강공격</span>
+  - <img src="Image/PowerfulAttack.gif" height="300" title="PowerfulAttack"> 
+  - 시연까지 오랜시간이 걸리나 피해량은 증가한 강공격을 구현. 애니메이션은 추후 재설정.
+    - MainPlayer클래스에 새로운 키 Alt를 할당하고 이 키와 공격키를 동시에 눌러야만 "PowerfulAttack" Montage로 이동하여 실행.
+    - 또한 데미지를 2배로 주기 위해서 StartPowerfulAttack()메서드 정의 후 강공격에서는 StartAttack()을 Notify하는 것이 아닌 방금 메서드 적용.
+
+    <details><summary>cpp 코드</summary> 
+      
+    ```c++
+    //MainPlayer.cpp
+    void AMainPlayer::SetupPlayerInputComponent(UInputComponent* PlayerInputComponent)
+    {
+      /** Powerful Attack */
+      PlayerInputComponent->BindAction("Alt", EInputEvent::IE_Pressed, this, &AMainPlayer::AltDown);
+      PlayerInputComponent->BindAction("Alt", EInputEvent::IE_Released, this, &AMainPlayer::AltUp);
+    }
+    void AMainPlayer::Attack() {
+      ...
+      /** Active Powerful Attack */
+      else if (bAltPressed && AnimInstance && PlayMontage) {
+        AnimInstance->Montage_Play(PlayMontage);
+        AnimInstance->Montage_JumpToSection("PowerfulAttack", PlayMontage);
+      }
+      ...
+    }
+    void AMainPlayer::StartPowerfulAttack() {
+      FString Type = "Player";
+      AttackFunction->AttackStart(GetActorLocation(), GetActorForwardVector(), PlayerDamageType, Type, GetHitParticle(), GetAttackRange(), AttackDamage * 2);
+    }
+    ```
+    </details>
+    <details><summary>h 코드</summary> 
+      
+    ```c++
+    //MainPlayer.h
+    public:
+      bool bAltPressed = false;
+
+      /** Set Can Use Powerful Attack */ 
+      FORCEINLINE void AltDown() { bAltPressed = true; }
+      FORCEINLINE void AltUp() { bAltPressed = false; }
+
+      /** Powerful Attack Notify */
+      UFUNCTION(BlueprintCallable)
+    	void StartPowerfulAttack();
+    ```
+    </details>
+
+> **<h3>Realization</h3>**
+  - null

@@ -226,6 +226,10 @@ void AMainPlayer::SetupPlayerInputComponent(UInputComponent* PlayerInputComponen
 
 	/** Throwing */
 	PlayerInputComponent->BindAction("Throwing", EInputEvent::IE_Pressed, this, &AMainPlayer::Throw);
+
+	/** Powerful Attack */
+	PlayerInputComponent->BindAction("Alt", EInputEvent::IE_Pressed, this, &AMainPlayer::AltDown);
+	PlayerInputComponent->BindAction("Alt", EInputEvent::IE_Released, this, &AMainPlayer::AltUp);
 }
 
 #pragma region CAMERA
@@ -339,7 +343,7 @@ void AMainPlayer::AnimDodge() {
 	}
 }
 bool AMainPlayer::IsCanMove() {
-	if (AttackFunction->bKicking || GetMovementStatus() == EMovementStatus::EMS_Death) return false;
+	if (bAttacking || AttackFunction->bKicking || GetMovementStatus() == EMovementStatus::EMS_Death) return false;
 	else return true;
 }
 void AMainPlayer::Targeting() {
@@ -407,39 +411,60 @@ void AMainPlayer::LMBDown() {
 	}
 	else if (!bAttacking) Attack();
 	else bIsAttackCheck = true;
-}
+}	
 void AMainPlayer::Attack() {
 	UAnimMontage* PlayMontage = nullptr;
+	bAttacking = true;
 	
+	/** Set Montage */
 	if(SkillFunction->bGround) PlayMontage = SkillAttackMontage;
 	else if (GetAttackCurrentWeapon() == nullptr) PlayMontage = AttackMontage;
-	else PlayMontage = WeaponAttackMontage;
-
+	else {	
+		AAttackWeapon* Weapon = Cast<AAttackWeapon>(GetAttackCurrentWeapon());
+		if (Weapon) {
+			switch (Weapon->GetWeaponName()) {
+				case EWeaponName::EWN_Sword :
+					PlayMontage = SwordAttackMontage;
+					break;
+				case EWeaponName::EWN_Mace:
+					PlayMontage = MaceAttackMontage;
+					break;
+				default:
+					break;
+			}
+		}
+	}
+	
+	//AnimInstance->Montage_SetPlayRate(PlayMontage, 1.5f); // test
 	if (!AnimInstance) AnimInstance = GetMesh()->GetAnimInstance();
 
-	/** USEING SKILL */
-	if (AnimInstance && SkillFunction->bGround && PlayMontage) {
+	if (AnimInstance && SkillFunction->bGround && PlayMontage) /** USEING SKILL */
+	{
 		AnimInstance->Montage_Play(PlayMontage);
 		AnimInstance->Montage_JumpToSection("SkillEmpact", PlayMontage);
 
 		SkillFunction->ConfirmTargetAndContinue();
 		SkillEnd();
 	}
-	/** NOMAL ATTACK */
-	else if (AnimInstance && PlayMontage) {
-		bAttacking = true;
+	else if (bAltPressed && AnimInstance && PlayMontage)		/** Powerful ATTACK */
+	{
+		AnimInstance->Montage_Play(PlayMontage);
+		AnimInstance->Montage_JumpToSection("PowerfulAttack", PlayMontage);
+	}
+	else if (AnimInstance && PlayMontage)		/** NOMAL ATTACK */
+	{ 
 		if (!AnimInstance->Montage_IsPlaying(PlayMontage)) {	//공격중이 아닐때 (처음 공격)
-			ComboCnt = 0;
 			AnimInstance->Montage_Play(PlayMontage);
+			ComboCnt = 0;
 		}
 		else {													//공격중일때 2타 3타
 			AnimInstance->Montage_Play(PlayMontage);
 			AnimInstance->Montage_JumpToSection(GetAttackMontageSection("Attack", ComboCnt), PlayMontage);
 
 			/** Combo Event */
-			if (ComboCnt == 2) {
-				ZoomInCam(SpringArm_Attacking,FRotator(0.f,-30.f,0.f));
-			}
+			//if (ComboCnt == 2) {
+			//	ZoomInCam(SpringArm_Attacking,FRotator(0.f,-30.f,0.f));
+			//}
 		}
 	}
 }
@@ -450,6 +475,10 @@ void AMainPlayer::StartAttack() {
 void AMainPlayer::EndAttack() {
 	bAttacking = false;
 	ZoomOutCam();
+}
+void AMainPlayer::StartPowerfulAttack() {
+	FString Type = "Player";
+	AttackFunction->AttackStart(GetActorLocation(), GetActorForwardVector(), PlayerDamageType, Type, GetHitParticle(), GetAttackRange(), AttackDamage * 2);
 }
 void AMainPlayer::AttackInputCheck() {
 	if (bIsAttackCheck) {

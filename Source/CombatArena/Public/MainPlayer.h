@@ -225,9 +225,6 @@ public:
 	UPROPERTY()
 	class UPlayerAttackFunction* AttackFunction;
 
-	UFUNCTION(BlueprintCallable)
-	FORCEINLINE UPlayerAttackFunction* GetAttackFunction() { return AttackFunction; }
-
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Anims")
 	class UAnimInstance* AnimInstance;
 
@@ -235,23 +232,21 @@ public:
 	class UAnimMontage* AttackMontage;
 
 	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "Anims")
-	class UAnimMontage* WeaponAttackMontage;
+	class UAnimMontage* SwordAttackMontage;
+
+	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "Anims")
+	class UAnimMontage* MaceAttackMontage;		
 
 	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "Anims")
 	class UAnimMontage* SkillAttackMontage;
 
-	bool bLMBDown;			//공격 키가 눌렸는지 여부
-	bool bAttacking;		//공격중인지 여부
-	bool bIsAttackCheck;	//또 공격할 건지에 대한 여부
-	int ComboCnt;			//현재 공격 횟수
+	int ComboCnt;			
 
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Attack")
 	float DefaultAttackRange;		//공격 범위
 
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Attack")
 	float AttackRange;		//공격 범위
-
-	FORCEINLINE float GetAttackRange() { return AttackRange; }
 	
 	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "Anims")
 	int ComboMaxCnt;		//최대 공격 횟수
@@ -259,15 +254,6 @@ public:
 	/** Weapon의 장착 여부 */
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Weapon")
 	EWeaponStatus WeaponStatus;
-
-	FORCEINLINE void SetWeaponStatus(EWeaponStatus Status) { WeaponStatus = Status; }
-
-	UFUNCTION(BlueprintCallable)
-	FORCEINLINE EWeaponStatus GetWeaponStatus() { return WeaponStatus; }
-
-	/** 현재 싸움 상태의 종류  (Attack, Shield,,,)*/
-
-	void Attack();
 
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Combat")
 	TSubclassOf<UDamageType> PlayerDamageType;
@@ -278,15 +264,39 @@ public:
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Combat")
 	float AttackDamage;
 
+	/** Powerful Attack */
+	bool bAltPressed = false;
+
+	bool bLMBDown;
+
+	bool bAttacking;
+
+	bool bIsAttackCheck;
+
+public:
+	UFUNCTION(BlueprintCallable)
+	FORCEINLINE UPlayerAttackFunction* GetAttackFunction() { return AttackFunction; }
+
+	FORCEINLINE float GetAttackRange() { return AttackRange; }
+
+	FORCEINLINE void SetWeaponStatus(EWeaponStatus Status) { WeaponStatus = Status; }
+
+	UFUNCTION(BlueprintCallable)
+	FORCEINLINE EWeaponStatus GetWeaponStatus() { return WeaponStatus; }
+
+	void Attack();
+
 	FORCEINLINE void SetAttackDamage(float Value) { AttackDamage = Value; }
 
 	/** 노티파이를 통하여 호출 되며 Sweep 구체 생성 */
 	UFUNCTION(BlueprintCallable)
 	void StartAttack();
 
-	/** bAttacking을 false로 전환 */
 	UFUNCTION(BlueprintCallable)
 	void EndAttack();
+
+	UFUNCTION(BlueprintCallable)
+	void StartPowerfulAttack();
 
 	/** 콤보의 구현을 위해서 사용 */
 	UFUNCTION(BlueprintCallable)
@@ -295,7 +305,11 @@ public:
 	void LMBDown();
 	FORCEINLINE void LMBUp() { bLMBDown = false; }
 
-	FName GetAttackMontageSection(FString Type,int32 Section);
+	/** Set Can Use Powerful Attack */ 
+	FORCEINLINE void AltDown() { bAltPressed = true; }
+	FORCEINLINE void AltUp() { bAltPressed = false; }
+
+	FName GetAttackMontageSection(FString Type, int32 Section);
 
 	UFUNCTION()
 	void Kick();

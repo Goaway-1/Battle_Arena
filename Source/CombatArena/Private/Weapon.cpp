@@ -34,6 +34,6 @@ void AWeapon::UnEquip() {
 	SetItemState(EItemState::EIS_Ground);
 	DetachFromActor(FDetachmentTransformRules::KeepWorldTransform);
 	CollisionVolume->SetCollisionEnabled(ECollisionEnabled::QueryOnly);
-	SetActorLocationAndRotation(GetActorLocation(), FRotator(180.f,0.f, 0.f));
+	SetActorLocationAndRotation(GetActorLocation(), FRotator(0.f,0.f, 0.f));
 }
 #pragma endregion

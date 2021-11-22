@@ -7,6 +7,13 @@
 /**
  * MeleeWeapon
  */
+UENUM(BlueprintType)
+enum class EWeaponName : uint8 {
+	EWN_Normal		UMETA(DisplayName = "Normal"),
+	EWN_Sword		UMETA(DisplayName = "Sword"),
+	EWN_Mace		UMETA(DisplayName = "Mace")
+};
+
 UCLASS()
 class COMBATARENA_API AAttackWeapon : public AWeapon
 {
@@ -30,4 +37,9 @@ public:
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Combat")
 	TSubclassOf<UDamageType> DamageTypeClass;
 #pragma endregion
+	/** Weapon Name */
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Combat", Meta = (AllowPrivateAccess = true))
+	EWeaponName WeaponName;
+
+	FORCEINLINE EWeaponName GetWeaponName() { return WeaponName; }
 };
