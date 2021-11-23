@@ -95,6 +95,11 @@ AMainPlayer::AMainPlayer()
 	AttackDamage = DefaultDamage;
 
 #pragma endregion
+#pragma region BALANCE
+	balance = 0.f;
+	DecreaseBalanceTime = 1.0f;
+	bIsDecreaseBalance = false;
+#pragma endregion
 #pragma region SKILL
 	SkillFunction = CreateDefaultSubobject<UPlayerSkillFunction>("SkillFunction");
 #pragma endregion
@@ -170,6 +175,10 @@ void AMainPlayer::Tick(float DeltaTime)
 
 	/** Anim Charging */
 	BowAnimCharge();
+	CurrentHealth = 100.f;
+	
+	/** Set Balance (If this number is 100, the player will faint.) */
+	SetBalance();
 }
 
 void AMainPlayer::SetupPlayerInputComponent(UInputComponent* PlayerInputComponent)
@@ -234,12 +243,12 @@ void AMainPlayer::SetupPlayerInputComponent(UInputComponent* PlayerInputComponen
 
 #pragma region CAMERA
 void AMainPlayer::Lookup(float value) {
+	if (GetMovementStatus() == EMovementStatus::EMS_Faint) return;
 	AddControllerYawInput(value * CameraSpeed * GetWorld()->GetDeltaSeconds());
-
-	/* TurnInPlace */
 	TurnInPlace(value);
 }
 void AMainPlayer::Turn(float value) {
+	if (GetMovementStatus() == EMovementStatus::EMS_Faint) return;
 	AddControllerPitchInput(value * CameraSpeed * GetWorld()->GetDeltaSeconds());
 }
 void AMainPlayer::TurnInPlace(float value) {
@@ -343,7 +352,8 @@ void AMainPlayer::AnimDodge() {
 	}
 }
 bool AMainPlayer::IsCanMove() {
-	if (bAttacking || AttackFunction->bKicking || GetMovementStatus() == EMovementStatus::EMS_Death) return false;
+	if (bAttacking || AttackFunction->bKicking || GetMovementStatus() == EMovementStatus::EMS_Death 
+	|| GetMovementStatus() == EMovementStatus::EMS_Faint) return false;
 	else return true;
 }
 void AMainPlayer::Targeting() {
@@ -495,12 +505,17 @@ FName AMainPlayer::GetAttackMontageSection(FString Type, int32 Section) {
 }
 float AMainPlayer::TakeDamage(float DamageAmount, struct FDamageEvent const& DamageEvent, class AController* EventInstigator, AActor* DamageCauser) {
 	Super::TakeDamage(DamageAmount, DamageEvent, EventInstigator, DamageCauser);
+	if(GetMovementStatus() == EMovementStatus::EMS_Faint) RecoverBalance();
 
-	// 방어 성공시 
+	/** Active Shield */
 	if (GetCombatStatus() == ECombatStatus::ECS_Blocking) {
-		if (IsBlockingSuccess(DamageCauser)) return 0;
+		if (IsBlockingSuccess(DamageCauser)) {
+			balance += 10.f;		//test
+			return 0;
+		}
 	}
 
+	/** Health */
 	if (CurrentHealth <= 0) return 0.f;
 	CurrentHealth -= DamageAmount;
 	if (CurrentHealth <= 0) {
@@ -509,10 +524,17 @@ float AMainPlayer::TakeDamage(float DamageAmount, struct FDamageEvent const& Dam
 	}
 	SetHealthRatio();
 
+	/** Balance */
+	balance += 20.f;
+	SetDecreaseBalance(false);
+	if (balance >= 100.f) BrokenBalance();
+	else GetWorldTimerManager().SetTimer(BalanceHandle, FTimerDelegate::CreateLambda([&] { SetDecreaseBalance(true);}), DecreaseBalanceTime, false);
+	//SetBalanceRatio();
+
 	/** KnockBack */
 	FVector Loc = DamageCauser->GetActorForwardVector();
 	Loc.Z = 0;
-	LaunchCharacter(Loc * 1000.f, true, true);
+	LaunchCharacter(Loc * 500.f, true, true);
 	UGameplayStatics::SpawnEmitterAtLocation(GetWorld(), HitParticle, GetActorLocation(), FRotator(0.f));
 
 	/** CameraShake */
@@ -621,6 +643,33 @@ void AMainPlayer::EndCharge() {
 }
 void AMainPlayer::BowAnimCharge() {
 	if (Bow && bBowCharging) ChargeAmount = Bow->ChargeAmount;
+}
+#pragma endregion
+#pragma region BALANCE
+void AMainPlayer::SetBalance() {
+	if (bIsDecreaseBalance && balance > 0.f) {
+		balance -= 0.1f;
+		if (balance < 0.f) balance = 0.f;
+		UE_LOG(LogTemp, Warning, TEXT("Balance : %f"), balance);
+	}
+}
+void AMainPlayer::BrokenBalance() {
+	UE_LOG(LogTemp, Warning, TEXT("Player is faint"));
+	balance = 0.f;
+	SetMovementStatus(EMovementStatus::EMS_Faint); 
+	GetWorldTimerManager().ClearTimer(BalanceHandle);
+	GetWorldTimerManager().SetTimer(BalanceHandle, this, &AMainPlayer::RecoverBalance , 1.5f, false);
+	
+	/** Play Animation */
+	if(!FaintMontage) return;
+	AnimInstance->Montage_Play(FaintMontage);
+	AnimInstance->Montage_JumpToSection("Faint", FaintMontage);
+}
+void AMainPlayer::RecoverBalance() {
+	UE_LOG(LogTemp, Warning, TEXT("Player Recover"));
+	if(GetMovementStatus() != EMovementStatus::EMS_Faint) return;
+	AnimInstance->Montage_Stop(0.1f);
+	SetMovementStatus(EMovementStatus::EMS_Normal);
 }
 #pragma endregion
 

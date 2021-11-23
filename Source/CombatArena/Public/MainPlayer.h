@@ -14,6 +14,7 @@ enum class EMovementStatus : uint8 {
 	EMS_Sprinting	UMETA(DisplayName = "Sprinting"),
 	EMS_Drawing		UMETA(DisplayName = "Drawing"),
 	EMS_Throwing	UMETA(DisplayName = "Throwing"),
+	EMS_Faint		UMETA(DisplayName = "Faint"),
 	EMS_Death		UMETA(DisplayName = "Death"),
 
 	EMS_Default		UMETA(DisplayName = "Default")
@@ -362,6 +363,35 @@ public:
 	UFUNCTION()
 	void BowAnimCharge();
 
+#pragma endregion
+#pragma region BALANCE
+private:
+	UPROPERTY(VisibleAnywhere,  Category = "BALANCE")
+	float balance;
+
+	UPROPERTY(VisibleAnywhere,  Category = "BALANCE")
+	bool bIsDecreaseBalance;
+
+	UPROPERTY(VisibleAnywhere,  Category = "BALANCE")
+	FTimerHandle BalanceHandle;
+
+	UPROPERTY(VisibleAnywhere,  Category = "BALANCE")
+	float DecreaseBalanceTime;
+
+	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "BALANCE", Meta = (AllowPrivateAccess = true))
+	class UAnimMontage* FaintMontage;
+
+public:
+	UFUNCTION()
+	void SetBalance();
+	
+	UFUNCTION()
+	void BrokenBalance();
+
+	UFUNCTION()
+	void RecoverBalance();
+
+	FORCEINLINE void SetDecreaseBalance(bool value) { bIsDecreaseBalance = value; }
 #pragma endregion
 
 #pragma region SKILL

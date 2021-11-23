@@ -7984,3 +7984,124 @@
 
 > **<h3>Realization</h3>**
   - null
+
+## **11.23**
+> **<h3>Today Dev Story</h3>**
+- ## <span style = "color:yellow;">Player의 균형</span>
+  - <img src="Image/Player_Balance_Logic.gif" height="300" title="Player_Balance_Logic">
+  - 공격을 막거나 피해를 받을 시 몸의 균형이 흐트러지며 일정 이상 도달하면 기절하는 로직 생성.
+    - enum 클래스의 EMovementStatus에 EMS_Faint라는 기절 상태를 추가하여 Lookup(),Turn()메서드에서 회전을 금지하였고, IsCanMove()메서드에도 조건을 추가하여 움직임을 금지.
+    - SetBalance()메서드에서 이벤트 발생 후 DecreaseBalanceTime의 시간이 지나야만 균형이 찾아오며 계속해서 데미지를 받는다면 회복 불가.
+    - TakeDamage()메서드 내에서 람다식과 타이머를 동시에 사용하여 DecreaseBalanceTime 후 Tick에서 균형을 잃음.
+    - 기절하면 1.5초간 움직일 수 없으며 그 사이에 다시 공격을 받아 TakeDamage()메서드가 활성화 되면 움직임 가능하고 1.5초가 지나면 자연스럽게 움직임 가능.
+  - SetBalance()는 현재 Balance값을 계산, BrokenBalance()는 Balance의 값이 100을 넘었을때 활성화되며 기절을 표현 후 1.5초 뒤 회복하는 RecoverBalance()메서드 실행.
+
+    <details><summary>cpp 코드</summary> 
+      
+    ```c++
+    //MainPlayer.cpp
+    AMainPlayer::AMainPlayer(){
+    	balance = 0.f;
+      DecreaseBalanceTime = 1.0f;
+      bIsDecreaseBalance = false;
+    }
+    void AMainPlayer::Tick(float DeltaTime){
+      /** Set Balance (If this number is 100, the player will faint.) */
+      SetBalance();
+    }
+    void AMainPlayer::Lookup(float value) {
+      if (GetMovementStatus() == EMovementStatus::EMS_Faint) return;
+      AddControllerYawInput(value * CameraSpeed * GetWorld()->GetDeltaSeconds());
+      TurnInPlace(value);
+    }
+    void AMainPlayer::Turn(float value) {
+      if (GetMovementStatus() == EMovementStatus::EMS_Faint) return;
+      AddControllerPitchInput(value * CameraSpeed * GetWorld()->GetDeltaSeconds());
+    }
+    bool AMainPlayer::IsCanMove() {
+      if (bAttacking || AttackFunction->bKicking || GetMovementStatus() == EMovementStatus::EMS_Death 
+      || GetMovementStatus() == EMovementStatus::EMS_Faint) return false;
+      else return true;
+    }
+    float AMainPlayer::TakeDamage(float DamageAmount, struct FDamageEvent const& DamageEvent, class AController* EventInstigator, AActor* DamageCauser) {
+      Super::TakeDamage(DamageAmount, DamageEvent, EventInstigator, DamageCauser);
+      if(GetMovementStatus() == EMovementStatus::EMS_Faint) RecoverBalance();
+
+      /** Active Shield */
+      if (GetCombatStatus() == ECombatStatus::ECS_Blocking) {
+        if (IsBlockingSuccess(DamageCauser)) {
+          balance += 10.f;		
+          return 0;
+        }
+      }
+
+      /** Balance */
+      balance += 20.f;
+      SetDecreaseBalance(false);
+      if (balance >= 100.f) BrokenBalance();
+      else GetWorldTimerManager().SetTimer(BalanceHandle, FTimerDelegate::CreateLambda([&] { SetDecreaseBalance(true);}), DecreaseBalanceTime, false);
+      //SetBalanceRatio();
+      ...
+    }
+    void AMainPlayer::SetBalance() {
+      if (bIsDecreaseBalance && balance > 0.f) {
+        balance -= 0.1f;
+        if (balance < 0.f) balance = 0.f;
+        UE_LOG(LogTemp, Warning, TEXT("Balance : %f"), balance);
+      }
+    }
+    void AMainPlayer::BrokenBalance() {
+      UE_LOG(LogTemp, Warning, TEXT("Player is faint"));
+      balance = 0.f;
+      SetMovementStatus(EMovementStatus::EMS_Faint); 
+      GetWorldTimerManager().ClearTimer(BalanceHandle);
+      GetWorldTimerManager().SetTimer(BalanceHandle, this, &AMainPlayer::RecoverBalance , 1.5f, false);
+      
+      /** Play Animation */
+      if(!FaintMontage) return;
+      AnimInstance->Montage_Play(FaintMontage);
+      AnimInstance->Montage_JumpToSection("Faint", FaintMontage);
+    }
+    void AMainPlayer::RecoverBalance() {
+      UE_LOG(LogTemp, Warning, TEXT("Player Recover"));
+      if(GetMovementStatus() != EMovementStatus::EMS_Faint) return;
+      AnimInstance->Montage_Stop(0.1f);
+      SetMovementStatus(EMovementStatus::EMS_Normal);
+    }
+    ```
+    </details>
+    <details><summary>h 코드</summary> 
+      
+    ```c++
+    //MainPlayer.h
+    UENUM(BlueprintType)
+    enum class EMovementStatus : uint8 {
+      ...
+      EMS_Faint		UMETA(DisplayName = "Faint"),
+      ...
+    }; 
+    private:
+    	UPROPERTY(VisibleAnywhere, Category = "BALANCE")
+      float balance;
+
+      UPROPERTY(VisibleAnywhere, Category = "BALANCE")
+      bool bIsDecreaseBalance;
+
+      UPROPERTY(VisibleAnywhere, Category = "BALANCE")
+      FTimerHandle BalanceHandle;
+
+      UPROPERTY(VisibleAnywhere, Category = "BALANCE")
+      float DecreaseBalanceTime;
+
+      UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "BALANCE", Meta = (AllowPrivateAccess = true))
+      class UAnimMontage* FaintMontage;
+    public:
+      UFUNCTION()
+      void BrokenBalance();
+
+      UFUNCTION()
+      void RecoverBalance();
+
+      FORCEINLINE void SetDecreaseBalance(bool value) { bIsDecreaseBalance = value; }
+    ```
+    </details>
