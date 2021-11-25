@@ -11,7 +11,8 @@ UENUM(BlueprintType)
 enum class EWeaponName : uint8 {
 	EWN_Normal		UMETA(DisplayName = "Normal"),
 	EWN_Sword		UMETA(DisplayName = "Sword"),
-	EWN_Mace		UMETA(DisplayName = "Mace")
+	EWN_Mace		UMETA(DisplayName = "Mace"),
+	EWN_Spear		UMETA(DisplayName = "Spear")
 };
 
 UCLASS()

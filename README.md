@@ -584,6 +584,7 @@
     - LaunchCharacter()와 GetLastMovementInputVector()를 사용하여 마지막으로 입력된 방향으로 한 Tick동안 시작속도를 DodgeSpeed로 전환한다. (구르기처럼 보인다.)
     - GetWorldTimerManager().SetTimer를 사용하여 DodgeStopTime만큼 기다렸다가 StopMovementImmediately()를 통해 이동을 멈추고 다시 시작속도를 기본값(2.f)로 전환한다.
     - 다시 SetTimer()를 사용하여 DodgeCoolDownTime이 지나면 다시 Dodge가 가능하도록 bCanDodge를 true로 바꿔준다.
+  - ### 새로운 Dodge로 수정
       <details><summary>c++ 코드</summary> 
 
       ```c++
@@ -8105,3 +8106,139 @@
       FORCEINLINE void SetDecreaseBalance(bool value) { bIsDecreaseBalance = value; }
     ```
     </details>
+
+> **<h3>Realization</h3>**
+  - null
+
+## **11.25**
+> **<h3>Today Dev Story</h3>**
+- ## <span style = "color:yellow;">Player와 적의 균형...!</span>
+  - <img src="Image/" height="300" title="">  
+  - BlanceWidget생성.
+
+    <details><summary>cpp 코드</summary> 
+      
+    ```c++
+    //BalanceWidget.cpp
+    #include "BalanceWidget.h"
+    #include "Enemy.h"
+    #include "MainPlayer.h"
+    #include "Components/ProgressBar.h"
+    #include "Components/TextBlock.h"
+
+    void UBalanceWidget::SetOwnerBalance(float Ratio, float Max, float Current) {
+      if (!Enemy.IsValid() && !PlayerController.IsValid()) return;
+
+      FNumberFormattingOptions Opts;
+      Opts.SetMaximumFractionalDigits(0);
+
+      if (Enemy.IsValid()) BalanceBar->SetPercent(Ratio);
+      else if (PlayerController.IsValid()) BalanceBar->SetPercent(Ratio);
+    }
+
+    void UBalanceWidget::SetEnemyOwner(AEnemy* OtherActor) {
+      Enemy = OtherActor;
+    }
+    void UBalanceWidget::SetPlayerOwner(AController* OtherActor) {
+      PlayerController = Cast<APlayerController>(OtherActor);
+    }
+    ```
+    ```c++
+    //MainController.cpp
+    void AMainController::BeginPlay() {
+      if (WPlayerMainHealth) {
+        ...
+        if (PlayerWidget) {
+          ...
+          BalanceBarOutLine = PlayerWidget->WidgetTree->FindWidget<UBalanceWidget>("PlayerBalance_BP");
+          BalanceBarOutLine->SetPlayerOwner(this);
+          SetPlayerBalance();
+        }
+      }
+    }
+    void AMainController::SetPlayerBalance() {	
+      BalanceBarOutLine->SetOwnerBalance(MainPlayer->GetBalanceRatio(), MainPlayer->GetMaxBalance(), MainPlayer->GetCurrentBalance());
+    }
+    ```
+    ```c++
+    //MainPlayer.cpp
+    void AMainPlayer::SetBalance() {
+      if (bIsDecreaseBalance && Currentbalance > 0.f) {
+        Currentbalance -= 0.1f;
+        if (Currentbalance < 0.f) Currentbalance = 0.f;
+        BalanceRatio = Currentbalance / Maxbalance;
+      }
+    }
+    ```
+    </details>
+    <details><summary>h 코드</summary> 
+    
+    ```c++
+    //BalanceWidget.h
+    public:
+      UFUNCTION()
+      void SetEnemyOwner(AEnemy* OtherActor);
+
+      UFUNCTION()
+      void SetPlayerOwner(AController* OtherActor);
+
+      UFUNCTION()
+      void SetOwnerBalance(float Ratio, float Max, float Current);
+    protected:
+      UPROPERTY()
+      TWeakObjectPtr<AEnemy> Enemy;
+
+      UPROPERTY()
+      TWeakObjectPtr<APlayerController> PlayerController;
+
+      UPROPERTY(meta = (BindWidget))
+      class UProgressBar* BalanceBar;
+    ```
+    ```c++
+    //MainController.h
+    public:
+    	UPROPERTY(VisibleAnywhere, Category = "Widget | PlayerWidget")
+      class UBalanceWidget* BalanceBarOutLine;
+
+      UFUNCTION()
+      void SetPlayerBalance();
+    ```
+    ```c++
+    //MainPlayer.h
+    private:
+    	UPROPERTY(VisibleAnywhere, Category = "BALANCE")	
+      float Maxbalance;
+      
+      UPROPERTY(VisibleAnywhere, Category = "BALANCE")	
+      float BalanceRatio;
+    public:
+    	FORCEINLINE float GetBalanceRatio() { return BalanceRatio; } 
+      FORCEINLINE float GetMaxBalance() { return Maxbalance; }
+      FORCEINLINE float GetCurrentBalance() { return Currentbalance; }
+    ```
+    </details>
+- ## <span style = "color:yellow;">잡다한 것</span>
+  1. __Player의 공격 애니메이션 추가 및 수정__
+    - <img src="Image/Weapon_Add(Spear).gif" height="300" title="Weapon_Add(Spear)">
+    - 무기의 종류를 늘리기 위해 AttackWeapon클래스의 enum클래스인 EWeaponName에 내용 추가.
+
+  2. __Playerd의 Dodge 수정__
+    - <img src="Image/New_Dodge_Logic.gif" height="300" title="New_Dodge_Logic">
+    - 공격 애니메이션과 마찬가지로 기존 LaunchCharacter()메서드를 사용하지 않고 RootMotion을 사용하여 처리.   
+    - [이전처리방식](#새로운-Dodge로-수정)은 다음과 같으며 DodgeEnd내용은 삭제되고 Reset의 내용을 End로 이전하여 처리.
+    - 단점 : 대각선은 진행되지 않음
+
+      ```c++
+      //MainPlayer.cpp
+      void AMainPlayer::Dodge() {
+        if (!bCanDodge) return;
+        if (bCanDodge && DirX !=0 || DirY != 0) {
+          AnimDodge();		
+          bCanDodge = false;
+          GetWorldTimerManager().SetTimer(DodgeHandle, this, &AMainPlayer::DodgeEnd, DodgeCoolDownTime, false);
+        }
+      }
+      void AMainPlayer::DodgeEnd() {
+        bCanDodge = true;
+      } 
+      ```

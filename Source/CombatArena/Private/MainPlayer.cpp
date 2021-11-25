@@ -73,7 +73,6 @@ AMainPlayer::AMainPlayer()
 	DodgeSpeed = 5000.f;
 	bCanDodge = true;
 	DodgeCoolDownTime = 1.f;
-	DodgeStopTime = 0.1f;
 	DirX = 0.f;
 	DirY = 0.f;
 
@@ -96,7 +95,8 @@ AMainPlayer::AMainPlayer()
 
 #pragma endregion
 #pragma region BALANCE
-	balance = 0.f;
+	Currentbalance = 0.f;
+	Maxbalance = 100.f;
 	DecreaseBalanceTime = 1.0f;
 	bIsDecreaseBalance = false;
 #pragma endregion
@@ -263,7 +263,7 @@ void AMainPlayer::TurnInPlace(float value) {
 		GetCharacterMovement()->bUseControllerDesiredRotation = false;
 		TurnAxis = 0;
 	}
-	else if (calculationY >= 90.f || (DirX != 0 || DirY != 0)) {
+	else if (calculationY >= 45.f || (DirX != 0 || DirY != 0)) {
 		GetCharacterMovement()->bUseControllerDesiredRotation = true;
 		if (GetVelocity().Size() == 0) {
 			if (value > 0.1f) TurnAxis = 1;
@@ -322,19 +322,12 @@ void AMainPlayer::OffSprinting() {
 void AMainPlayer::Dodge() {
 	if (!bCanDodge) return;
 	if (bCanDodge && DirX !=0 || DirY != 0) {
-		//GetCharacterMovement()->BrakingFrictionFactor = 0.f;	//마찰계수
-		AnimDodge();
-		LaunchCharacter(FVector(GetLastMovementInputVector().X , GetLastMovementInputVector().Y, 0.f) * DodgeSpeed, true, true);	//입력 방향대로
-		GetWorldTimerManager().SetTimer(DodgeHandle, this, &AMainPlayer::DodgeEnd, DodgeStopTime,false);
+		AnimDodge();		
 		bCanDodge = false;
+		GetWorldTimerManager().SetTimer(DodgeHandle, this, &AMainPlayer::DodgeEnd, DodgeCoolDownTime, false);
 	}
 }
 void AMainPlayer::DodgeEnd() {
-	GetCharacterMovement()->StopMovementImmediately();	//움직임을 정지시킨다.
-	GetWorldTimerManager().SetTimer(DodgeHandle, this, &AMainPlayer::ResetDodge, DodgeCoolDownTime, false);
-	GetCharacterMovement()->BrakingFrictionFactor = 2.f;
-}
-void AMainPlayer::ResetDodge() {
 	bCanDodge = true;
 }
 void AMainPlayer::AnimDodge() {
@@ -439,13 +432,15 @@ void AMainPlayer::Attack() {
 				case EWeaponName::EWN_Mace:
 					PlayMontage = MaceAttackMontage;
 					break;
+				case EWeaponName::EWN_Spear:
+					PlayMontage = SpearAttackMontage;
+					break;
 				default:
 					break;
 			}
 		}
 	}
 	
-	//AnimInstance->Montage_SetPlayRate(PlayMontage, 1.5f); // test
 	if (!AnimInstance) AnimInstance = GetMesh()->GetAnimInstance();
 
 	if (AnimInstance && SkillFunction->bGround && PlayMontage) /** USEING SKILL */
@@ -510,7 +505,7 @@ float AMainPlayer::TakeDamage(float DamageAmount, struct FDamageEvent const& Dam
 	/** Active Shield */
 	if (GetCombatStatus() == ECombatStatus::ECS_Blocking) {
 		if (IsBlockingSuccess(DamageCauser)) {
-			balance += 10.f;		//test
+			Currentbalance += 10.f;		//test
 			return 0;
 		}
 	}
@@ -525,9 +520,9 @@ float AMainPlayer::TakeDamage(float DamageAmount, struct FDamageEvent const& Dam
 	SetHealthRatio();
 
 	/** Balance */
-	balance += 20.f;
+	Currentbalance += 20.f;
 	SetDecreaseBalance(false);
-	if (balance >= 100.f) BrokenBalance();
+	if (Currentbalance >= 100.f) BrokenBalance();
 	else GetWorldTimerManager().SetTimer(BalanceHandle, FTimerDelegate::CreateLambda([&] { SetDecreaseBalance(true);}), DecreaseBalanceTime, false);
 	//SetBalanceRatio();
 
@@ -645,17 +640,19 @@ void AMainPlayer::BowAnimCharge() {
 	if (Bow && bBowCharging) ChargeAmount = Bow->ChargeAmount;
 }
 #pragma endregion
+
 #pragma region BALANCE
 void AMainPlayer::SetBalance() {
-	if (bIsDecreaseBalance && balance > 0.f) {
-		balance -= 0.1f;
-		if (balance < 0.f) balance = 0.f;
-		UE_LOG(LogTemp, Warning, TEXT("Balance : %f"), balance);
+	if (bIsDecreaseBalance && Currentbalance > 0.f) {
+		Currentbalance -= 0.1f;
+		if (Currentbalance < 0.f) Currentbalance = 0.f;
+		BalanceRatio = Currentbalance / Maxbalance;
+		UE_LOG(LogTemp, Warning, TEXT("Balance : %f"), BalanceRatio);
 	}
 }
 void AMainPlayer::BrokenBalance() {
 	UE_LOG(LogTemp, Warning, TEXT("Player is faint"));
-	balance = 0.f;
+	Currentbalance = 0.f;
 	SetMovementStatus(EMovementStatus::EMS_Faint); 
 	GetWorldTimerManager().ClearTimer(BalanceHandle);
 	GetWorldTimerManager().SetTimer(BalanceHandle, this, &AMainPlayer::RecoverBalance , 1.5f, false);

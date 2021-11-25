@@ -168,9 +168,6 @@ public:
 	float DodgeCoolDownTime;
 
 	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "Movement | Dodge")
-	float DodgeStopTime;
-
-	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "Movement | Dodge")
 	bool bCanDodge;
 
 	//πÊ«‚
@@ -191,9 +188,6 @@ public:
 
 	UFUNCTION()
 	void DodgeEnd();
-
-	UFUNCTION()
-	void ResetDodge();
 
 	UFUNCTION()
 	void AnimDodge();
@@ -236,7 +230,10 @@ public:
 	class UAnimMontage* SwordAttackMontage;
 
 	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "Anims")
-	class UAnimMontage* MaceAttackMontage;		
+	class UAnimMontage* MaceAttackMontage;	
+	
+	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "Anims")
+	class UAnimMontage* SpearAttackMontage;
 
 	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "Anims")
 	class UAnimMontage* SkillAttackMontage;
@@ -367,7 +364,13 @@ public:
 #pragma region BALANCE
 private:
 	UPROPERTY(VisibleAnywhere,  Category = "BALANCE")
-	float balance;
+	float Currentbalance;
+
+	UPROPERTY(VisibleAnywhere, Category = "BALANCE")	
+	float Maxbalance;
+	
+	UPROPERTY(VisibleAnywhere, Category = "BALANCE")	
+	float BalanceRatio;
 
 	UPROPERTY(VisibleAnywhere,  Category = "BALANCE")
 	bool bIsDecreaseBalance;
@@ -392,6 +395,10 @@ public:
 	void RecoverBalance();
 
 	FORCEINLINE void SetDecreaseBalance(bool value) { bIsDecreaseBalance = value; }
+
+	FORCEINLINE float GetBalanceRatio() { return BalanceRatio; } 
+	FORCEINLINE float GetMaxBalance() { return Maxbalance; }
+	FORCEINLINE float GetCurrentBalance() { return Currentbalance; }
 #pragma endregion
 
 #pragma region SKILL

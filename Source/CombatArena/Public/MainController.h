@@ -38,6 +38,13 @@ public:
 	UFUNCTION()
 	void SetPlayerStamina();
 
+	/** Balance */	
+	UPROPERTY(VisibleAnywhere, Category = "Widget | PlayerWidget")
+	class UBalanceWidget* BalanceBarOutLine;
+
+	UFUNCTION()
+	void SetPlayerBalance();
+
 	/** Pause Menu */
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "HUD")
 	TSubclassOf<UUserWidget> WPauseMenu;

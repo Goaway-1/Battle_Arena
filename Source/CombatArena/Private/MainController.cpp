@@ -7,6 +7,7 @@
 #include "MainPlayer.h"
 #include "HealthWidget.h"
 #include "StaminaWidget.h"
+#include "BalanceWidget.h"
 
 AMainController::AMainController() {
 	bPauseMenuVisible = false;
@@ -23,12 +24,15 @@ void AMainController::BeginPlay() {
 			//Health,Stamina의 Progress를 찾는 부분
 			HealthBarOutLine = PlayerWidget->WidgetTree->FindWidget<UHealthWidget>("PlayerHealth_BP");
 			StaminaBarOutLine = PlayerWidget->WidgetTree->FindWidget<UStaminaWidget>("PlayerStanima_BP");
+			BalanceBarOutLine = PlayerWidget->WidgetTree->FindWidget<UBalanceWidget>("PlayerBalance_BP"); //test
 
 			HealthBarOutLine->SetPlayerOwner(this);
 			StaminaBarOutLine->SetOwner(this);
+			BalanceBarOutLine->SetPlayerOwner(this);
 
 			SetPlayerHealth();
 			SetPlayerStamina();
+			SetPlayerBalance();
 		}
 	}
 	if (WPauseMenu) {	
@@ -53,6 +57,10 @@ void AMainController::SetPlayerHealth() {
 
 void AMainController::SetPlayerStamina() {
 	StaminaBarOutLine->SetOwnerStamina(MainPlayer->GetStaminaRatio(), MainPlayer->MaxStamina, MainPlayer->CurrentStamina);
+}
+
+void AMainController::SetPlayerBalance() {	
+	BalanceBarOutLine->SetOwnerBalance(MainPlayer->GetBalanceRatio(), MainPlayer->GetMaxBalance(), MainPlayer->GetCurrentBalance());
 }
 
 void AMainController::DisplayPauseMenu_Implementation() {
@@ -81,7 +89,6 @@ void AMainController::RemovePauseMenu_Implementation() {
 void AMainController::TogglePauseMenu() {
 	return bPauseMenuVisible ? RemovePauseMenu() : DisplayPauseMenu();
 }
-
 void AMainController::DisplayFogSplatter_Implementation() {
 	if (FogSplatter) {
 		bFogSplatterVisible = true;
