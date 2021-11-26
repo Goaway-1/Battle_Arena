@@ -2133,6 +2133,7 @@
     - TakeDamage()메서드에서 SetHealthRatio()메서드를 통해 PlayerHealth의 값을 HUD상에 표시하며 __이는 MainController와 연결.__
   - Maincontroller클래스의 BeginPlay()메서드에서 PlayerWidget의 Tree의 FindWidget()메서드를 사용하여 위젯의 내부 위젯(HealthWidget타입)을 찾는다.
     - 타입을 찾고 SetPlayerOwner()메서드를 통해서 주인을 MainController로 지정. Enemy는 SetEnemyOwner()메서드를 사용.
+  - #### Health, Stamina, Balance 모두 같은 방식으로 진행
       <details><summary>c++ 코드</summary> 
 
       ```c++
@@ -8112,9 +8113,41 @@
 
 ## **11.25**
 > **<h3>Today Dev Story</h3>**
-- ## <span style = "color:yellow;">Player와 적의 균형...!</span>
-  - <img src="Image/" height="300" title="">  
-  - BlanceWidget생성.
+- ## <span style = "color:yellow;">잡다한 것</span>
+  1. __Player의 공격 애니메이션 추가 및 수정__
+    - <img src="Image/Weapon_Add(Spear).gif" height="300" title="Weapon_Add(Spear)">
+    - 무기의 종류를 늘리기 위해 AttackWeapon클래스의 enum클래스인 EWeaponName에 내용 추가.
+
+  2. __Playerd의 Dodge 수정__
+    - <img src="Image/New_Dodge_Logic.gif" height="300" title="New_Dodge_Logic">
+    - 공격 애니메이션과 마찬가지로 기존 LaunchCharacter()메서드를 사용하지 않고 RootMotion을 사용하여 처리.   
+    - [이전처리방식](#새로운-Dodge로-수정)은 다음과 같으며 DodgeEnd내용은 삭제되고 Reset의 내용을 End로 이전하여 처리.
+    - 단점 : 대각선은 진행되지 않음
+
+      ```c++
+      //MainPlayer.cpp
+      void AMainPlayer::Dodge() {
+        if (!bCanDodge) return;
+        if (bCanDodge && DirX !=0 || DirY != 0) {
+          AnimDodge();		
+          bCanDodge = false;
+          GetWorldTimerManager().SetTimer(DodgeHandle, this, &AMainPlayer::DodgeEnd, DodgeCoolDownTime, false);
+        }
+      }
+      void AMainPlayer::DodgeEnd() {
+        bCanDodge = true;
+      } 
+      ```
+
+> **<h3>Realization</h3>**
+  - null
+
+## **11.26**
+> **<h3>Today Dev Story</h3>**
+- ## <span style = "color:yellow;">Player와 적의 균형 위젯</span>
+  - <img src="Image/SetBalanceWidget.gif" height="300" title="SetBalanceWidget">  
+  - Widget클래스인 BalanceWidget생성하여 Player의 Balance를 표현.
+  - 기존 Health, Stamia와 동일한 [방식](#Health,-Stamina,-Balance-모두-같은-방식으로-진행)으로 제작.
 
     <details><summary>cpp 코드</summary> 
       
@@ -8162,12 +8195,25 @@
     ```
     ```c++
     //MainPlayer.cpp
+    float AMainPlayer::TakeDamage(float DamageAmount, struct FDamageEvent const& DamageEvent, class AController* EventInstigator, AActor* DamageCauser) {
+      ...
+      /** Balance */
+      Currentbalance += 20.f;
+      SetDecreaseBalance(false);
+      if (Currentbalance >= 100.f) BrokenBalance();
+      else GetWorldTimerManager().SetTimer(BalanceHandle, FTimerDelegate::CreateLambda([&] { SetDecreaseBalance(true);}), DecreaseBalanceTime, false);
+      SetBalanceRatio();
+    }
     void AMainPlayer::SetBalance() {
       if (bIsDecreaseBalance && Currentbalance > 0.f) {
         Currentbalance -= 0.1f;
         if (Currentbalance < 0.f) Currentbalance = 0.f;
-        BalanceRatio = Currentbalance / Maxbalance;
+        SetBalanceRatio();
       }
+    }
+    void AMainPlayer::SetBalanceRatio() {
+      BalanceRatio = Currentbalance / Maxbalance;
+      PlayerController->SetPlayerBalance();
     }
     ```
     </details>
@@ -8212,33 +8258,14 @@
       UPROPERTY(VisibleAnywhere, Category = "BALANCE")	
       float BalanceRatio;
     public:
+    	UFUNCTION()
+    	void SetBalanceRatio();
+
     	FORCEINLINE float GetBalanceRatio() { return BalanceRatio; } 
       FORCEINLINE float GetMaxBalance() { return Maxbalance; }
       FORCEINLINE float GetCurrentBalance() { return Currentbalance; }
     ```
     </details>
-- ## <span style = "color:yellow;">잡다한 것</span>
-  1. __Player의 공격 애니메이션 추가 및 수정__
-    - <img src="Image/Weapon_Add(Spear).gif" height="300" title="Weapon_Add(Spear)">
-    - 무기의 종류를 늘리기 위해 AttackWeapon클래스의 enum클래스인 EWeaponName에 내용 추가.
-
-  2. __Playerd의 Dodge 수정__
-    - <img src="Image/New_Dodge_Logic.gif" height="300" title="New_Dodge_Logic">
-    - 공격 애니메이션과 마찬가지로 기존 LaunchCharacter()메서드를 사용하지 않고 RootMotion을 사용하여 처리.   
-    - [이전처리방식](#새로운-Dodge로-수정)은 다음과 같으며 DodgeEnd내용은 삭제되고 Reset의 내용을 End로 이전하여 처리.
-    - 단점 : 대각선은 진행되지 않음
-
-      ```c++
-      //MainPlayer.cpp
-      void AMainPlayer::Dodge() {
-        if (!bCanDodge) return;
-        if (bCanDodge && DirX !=0 || DirY != 0) {
-          AnimDodge();		
-          bCanDodge = false;
-          GetWorldTimerManager().SetTimer(DodgeHandle, this, &AMainPlayer::DodgeEnd, DodgeCoolDownTime, false);
-        }
-      }
-      void AMainPlayer::DodgeEnd() {
-        bCanDodge = true;
-      } 
-      ```
+    
+> **<h3>Realization</h3>**
+  - null

@@ -387,6 +387,9 @@ private:
 public:
 	UFUNCTION()
 	void SetBalance();
+
+	UFUNCTION()
+	void SetBalanceRatio();
 	
 	UFUNCTION()
 	void BrokenBalance();

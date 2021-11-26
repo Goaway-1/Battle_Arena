@@ -21,10 +21,10 @@ void AMainController::BeginPlay() {
 			PlayerWidget->AddToViewport();
 			PlayerWidget->SetVisibility(ESlateVisibility::Visible);	
 
-			//Health,Stamina의 Progress를 찾는 부분
+			//Health, Stamina, Balance의 Progress를 찾는 부분
 			HealthBarOutLine = PlayerWidget->WidgetTree->FindWidget<UHealthWidget>("PlayerHealth_BP");
 			StaminaBarOutLine = PlayerWidget->WidgetTree->FindWidget<UStaminaWidget>("PlayerStanima_BP");
-			BalanceBarOutLine = PlayerWidget->WidgetTree->FindWidget<UBalanceWidget>("PlayerBalance_BP"); //test
+			BalanceBarOutLine = PlayerWidget->WidgetTree->FindWidget<UBalanceWidget>("PlayerBalance_BP"); 
 
 			HealthBarOutLine->SetPlayerOwner(this);
 			StaminaBarOutLine->SetOwner(this);

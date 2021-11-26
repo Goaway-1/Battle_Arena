@@ -505,7 +505,7 @@ float AMainPlayer::TakeDamage(float DamageAmount, struct FDamageEvent const& Dam
 	/** Active Shield */
 	if (GetCombatStatus() == ECombatStatus::ECS_Blocking) {
 		if (IsBlockingSuccess(DamageCauser)) {
-			Currentbalance += 10.f;		//test
+			Currentbalance += 10.f;		
 			return 0;
 		}
 	}
@@ -524,7 +524,7 @@ float AMainPlayer::TakeDamage(float DamageAmount, struct FDamageEvent const& Dam
 	SetDecreaseBalance(false);
 	if (Currentbalance >= 100.f) BrokenBalance();
 	else GetWorldTimerManager().SetTimer(BalanceHandle, FTimerDelegate::CreateLambda([&] { SetDecreaseBalance(true);}), DecreaseBalanceTime, false);
-	//SetBalanceRatio();
+	SetBalanceRatio();
 
 	/** KnockBack */
 	FVector Loc = DamageCauser->GetActorForwardVector();
@@ -646,12 +646,14 @@ void AMainPlayer::SetBalance() {
 	if (bIsDecreaseBalance && Currentbalance > 0.f) {
 		Currentbalance -= 0.1f;
 		if (Currentbalance < 0.f) Currentbalance = 0.f;
-		BalanceRatio = Currentbalance / Maxbalance;
-		UE_LOG(LogTemp, Warning, TEXT("Balance : %f"), BalanceRatio);
+		SetBalanceRatio();
 	}
 }
+void AMainPlayer::SetBalanceRatio() {
+	BalanceRatio = Currentbalance / Maxbalance;
+	PlayerController->SetPlayerBalance();
+}
 void AMainPlayer::BrokenBalance() {
-	UE_LOG(LogTemp, Warning, TEXT("Player is faint"));
 	Currentbalance = 0.f;
 	SetMovementStatus(EMovementStatus::EMS_Faint); 
 	GetWorldTimerManager().ClearTimer(BalanceHandle);
