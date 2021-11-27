@@ -8269,3 +8269,13 @@
     
 > **<h3>Realization</h3>**
   - null
+
+## **11.27**
+> **<h3>Today Dev Story</h3>**
+- ## <span style = "color:yellow;">Attack Trail 생성</span>
+  - <img src="Image/AttackTrail.gif" height="300" title="AttackTrail">  
+  - P_SwordTrail 파티클을 생성하고 노티파이 스테이트인 Trail을 추가하여 발생시킴.
+    - 각 무기의 길이에 맞도록 각 소켓을 생성. (Sword/Spear/MaceTrailStart와 TrailEnd)
+
+> **<h3>Realization</h3>**
+  - null
