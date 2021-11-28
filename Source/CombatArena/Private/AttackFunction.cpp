@@ -27,7 +27,7 @@ void UAttackFunction::SetOwner(USkeletalMeshComponent* TakeMesh,AController* Tak
 	Controller = TakeController;
 }
 
-void UAttackFunction::AttackStart(FVector Location, FVector Forward, TSubclassOf<UDamageType> DamageType,FString Type, UParticleSystem* HitParticle,float AttackRange,float Damage)
+void UAttackFunction::SkillAttackStart(FVector Location, FVector Forward, TSubclassOf<UDamageType> DamageType,FString Type, UParticleSystem* HitParticle,float AttackRange,float Damage)
 {
 	//찾아낼 액터의 트레이스 채널
 	TArray<TEnumAsByte<EObjectTypeQuery>> TraceObjectTypes;

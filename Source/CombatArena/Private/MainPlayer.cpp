@@ -474,16 +474,37 @@ void AMainPlayer::Attack() {
 	}
 }
 void AMainPlayer::StartAttack() {
-	FString Type = "Player";
-	AttackFunction->AttackStart(GetActorLocation(), GetActorForwardVector(), PlayerDamageType, Type, GetHitParticle(), GetAttackRange(), AttackDamage);
+	//그 범위 공격으로 빠질듯
+	if(GetAttackCurrentWeapon()->GetWeaponPos() == EWeaponPos::EWP_Melee){
+	}
+
+	/** Use AttackFunction */
+	//FString Type = "Player";
+	//AttackFunction->SkillAttackStart(GetActorLocation(), GetActorForwardVector(), PlayerDamageType, Type, GetHitParticle(), GetAttackRange(), AttackDamage);
 }
 void AMainPlayer::EndAttack() {
+	//그 범위 공격으로 빠질듯
+
+
+	/** Use AttackFunction */
 	bAttacking = false;
 	ZoomOutCam();
 }
+void AMainPlayer::OnWeaponCollision() {
+	if (GetAttackCurrentWeapon()->GetWeaponPos() == EWeaponPos::EWP_Melee) {
+		AAttackWeapon* Weapon = Cast<AAttackWeapon>(GetAttackCurrentWeapon());
+		Weapon->SetAttackCollision(true);
+	}
+}
+void AMainPlayer::OffWeaponCollision() {
+	if (GetAttackCurrentWeapon()->GetWeaponPos() == EWeaponPos::EWP_Melee) {
+		AAttackWeapon* Weapon = Cast<AAttackWeapon>(GetAttackCurrentWeapon());
+		Weapon->SetAttackCollision(false);
+	}
+}
 void AMainPlayer::StartPowerfulAttack() {
 	FString Type = "Player";
-	AttackFunction->AttackStart(GetActorLocation(), GetActorForwardVector(), PlayerDamageType, Type, GetHitParticle(), GetAttackRange(), AttackDamage * 2);
+	AttackFunction->SkillAttackStart(GetActorLocation(), GetActorForwardVector(), PlayerDamageType, Type, GetHitParticle(), GetAttackRange(), AttackDamage * 2);
 }
 void AMainPlayer::AttackInputCheck() {
 	if (bIsAttackCheck) {
@@ -737,7 +758,10 @@ void AMainPlayer::ItemEquip() {
 	if (ActiveOverlappingItem != nullptr) {
 		if (ActiveOverlappingItem->GetItemType() == EItemType::EIT_Weapon) {
 			AWeapon* CurWeapon = Cast<AWeapon>(ActiveOverlappingItem);
-			CurWeapon->Equip(this);
+			CurWeapon->Equip(this); 
+
+			AAttackWeapon* ACurWeapon = Cast<AAttackWeapon>(CurWeapon);
+			if (ACurWeapon) ACurWeapon->SetAttackInit(PlayerController, this, PlayerDamageType);
 		}
 		else if(ActiveOverlappingItem->GetItemType() == EItemType::EIT_Item) {
 			APotion* Potion = Cast<APotion>(ActiveOverlappingItem);

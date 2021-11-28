@@ -4,6 +4,46 @@ AAttackWeapon::AAttackWeapon() {
 	WeaponPos = EWeaponPos::EWP_Melee;
 	Damage = 20.f;
 	AttackRange = 200.f;
+	AttackCnt = 0;		//test
+
+	AttackCollision = CreateDefaultSubobject<UCapsuleComponent>("AttackCollision");
+	AttackCollision->SetupAttachment(SkeletalMesh);
+	AttackCollision->SetCollisionProfileName(FName("PlayerWeapon"));
+}
+
+void AAttackWeapon::BeginPlay()
+{
+	Super::BeginPlay();
+
+	AttackCollision->OnComponentBeginOverlap.AddDynamic(this, &AAttackWeapon::OnAttackOverlap);
+	SetAttackCollision(false);
+}
+
+void AAttackWeapon::SetAttackCollision(bool value) {
+	if(!value){
+		AttackCollision->SetCollisionEnabled(ECollisionEnabled::NoCollision);	
+		AttackCnt++;
+		if (AttackCnt > 2) AttackCnt = 0;
+	}
+	else AttackCollision->SetCollisionEnabled(ECollisionEnabled::QueryOnly);
+}
+
+void AAttackWeapon::OnAttackOverlap(UPrimitiveComponent* OverlappedComponent, AActor* OtherActor, UPrimitiveComponent* OtherComp, int32 OtherBodyIndex, bool bFromSweep, const FHitResult& SweepResult) {
+	if (OtherActor) {
+		AEnemy* Enemy = Cast<AEnemy>(OtherActor);
+		if (Enemy) {
+			FString text = AtOwner->GetName() + this->GetName() + FString::FromInt(AttackCnt);
+			//UE_LOG(LogTemp, Warning ,TEXT("Name : %s"), text)
+			Enemy->SetCurrentAttack(AtOwner->GetName() + this->GetName() + FString::FromInt(AttackCnt));	//test
+			UGameplayStatics::ApplyDamage(Enemy, Damage, AtController, AtOwner, AtDamageType);
+		}
+	}
+}
+
+void AAttackWeapon::SetAttackInit(AController* CauserController, AActor* Causer, TSubclassOf<UDamageType> Type) {
+	AtController = CauserController;
+	AtOwner = Causer;
+	AtDamageType = Type;
 }
 
 void AAttackWeapon::Equip(class AMainPlayer* Player) {
@@ -26,8 +66,8 @@ void AAttackWeapon::Equip(class AMainPlayer* Player) {
 
 			Player->AttackRange = GetAttackRange();		//오른쪽 무기만 거리 지정
 			Player->SetAttackCurrentWeapon(this);
-
 			Player->SetAttackDamage(Damage);	
+
 			CollisionVolume->SetCollisionEnabled(ECollisionEnabled::NoCollision);
 		}
 	}

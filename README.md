@@ -8279,3 +8279,180 @@
 
 > **<h3>Realization</h3>**
   - null
+
+## **11.28**
+> **<h3>Today Dev Story</h3>**
+- ## <span style = "color:yellow;">Player의 Attack 수정_1</span>
+  - <img src="Image/PlayerAttack_Logic_Collision.gif" height="300" title="PlayerAttack_Logic_Collision">
+  - <img src="Image/PlayerAttack_Logic_Collision.png" height="300" title="PlayerAttack_Logic_Collision">  
+  - 기존 외적을 통한 공격은 범위 공격을 진행할때로 수정하고 새로운 공격방식 설정.
+    - 무기에 CapsuleComponent를 추가하여 일정 부분에 Collision을 활성화하고 그때 Overlap시 데미지 처리.
+    - 이는 중복되는 단점이 있기에 한번만 처리할 수 있도록 TakeDamage()에서 이전과 동일한 공격이면 예외처리.
+  - AttackWeapon클래스에 CapsuleComponent를 추가하여 Collision설정하고 OverlapBegin()만 처리. (일단 로그만 띄우는 걸로)
+    - SetAttackCollision()메서드를 통해서 MainPlayer클래스의 노티파이에서 콜리전을 활성화 및 비활성화를 위한 로직.
+  - MainPlayer에서는 콜리전을 키고 끄는 On/OffWeaponCollision()메서드를 통해서 콜리전을 활성화.
+    - 이는 애니메이션의 노티파이와 연결해 두어 처리.
+
+    <details><summary>cpp 코드</summary> 
+      
+    ```c++
+    //AttackWeapon.cpp
+    AAttackWeapon::AAttackWeapon() {
+      AttackCollision = CreateDefaultSubobject<UCapsuleComponent>("AttackCollision");
+      AttackCollision->SetupAttachment(SkeletalMesh);
+      AttackCollision->SetCollisionProfileName(FName("PlayerWeapon"));
+    }
+    void AAttackWeapon::BeginPlay()
+    {
+      Super::BeginPlay();
+
+      AttackCollision->OnComponentBeginOverlap.AddDynamic(this, &AAttackWeapon::OnAttackOverlap);
+      SetAttackCollision(false);
+    }
+    void AAttackWeapon::SetAttackCollision(bool value) {
+	    if(!value) AttackCollision->SetCollisionEnabled(ECollisionEnabled::NoCollision);
+      else AttackCollision->SetCollisionEnabled(ECollisionEnabled::QueryOnly);
+    }
+    void AAttackWeapon::OnAttackOverlap(UPrimitiveComponent* OverlappedComponent, AActor* OtherActor, UPrimitiveComponent* OtherComp, int32 OtherBodyIndex, bool bFromSweep, const FHitResult& SweepResult) {
+      if (OtherActor) {
+        AEnemy* Enemy = Cast<AEnemy>(OtherActor);
+        if (Enemy) {
+          UE_LOG(LogTemp,Warning, TEXT("OVerlap"));
+        }
+      }
+    }
+    ```
+    ```c++
+    //MainPlayer.cpp
+    void AMainPlayer::OnWeaponCollision() {
+    	if (GetAttackCurrentWeapon()->GetWeaponPos() == EWeaponPos::EWP_Melee) {
+        AAttackWeapon* Weapon = Cast<AAttackWeapon>(GetAttackCurrentWeapon());
+        Weapon->SetAttackCollision(true);
+      }
+    }
+    void AMainPlayer::OffWeaponCollision() {
+      if (GetAttackCurrentWeapon()->GetWeaponPos() == EWeaponPos::EWP_Melee) {
+        AAttackWeapon* Weapon = Cast<AAttackWeapon>(GetAttackCurrentWeapon());
+        Weapon->SetAttackCollision(false);
+      }
+    }
+    ```
+    </details>
+    <details><summary>h 코드</summary> 
+      
+    ```c++
+    //AttackWeapon.h
+    public:
+    	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Attack")
+      UCapsuleComponent* AttackCollision;
+
+      UFUNCTION()
+      void OnAttackOverlap(UPrimitiveComponent* OverlappedComponent, AActor* OtherActor, UPrimitiveComponent* OtherComp, int32 OtherBodyIndex, bool bFromSweep, const FHitResult& SweepResult);
+      
+      UFUNCTION()
+      void SetAttackCollision(bool value);
+    ```
+    ```c++
+    //MainPlayer.h
+    public:
+    	UFUNCTION(BlueprintCallable)
+      void OnWeaponCollision();
+
+      UFUNCTION(BlueprintCallable)
+      void OffWeaponCollision();
+    ```
+    </details>
+
+- ## <span style = "color:yellow;">Player의 Attack 수정_2</span>
+  - <img src="Image/NewAttackLogic_Collision.gif" height="300" title="NewAttackLogic_Collision">
+  - ApplyDamage()메서드에 필요한 정보를 무기를 착용할때 ItemEquip()메서드에서 SetAttackInit()메서드로 지정
+    - 또한 MainPlayer에서 SetAttackCollision()메서드를 통해 콜리전을 On/Off할때 동시에 AttakCnt를 증가시켜 한번에 한번만 데미지를 입히도록설정
+    - Overlap되면 Enemy클래스의 CurrentAttack이름과 LastAttack이름을 비교하여 다를시 TakeDamage()메서드 실행.
+      - 넘길때 공격자의 이름 + 무기의 이름 + 카운트 번호로 넘겨 멀티에서도 용이하게 구현
+
+    <details><summary>cpp 코드</summary> 
+      
+    ```c++
+    //AttackWeapon.cpp
+    void AAttackWeapon::SetAttackCollision(bool value) {
+      if(!value){
+        AttackCollision->SetCollisionEnabled(ECollisionEnabled::NoCollision);	
+        AttackCnt++;
+        if (AttackCnt > 2) AttackCnt = 0;
+      }
+      else AttackCollision->SetCollisionEnabled(ECollisionEnabled::QueryOnly);
+    }
+    void AAttackWeapon::OnAttackOverlap(UPrimitiveComponent* OverlappedComponent, AActor* OtherActor, UPrimitiveComponent* OtherComp, int32 OtherBodyIndex, bool bFromSweep, const FHitResult& SweepResult) {
+      if (OtherActor) {
+        AEnemy* Enemy = Cast<AEnemy>(OtherActor);
+        if (Enemy) {
+          FString text = AtOwner->GetName() + this->GetName() + FString::FromInt(AttackCnt);
+          Enemy->SetCurrentAttack(AtOwner->GetName() + this->GetName() + FString::FromInt(AttackCnt));	
+          UGameplayStatics::ApplyDamage(Enemy, Damage, AtController, AtOwner, AtDamageType);
+        }
+      }
+    }
+    void AAttackWeapon::SetAttackInit(AController* CauserController, AActor* Causer, TSubclassOf<UDamageType> Type) {
+      AtController = CauserController;
+      AtOwner = Causer;
+      AtDamageType = Type;
+    }
+    ```
+    ```c++
+    //MainPlayer.cpp
+    void AMainPlayer::ItemEquip() {	
+      if (ActiveOverlappingItem != nullptr) {
+        if (ActiveOverlappingItem->GetItemType() == EItemType::EIT_Weapon) {
+          ...
+          AAttackWeapon* ACurWeapon = Cast<AAttackWeapon>(CurWeapon);
+          if (ACurWeapon) ACurWeapon->SetAttackInit(PlayerController, this, PlayerDamageType);
+        }
+      }
+    }
+    ```
+    ```c++
+    //Enemy.cpp
+    float AEnemy::TakeDamage(float DamageAmount, struct FDamageEvent const& DamageEvent, class AController* EventInstigator, AActor* DamageCauser) {
+      if (LastAttack != CurrentAttack) {
+        LastAttack = CurrentAttack;
+      }
+      else return 0;
+      ...
+    }
+    ```
+    </details>
+    <details><summary>h 코드</summary> 
+      
+    ```c++
+    //AttackWeapon.h
+    public:
+    	UPROPERTY(VisibleAnywhere, BlueprintReadWrite, Category = "Combat")
+      class AController* AtController;
+
+      UPROPERTY(VisibleAnywhere, BlueprintReadWrite, Category = "Combat")
+      class AActor* AtOwner;
+
+      UPROPERTY(VisibleAnywhere, BlueprintReadWrite, Category = "Combat")
+      TSubclassOf<UDamageType> AtDamageType;
+
+      UPROPERTY(VisibleAnywhere, BlueprintReadWrite, Category = "Combat")
+	    int AttackCnt;
+
+      UFUNCTION()
+      void SetAttackInit(AController* CauserController, AActor* Causer, TSubclassOf<UDamageType> Type);
+    ```
+    ```c++
+    //Enemy.h
+    public:
+      UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Attack")
+      FString LastAttack = "";
+
+      UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Attack")
+      FString CurrentAttack = "";
+
+      FORCEINLINE void SetCurrentAttack(FString Value) { CurrentAttack = Value; }
+    ```
+    </details>
+
+> **<h3>Realization</h3>**
+  - null

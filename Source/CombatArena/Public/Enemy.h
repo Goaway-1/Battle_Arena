@@ -171,7 +171,6 @@ public:
 	void DestroyEnemy();
 #pragma endregion
 #pragma region HUD
-
 	UPROPERTY(VisibleAnywhere, Category = "Widget | EnemyWidget")
 	class UWidgetComponent* HealthWidget;
 
@@ -212,4 +211,12 @@ public:
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "HUD")
 	TSubclassOf<class UDamageTextWidget> DamageTextWidget;
 #pragma endregion
+public:
+	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Attack")
+	FString LastAttack = "";
+
+	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Attack")
+	FString CurrentAttack = "";
+
+	FORCEINLINE void SetCurrentAttack(FString Value) { CurrentAttack = Value; }
 };

@@ -153,7 +153,7 @@ void AEnemy::SkillAttackEnd() {
 }
 void AEnemy::AttackStart() {
 	FString Type = "Enemy";
-	AttackFunction->AttackStart(GetActorLocation(),GetActorForwardVector(),EnemyDamageType, Type, GetHitParticle(),GetAttackRange(), AttackDamage);
+	AttackFunction->SkillAttackStart(GetActorLocation(),GetActorForwardVector(),EnemyDamageType, Type, GetHitParticle(),GetAttackRange(), AttackDamage);
 }
 void AEnemy::OnAttackMontageEnded(UAnimMontage* Montage, bool bInterrupted)
 {
@@ -162,6 +162,10 @@ void AEnemy::OnAttackMontageEnded(UAnimMontage* Montage, bool bInterrupted)
 	OnAttackEnd.Broadcast();
 }
 float AEnemy::TakeDamage(float DamageAmount, struct FDamageEvent const& DamageEvent, class AController* EventInstigator, AActor* DamageCauser) {
+	if (LastAttack != CurrentAttack) LastAttack = CurrentAttack;
+	else return 0;
+
+
 	if (CurrentHealth <= 0) return 0.f;
 
 	SetHealthRatio();
@@ -235,7 +239,6 @@ void AEnemy::ActiveFogEvent() {
 	if (IsInFogMontage && Anim) Anim->Montage_Play(IsInFogMontage);
 	GetWorldTimerManager().SetTimer(FogHandle, this, &AEnemy::DeactiveFogEvent, SmokeTime, false);
 }
-
 void AEnemy::DeactiveFogEvent() {
 	UE_LOG(LogTemp, Warning, TEXT("Enemy DeactiveFogEvent"));
 	Anim->Montage_Stop(0.1f);

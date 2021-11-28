@@ -296,6 +296,12 @@ public:
 	UFUNCTION(BlueprintCallable)
 	void StartPowerfulAttack();
 
+	UFUNCTION(BlueprintCallable)
+	void OnWeaponCollision();
+
+	UFUNCTION(BlueprintCallable)
+	void OffWeaponCollision();
+
 	/** 콤보의 구현을 위해서 사용 */
 	UFUNCTION(BlueprintCallable)
 	void AttackInputCheck();

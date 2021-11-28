@@ -19,6 +19,10 @@ UCLASS()
 class COMBATARENA_API AAttackWeapon : public AWeapon
 {
 	GENERATED_BODY()
+
+protected:
+	virtual void BeginPlay() override;
+
 public:
 	AAttackWeapon();
 
@@ -30,6 +34,20 @@ public:
 
 	FORCEINLINE float GetAttackRange() { return AttackRange; }
 
+	/** Weapon Name */
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Combat", Meta = (AllowPrivateAccess = true))
+	EWeaponName WeaponName;
+
+	FORCEINLINE EWeaponName GetWeaponName() { return WeaponName; }
+
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Attack")
+	UCapsuleComponent* AttackCollision;
+
+	UFUNCTION()
+	void OnAttackOverlap(UPrimitiveComponent* OverlappedComponent, AActor* OtherActor, UPrimitiveComponent* OtherComp, int32 OtherBodyIndex, bool bFromSweep, const FHitResult& SweepResult);
+	
+	UFUNCTION()
+	void SetAttackCollision(bool value);
 #pragma endregion
 #pragma region DAMAGE
 	UPROPERTY(EditAnyWhere, BlueprintReadWrite, Category = "Combat")
@@ -38,9 +56,18 @@ public:
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Combat")
 	TSubclassOf<UDamageType> DamageTypeClass;
 #pragma endregion
-	/** Weapon Name */
-	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Combat", Meta = (AllowPrivateAccess = true))
-	EWeaponName WeaponName;
+	UPROPERTY(VisibleAnywhere, BlueprintReadWrite, Category = "Combat")
+	class AController* AtController;
 
-	FORCEINLINE EWeaponName GetWeaponName() { return WeaponName; }
+	UPROPERTY(VisibleAnywhere, BlueprintReadWrite, Category = "Combat")
+	class AActor* AtOwner;
+
+	UPROPERTY(VisibleAnywhere, BlueprintReadWrite, Category = "Combat")
+	TSubclassOf<UDamageType> AtDamageType;
+
+	UPROPERTY(VisibleAnywhere, BlueprintReadWrite, Category = "Combat")
+	int AttackCnt;
+
+	UFUNCTION()
+	void SetAttackInit(AController* CauserController, AActor* Causer, TSubclassOf<UDamageType> Type);
 };
