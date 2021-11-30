@@ -320,8 +320,8 @@ void AMainPlayer::OffSprinting() {
 	}
 }
 void AMainPlayer::Dodge() {
-	if (!bCanDodge) return;
-	if (bCanDodge && DirX !=0 || DirY != 0) {
+	if (!IsCanMove()) return;
+	if (DirX !=0 || DirY != 0) {
 		AnimDodge();		
 		bCanDodge = false;
 		GetWorldTimerManager().SetTimer(DodgeHandle, this, &AMainPlayer::DodgeEnd, DodgeCoolDownTime, false);
@@ -346,7 +346,7 @@ void AMainPlayer::AnimDodge() {
 }
 bool AMainPlayer::IsCanMove() {
 	if (bAttacking || AttackFunction->bKicking || GetMovementStatus() == EMovementStatus::EMS_Death 
-	|| GetMovementStatus() == EMovementStatus::EMS_Faint) return false;
+	|| GetMovementStatus() == EMovementStatus::EMS_Faint || !bCanDodge || !GetCharacterMovement()->CurrentFloor.IsWalkableFloor()) return false;
 	else return true;
 }
 void AMainPlayer::Targeting() {
@@ -443,7 +443,11 @@ void AMainPlayer::Attack() {
 	
 	if (!AnimInstance) AnimInstance = GetMesh()->GetAnimInstance();
 
-	if (AnimInstance && SkillFunction->bGround && PlayMontage) /** USEING SKILL */
+	if (!GetCharacterMovement()->CurrentFloor.IsWalkableFloor()) {	/** Flying Attack */
+		AnimInstance->Montage_Play(PlayMontage);
+		AnimInstance->Montage_JumpToSection("FlyAttack", PlayMontage);
+	}
+	else if (SkillFunction->bGround && PlayMontage) /** USEING SKILL */
 	{
 		AnimInstance->Montage_Play(PlayMontage);
 		AnimInstance->Montage_JumpToSection("SkillEmpact", PlayMontage);

@@ -8365,9 +8365,10 @@
 
 - ## <span style = "color:yellow;">Player의 Attack 수정_2</span>
   - <img src="Image/NewAttackLogic_Collision.gif" height="300" title="NewAttackLogic_Collision">
+  - 무기 콜리전과 Overlap판정으로 한 공격은 한번 휘두를때 2번 이상 피해를 받는 오류가 발생할 수 있기에 공격시 공격이름을 넘김 
   - ApplyDamage()메서드에 필요한 정보를 무기를 착용할때 ItemEquip()메서드에서 SetAttackInit()메서드로 지정
     - 또한 MainPlayer에서 SetAttackCollision()메서드를 통해 콜리전을 On/Off할때 동시에 AttakCnt를 증가시켜 한번에 한번만 데미지를 입히도록설정
-    - Overlap되면 Enemy클래스의 CurrentAttack이름과 LastAttack이름을 비교하여 다를시 TakeDamage()메서드 실행.
+    - Overlap되면 Enemy클래스의 CurrentAttack이름과 LastAttack이름을 비교하여 다를시 TakeDamage()메서드 실행
       - 넘길때 공격자의 이름 + 무기의 이름 + 카운트 번호로 넘겨 멀티에서도 용이하게 구현
 
     <details><summary>cpp 코드</summary> 
@@ -8456,3 +8457,41 @@
 
 > **<h3>Realization</h3>**
   - null
+
+## **11.29**
+> **<h3>Today Dev Story</h3>**
+- ## <span style = "color:yellow;">Player의 IsCanMove 수정</span> 
+  - Player가 공중에서 점프 중 일때 Dodge, 방향 전환과 같은 행동을 제한하기 위해 IsCanMove()메서드 수정
+    - CharacterMovement()의 CurrentFloor값이 true라면 즉 지면에 발이 닿았는지를 파악하여 행동 파악  
+
+    ```c++
+    bool AMainPlayer::IsCanMove() {
+      if (bAttacking || AttackFunction->bKicking || GetMovementStatus() == EMovementStatus::EMS_Death 
+      || GetMovementStatus() == EMovementStatus::EMS_Faint || !bCanDodge || !GetCharacterMovement()->CurrentFloor.IsWalkableFloor()) return false;
+      else return true;
+    }
+    ```
+
+> **<h3>Realization</h3>**
+  - null
+
+## **11.30**
+> **<h3>Today Dev Story</h3>**
+- ## <span style = "color:yellow;">Player의 JumpAttack 구현</span>
+  - <img src="Image/JumpAttack_Logic.gif" height="300" title="JumpAttack_Logic"> 
+  - 공중에서의 공격을 구분하기 위해서 이전 IsCanMove()메서드 수정과 동일하게 IsWalkableFloor()메서드를 통해 판정.
+    - 별다른 것 없이 Montage_Play를 사용 -> 애니메이션만 수정하면 완료.
+
+    <details><summary>cpp 코드</summary> 
+      
+    ```c++
+    //AttackWeapon.h
+    void AMainPlayer::Attack() {
+      ...
+      if (!GetCharacterMovement()->CurrentFloor.IsWalkableFloor()) {	/** Flying Attack */
+        AnimInstance->Montage_Play(PlayMontage);
+        AnimInstance->Montage_JumpToSection("FlyAttack", PlayMontage);
+      }
+    }
+    ```
+    </details>

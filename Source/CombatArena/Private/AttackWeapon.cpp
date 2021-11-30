@@ -4,7 +4,7 @@ AAttackWeapon::AAttackWeapon() {
 	WeaponPos = EWeaponPos::EWP_Melee;
 	Damage = 20.f;
 	AttackRange = 200.f;
-	AttackCnt = 0;		//test
+	AttackCnt = 0;		
 
 	AttackCollision = CreateDefaultSubobject<UCapsuleComponent>("AttackCollision");
 	AttackCollision->SetupAttachment(SkeletalMesh);
