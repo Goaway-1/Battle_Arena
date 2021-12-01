@@ -55,7 +55,7 @@ void UAttackFunction::SkillAttackStart(FVector Location, FVector Forward, TSubcl
 
 	/** Draw Image */
 	FColor DrawColor = bResult ? FColor::Green : FColor::Red;
-	//DrawDebugSphere(GetWorld(), Owner->GetActorLocation(), AttackRange, 12, DrawColor, false, 0.5f);
+	DrawDebugSphere(GetWorld(), Owner->GetActorLocation(), AttackRange, 12, DrawColor, false, 0.5f);
 
 	/** 실질적인 알고리즘 */
 	if (bResult) {

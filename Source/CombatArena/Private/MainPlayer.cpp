@@ -17,6 +17,7 @@
 #include "PlayerSkillFunction.h"
 #include "BowWeapon.h"
 #include "Grenade.h"
+#include "Balance.h"
 
 AMainPlayer::AMainPlayer()
 {
@@ -95,10 +96,8 @@ AMainPlayer::AMainPlayer()
 
 #pragma endregion
 #pragma region BALANCE
-	Currentbalance = 0.f;
-	Maxbalance = 100.f;
+	Balance = CreateDefaultSubobject<UBalance>("Balance");
 	DecreaseBalanceTime = 1.0f;
-	bIsDecreaseBalance = false;
 #pragma endregion
 #pragma region SKILL
 	SkillFunction = CreateDefaultSubobject<UPlayerSkillFunction>("SkillFunction");
@@ -176,9 +175,8 @@ void AMainPlayer::Tick(float DeltaTime)
 	/** Anim Charging */
 	BowAnimCharge();
 	CurrentHealth = 100.f;
-	
-	/** Set Balance (If this number is 100, the player will faint.) */
-	SetBalance();
+
+	SetBalanceRatio();
 }
 
 void AMainPlayer::SetupPlayerInputComponent(UInputComponent* PlayerInputComponent)
@@ -443,11 +441,7 @@ void AMainPlayer::Attack() {
 	
 	if (!AnimInstance) AnimInstance = GetMesh()->GetAnimInstance();
 
-	if (!GetCharacterMovement()->CurrentFloor.IsWalkableFloor()) {	/** Flying Attack */
-		AnimInstance->Montage_Play(PlayMontage);
-		AnimInstance->Montage_JumpToSection("FlyAttack", PlayMontage);
-	}
-	else if (SkillFunction->bGround && PlayMontage) /** USEING SKILL */
+	if (SkillFunction->bGround && PlayMontage) /** USEING SKILL */
 	{
 		AnimInstance->Montage_Play(PlayMontage);
 		AnimInstance->Montage_JumpToSection("SkillEmpact", PlayMontage);
@@ -525,12 +519,16 @@ FName AMainPlayer::GetAttackMontageSection(FString Type, int32 Section) {
 }
 float AMainPlayer::TakeDamage(float DamageAmount, struct FDamageEvent const& DamageEvent, class AController* EventInstigator, AActor* DamageCauser) {
 	Super::TakeDamage(DamageAmount, DamageEvent, EventInstigator, DamageCauser);
+
+	if (LastAttack != CurrentAttack) LastAttack = CurrentAttack;
+	else if (DamageEvent.DamageTypeClass != InternalDamageType) return 0;
+
 	if(GetMovementStatus() == EMovementStatus::EMS_Faint) RecoverBalance();
 
 	/** Active Shield */
 	if (GetCombatStatus() == ECombatStatus::ECS_Blocking) {
 		if (IsBlockingSuccess(DamageCauser)) {
-			Currentbalance += 10.f;		
+			Balance->SetCurrentBalance(10.f);
 			return 0;
 		}
 	}
@@ -545,10 +543,10 @@ float AMainPlayer::TakeDamage(float DamageAmount, struct FDamageEvent const& Dam
 	SetHealthRatio();
 
 	/** Balance */
-	Currentbalance += 20.f;
-	SetDecreaseBalance(false);
-	if (Currentbalance >= 100.f) BrokenBalance();
-	else GetWorldTimerManager().SetTimer(BalanceHandle, FTimerDelegate::CreateLambda([&] { SetDecreaseBalance(true);}), DecreaseBalanceTime, false);
+	Balance->SetCurrentBalance(20.f);
+	Balance->SetDecreaseBalance(false);
+	if (Balance->GetCurrentBalance() >= 100.f) BrokenBalance();
+	else GetWorldTimerManager().SetTimer(BalanceHandle, FTimerDelegate::CreateLambda([&] { Balance->SetDecreaseBalance(true);}), DecreaseBalanceTime, false);
 	SetBalanceRatio();
 
 	/** KnockBack */
@@ -667,19 +665,13 @@ void AMainPlayer::BowAnimCharge() {
 #pragma endregion
 
 #pragma region BALANCE
-void AMainPlayer::SetBalance() {
-	if (bIsDecreaseBalance && Currentbalance > 0.f) {
-		Currentbalance -= 0.1f;
-		if (Currentbalance < 0.f) Currentbalance = 0.f;
-		SetBalanceRatio();
+void AMainPlayer::SetBalanceRatio() {
+	if (Balance->GetCurrentBalance() > 0.f) {
+		PlayerController->SetPlayerBalance();
 	}
 }
-void AMainPlayer::SetBalanceRatio() {
-	BalanceRatio = Currentbalance / Maxbalance;
-	PlayerController->SetPlayerBalance();
-}
 void AMainPlayer::BrokenBalance() {
-	Currentbalance = 0.f;
+	Balance->SetCurrentBalance(-100.f);
 	SetMovementStatus(EMovementStatus::EMS_Faint); 
 	GetWorldTimerManager().ClearTimer(BalanceHandle);
 	GetWorldTimerManager().SetTimer(BalanceHandle, this, &AMainPlayer::RecoverBalance , 1.5f, false);

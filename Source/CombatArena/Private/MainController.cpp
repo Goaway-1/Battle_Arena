@@ -60,7 +60,7 @@ void AMainController::SetPlayerStamina() {
 }
 
 void AMainController::SetPlayerBalance() {	
-	BalanceBarOutLine->SetOwnerBalance(MainPlayer->GetBalanceRatio(), MainPlayer->GetMaxBalance(), MainPlayer->GetCurrentBalance());
+	BalanceBarOutLine->SetOwnerBalance(MainPlayer->GetBalance()->GetBalanceRatio(), MainPlayer->GetBalance()->GetMaxBalance(), MainPlayer->GetBalance()->GetCurrentBalance());
 }
 
 void AMainController::DisplayPauseMenu_Implementation() {

@@ -8072,6 +8072,7 @@
     }
     ```
     </details>
+
     <details><summary>h 코드</summary> 
       
     ```c++
@@ -8285,7 +8286,7 @@
 - ## <span style = "color:yellow;">Player의 Attack 수정_1</span>
   - <img src="Image/PlayerAttack_Logic_Collision.gif" height="300" title="PlayerAttack_Logic_Collision">
   - <img src="Image/PlayerAttack_Logic_Collision.png" height="300" title="PlayerAttack_Logic_Collision">  
-  - 기존 외적을 통한 공격은 범위 공격을 진행할때로 수정하고 새로운 공격방식 설정.
+  - 기존 외적을 통한 공격은 범위 공격을 진행할때로 수정하고 새로운 공격방식 설정
     - 무기에 CapsuleComponent를 추가하여 일정 부분에 Collision을 활성화하고 그때 Overlap시 데미지 처리.
     - 이는 중복되는 단점이 있기에 한번만 처리할 수 있도록 TakeDamage()에서 이전과 동일한 공격이면 예외처리.
   - AttackWeapon클래스에 CapsuleComponent를 추가하여 Collision설정하고 OverlapBegin()만 처리. (일단 로그만 띄우는 걸로)
@@ -8338,6 +8339,7 @@
     }
     ```
     </details>
+
     <details><summary>h 코드</summary> 
       
     ```c++
@@ -8481,6 +8483,7 @@
   - <img src="Image/JumpAttack_Logic.gif" height="300" title="JumpAttack_Logic"> 
   - 공중에서의 공격을 구분하기 위해서 이전 IsCanMove()메서드 수정과 동일하게 IsWalkableFloor()메서드를 통해 판정.
     - 별다른 것 없이 Montage_Play를 사용 -> 애니메이션만 수정하면 완료.
+  - __현재는 삭제__
 
     <details><summary>cpp 코드</summary> 
       
@@ -8495,3 +8498,218 @@
     }
     ```
     </details>
+    
+> **<h3>Realization</h3>**
+  - null
+
+## **12.01**
+> **<h3>Today Dev Story</h3>**
+- ## <span style = "color:yellow;">Enemy의 공격 수정</span>
+- <img src="Image/EnemyAttack_NewDamageType.gif" height="300" title="EnemyAttack_NewDamageType"> 
+  - Enemy 또한 특별한 범위 공격을 제한 모든 공격은 Collision의 On/Off로 지정하여 충돌 판단.
+    - 기존 AttackFunction클래스를 사용한 공격 방식은 AttackStart_Internal()메서드라는 이름으로 변경.
+    - [Player의 방식](#기존-외적을-통한-공격은-범위-공격을-진행할때로-수정하고-새로운-공격방식-설정)과 동일하게 진행.
+    - 무기에 맞는 위치에 콜리전을 생성 -> 콜리전채널 생성....
+  - 강공격과의 구분은 DamageType을 분리하여 InternalDamageType시 MainPlayer의 TakeDamage()메서드에서 통과 시킴.
+
+    <details><summary>cpp 코드</summary> 
+      
+    ```c++
+    //Enemy.cpp
+    AEnemy::AEnemy(){
+      LeftWeapon = CreateDefaultSubobject<UCapsuleComponent>("LeftWeapon");
+      LeftWeapon->SetupAttachment(GetMesh(), FName("weapon_l"));
+      LeftWeapon->SetCollisionProfileName(FName("EnemyWeapon"));
+
+      RightWeapon = CreateDefaultSubobject<UCapsuleComponent>("RightWeapon");
+      RightWeapon->SetupAttachment(GetMesh(), FName("weapon_r"));
+      RightWeapon->SetCollisionProfileName(FName("EnemyWeapon"));
+    }
+    void AEnemy::PossessedBy(AController* NewController) {
+      RightWeapon->OnComponentBeginOverlap.AddDynamic(this, &AEnemy::OnWeaponOverlap);
+      LeftWeapon->OnComponentBeginOverlap.AddDynamic(this, &AEnemy::OnWeaponOverlap);
+      AttackStart_Collision(false);
+    }
+    void AEnemy::AttackStart_Internal() {
+      FString Type = "Enemy";
+      AttackFunction->SkillAttackStart(GetActorLocation(),GetActorForwardVector(),InternalDamageType, Type, GetHitParticle(),GetAttackRange(), AttackDamage);
+    }
+    void AEnemy::AttackStart_Collision(bool value) {
+      	if (value) RightWeapon->SetCollisionEnabled(ECollisionEnabled::QueryOnly);
+        else LeftWeapon->SetCollisionEnabled(ECollisionEnabled::QueryOnly);
+        
+        AttackCnt++; 
+        if (AttackCnt > 2) AttackCnt = 0;
+    }
+    void AEnemy::AttackEnd_Collision() {
+      LeftWeapon->SetCollisionEnabled(ECollisionEnabled::NoCollision);
+      RightWeapon->SetCollisionEnabled(ECollisionEnabled::NoCollision);
+    }
+    void AEnemy::OnWeaponOverlap(UPrimitiveComponent* OverlappedComponent, AActor* OtherActor, UPrimitiveComponent* OtherComp, int32 OtherBodyIndex, bool bFromSweep, const FHitResult& SweepResult) {
+      if (OtherActor) {
+        AMainPlayer* Player = Cast<AMainPlayer>(OtherActor);
+        if (Player) {
+          Player->SetCurrentAttack(GetName() +  FString::FromInt(AttackCnt));
+          UGameplayStatics::ApplyDamage(Player, AttackDamage, EnemyController, GetController(), CollisionDamageType);
+        }
+      }
+    }
+    ```
+    ```c++
+    //MainPlayer.cpp
+    float AMainPlayer::TakeDamage(float DamageAmount, struct FDamageEvent const& DamageEvent, class AController* EventInstigator, AActor* DamageCauser) {
+      Super::TakeDamage(DamageAmount, DamageEvent, EventInstigator, DamageCauser);
+
+      if (LastAttack != CurrentAttack) LastAttack = CurrentAttack;
+      else if (DamageEvent.DamageTypeClass != InternalDamageType) return 0;
+      ...
+    }
+    ```
+    </details>  
+    
+    <details><summary>h 코드</summary> 
+      
+    ```c++
+    //Enemy.h
+    public:
+      UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Attack | Collision")
+      UCapsuleComponent* LeftWeapon;
+
+      UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Attack | Collision")
+      UCapsuleComponent* RightWeapon;
+
+      UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Attack")
+	    TSubclassOf<UDamageType> CollisionDamageType;
+
+      UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Attack")
+      TSubclassOf<UDamageType> InternalDamageType;
+
+  	  UPROPERTY(VisibleAnywhere, BlueprintReadWrite, Category = "Attack")	//test
+      int AttackCnt;
+
+      UFUNCTION(BlueprintCallable)
+      void AttackStart_Collision(bool value);		/** if true then rightweapon On*/
+
+      UFUNCTION(BlueprintCallable)
+      void AttackEnd_Collision();
+
+      UFUNCTION()
+      void OnWeaponOverlap(UPrimitiveComponent* OverlappedComponent, AActor* OtherActor, UPrimitiveComponent* OtherComp, int32 OtherBodyIndex, bool bFromSweep, const FHitResult& SweepResult);
+    ```
+    ```c++
+    //MainPlayer.h
+    public:
+      UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Melee")
+      FString LastAttack = "";
+
+      UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Melee")
+      FString CurrentAttack = "";
+
+      UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Melee")
+      TSubclassOf<UDamageType> InternalDamageType;
+
+      FORCEINLINE void SetCurrentAttack(FString Value) { CurrentAttack = Value; }
+    ```
+    </details>   
+
+- ## <span style = "color:yellow;">Enemy의 Balance</span>
+  - Player와 Enemy모두에서 Balance를 사용하기에 그를 위해 UActorComponent클래스를 상속받은 UBalance클래스 생성.
+  - Balance클래스에서는 Balance의 값을 관리하고 Ratio등등을 계산하며 나머지는 각각 메서드에서 계산해야함.
+    - 그에 따라 기존 MainPlayer의 로직도 변경되었으며, 크게 달라진 것 없이 Balance객체를 생성하고 끌어다 쓴다는 개념.
+
+    <details><summary>cpp 코드</summary> 
+
+    ```c++
+    //Balacne.cpp
+    UBalance::UBalance(){
+      PrimaryComponentTick.bCanEverTick = true;
+
+      Maxbalance = 100.f;
+      Currentbalance = 0.f;
+      bIsDecreaseBalance = false;
+    }
+    void UBalance::TickComponent(float DeltaTime, ELevelTick TickType, FActorComponentTickFunction* ThisTickFunction)
+    {
+      Super::TickComponent(DeltaTime, TickType, ThisTickFunction);
+      BalancePercent();
+    }
+    void UBalance::BalancePercent() {
+      if (bIsDecreaseBalance && Currentbalance > 0.f) {
+        Currentbalance -= 0.1f;
+        if (Currentbalance < 0.f) Currentbalance = 0.f;
+        UE_LOG(LogTemp, Warning, TEXT("Currentbalance : %f"), Currentbalance);
+      }
+      BalanceRatio = Currentbalance / Maxbalance;
+    }
+    ```
+    ```c++
+    //Enemy.cpp
+    AEnemy::AEnemy(){
+      ...
+      Balance = CreateDefaultSubobject<UBalance>("Balance");
+      DecreaseBalanceTime = 1.0f;
+    }
+    float AEnemy::TakeDamage(float DamageAmount, struct FDamageEvent const& DamageEvent, class AController* EventInstigator, AActor* DamageCauser) {
+      ...
+      /** Balance */
+      Balance->SetCurrentBalance(20.f);
+      Balance->SetDecreaseBalance(false);
+      if (Balance->GetBalance() >= 100.f) BrokenBalance();
+      else GetWorldTimerManager().SetTimer(BalanceHandle, FTimerDelegate::CreateLambda([&] { Balance->SetDecreaseBalance(true); }), DecreaseBalanceTime, false);
+    }
+    void AEnemy::BrokenBalance() {
+      UE_LOG(LogTemp, Warning, TEXT("Enemy is faint"));
+      //Balance->SetCurrentBalance(-100.f);
+      //기절로 상태 변환
+      //GetWorldTimerManager().ClearTimer(BalanceHandle);
+      //GetWorldTimerManager().SetTimer(BalanceHandle, this, &AEnemy::RecoverBalance, 1.5f, false);
+
+      /** Play Animation */
+      //if (!FaintMontage) return;
+      //Anim->Montage_Play(FaintMontage);
+      //Anim->Montage_JumpToSection("Faint", FaintMontage);
+    }
+    void AEnemy::RecoverBalance() {
+      Anim->Montage_Stop(0.1f);
+      //상태 복귀
+    }
+    ```
+    </details>   
+
+    <details><summary>h 코드</summary> 
+      
+    ```c++
+    //Balacne.h
+    private:
+      UPROPERTY(VisibleAnywhere, Category = "BALANCE")
+      float Currentbalance;
+
+      UPROPERTY(VisibleAnywhere, Category = "BALANCE")
+      float Maxbalance;
+
+      UPROPERTY(VisibleAnywhere, Category = "BALANCE")
+      float BalanceRatio;
+
+      UPROPERTY(VisibleAnywhere, Category = "BALANCE")
+      bool bIsDecreaseBalance;
+
+    public:
+      UFUNCTION()
+      void BalancePercent();
+
+      FORCEINLINE float GetBalance(){ return Currentbalance; }
+      FORCEINLINE float GetMaxBalance() { return Maxbalance; }
+      FORCEINLINE float GetCurrentBalance() { return Currentbalance; }
+      FORCEINLINE float GetBalanceRatio() { return BalanceRatio; }
+      FORCEINLINE void SetBalanceRatio(float value) { BalanceRatio = value; }
+      FORCEINLINE void SetCurrentBalance(float value) { Currentbalance += value; }
+      FORCEINLINE void SetDecreaseBalance(bool value) { bIsDecreaseBalance = value; }
+    ```
+    </details> 
+    
+- ## <span style = "color:yellow;">잡다한 것</span>
+  1. 기본 맨손 공격과 PowerfulAttack은 내적판단, 그 외 모든 공격은 Collision의 Overlap 판단.
+  2. JumpAttack 삭제
+
+> **<h3>Realization</h3>**
+  - null

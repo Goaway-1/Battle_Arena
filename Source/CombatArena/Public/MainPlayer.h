@@ -370,18 +370,6 @@ public:
 #pragma region BALANCE
 private:
 	UPROPERTY(VisibleAnywhere,  Category = "BALANCE")
-	float Currentbalance;
-
-	UPROPERTY(VisibleAnywhere, Category = "BALANCE")	
-	float Maxbalance;
-	
-	UPROPERTY(VisibleAnywhere, Category = "BALANCE")	
-	float BalanceRatio;
-
-	UPROPERTY(VisibleAnywhere,  Category = "BALANCE")
-	bool bIsDecreaseBalance;
-
-	UPROPERTY(VisibleAnywhere,  Category = "BALANCE")
 	FTimerHandle BalanceHandle;
 
 	UPROPERTY(VisibleAnywhere,  Category = "BALANCE")
@@ -390,10 +378,10 @@ private:
 	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "BALANCE", Meta = (AllowPrivateAccess = true))
 	class UAnimMontage* FaintMontage;
 
-public:
-	UFUNCTION()
-	void SetBalance();
+	UPROPERTY(VisibleAnywhere, Category = "BALANCE")
+	class UBalance* Balance;
 
+public:
 	UFUNCTION()
 	void SetBalanceRatio();
 	
@@ -403,11 +391,7 @@ public:
 	UFUNCTION()
 	void RecoverBalance();
 
-	FORCEINLINE void SetDecreaseBalance(bool value) { bIsDecreaseBalance = value; }
-
-	FORCEINLINE float GetBalanceRatio() { return BalanceRatio; } 
-	FORCEINLINE float GetMaxBalance() { return Maxbalance; }
-	FORCEINLINE float GetCurrentBalance() { return Currentbalance; }
+	FORCEINLINE UBalance* GetBalance() { return Balance; }
 #pragma endregion
 
 #pragma region SKILL
@@ -566,4 +550,15 @@ public:
 	UFUNCTION(BlueprintCallable)
 	void LoadData();
 #pragma endregion
+public:
+	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Melee")
+	FString LastAttack = "";
+
+	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Melee")
+	FString CurrentAttack = "";
+
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Melee")
+	TSubclassOf<UDamageType> InternalDamageType;
+
+	FORCEINLINE void SetCurrentAttack(FString Value) { CurrentAttack = Value; }
 };

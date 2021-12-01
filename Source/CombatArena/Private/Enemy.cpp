@@ -14,17 +14,19 @@
 #include "Components/PrimitiveComponent.h"
 #include "EnemySkillFunction.h"
 #include "Engine/World.h"
+#include "Balance.h"
 
 AEnemy::AEnemy()
 {
+#pragma region INIT
 	PrimaryActorTick.bCanEverTick = true;
 
 	GetCharacterMovement()->MaxWalkSpeed = 300.f;
 	GetCharacterMovement()->bOrientRotationToMovement = true;
 	GetCharacterMovement()->RotationRate = FRotator(0.f, 480.f, 0.f);
 
-	GetCapsuleComponent()->SetCollisionProfileName(TEXT("Enemy"));	//콜리전 설정
-
+	GetCapsuleComponent()->SetCollisionProfileName(TEXT("Enemy"));	
+#pragma endregion
 #pragma region HUD
 	//Health
 	MaxHealth = 100.f;
@@ -43,25 +45,39 @@ AEnemy::AEnemy()
 	TargetingDecal->DecalSize = FVector(10.f, 10.f, 90.f);
 	TargetingDecal->SetVisibility(false);
 #pragma endregion
-
 #pragma region ATTCK
 	AttackFunction = CreateDefaultSubobject<UEnemyAttackFunction>(TEXT("AttackFunction"));
+
+	LeftWeapon = CreateDefaultSubobject<UCapsuleComponent>("LeftWeapon");
+	LeftWeapon->SetupAttachment(GetMesh(), FName("weapon_l"));
+	LeftWeapon->SetCollisionProfileName(FName("EnemyWeapon"));
+
+	RightWeapon = CreateDefaultSubobject<UCapsuleComponent>("RightWeapon");
+	RightWeapon->SetupAttachment(GetMesh(), FName("weapon_r"));
+	RightWeapon->SetCollisionProfileName(FName("EnemyWeapon"));
+
 	AttackDamage = 10.f;
+	IsAttacking = false;
+	AttackRange = 200.f;
+	KnockBackPower = 800.f;
+	bIsback = false;
 #pragma endregion
 #pragma region SKILL
 	SkillFunction = CreateDefaultSubobject<UEnemySkillFunction>(TEXT("SkillFunction"));
 #pragma endregion
-
+	Balance = CreateDefaultSubobject<UBalance>("Balance");
+	DecreaseBalanceTime = 1.0f;
 }
 void AEnemy::PossessedBy(AController* NewController) {
 	Super::PossessedBy(NewController);
 
 	EnemyController = Cast<AEnemyController>(NewController);
 	AttackFunction->SetOwner(GetMesh(),EnemyController);
-
-#pragma region SKILL
 	SkillFunction->SetInitial(GetController()->GetPawn(), GetMesh(), GetController(), this);
-#pragma endregion
+
+	RightWeapon->OnComponentBeginOverlap.AddDynamic(this, &AEnemy::OnWeaponOverlap);
+	LeftWeapon->OnComponentBeginOverlap.AddDynamic(this, &AEnemy::OnWeaponOverlap);
+	AttackStart_Collision(false);
 }
 void AEnemy::BeginPlay()
 {
@@ -71,25 +87,14 @@ void AEnemy::BeginPlay()
 	GetCapsuleComponent()->SetCollisionResponseToChannel(ECollisionChannel::ECC_Camera, ECollisionResponse::ECR_Ignore);
 
 	if (!Anim) Anim = Cast<UEnemyAnim>(GetMesh()->GetAnimInstance());
-
-#pragma region ATTACK
-
-	//KnockBack
-	IsAttacking = false;
-	AttackRange = 200.f;
-	KnockBackPower = 800.f;
-	bIsback = false;
-#pragma endregion
 	
 #pragma region HUD
-	//HUD
 	if (WEnemyHealth) {
 		HealthWidget->SetWidgetClass(WEnemyHealth);
 		HealthWidget->SetDrawSize(FVector2D(150.f, 20.f));
 		HealthWidget->SetVisibility(false);
 	}
 
-	//HealthBar
 	HealthBar = Cast<UHealthWidget>(HealthWidget->GetUserWidgetObject());
 	HealthBar->SetEnemyOwner(this);
 	HealthBar->SetOwnerHealth(GetHealthRatio(), MaxHealth, CurrentHealth);
@@ -98,8 +103,6 @@ void AEnemy::BeginPlay()
 void AEnemy::Tick(float DeltaTime)
 {
 	Super::Tick(DeltaTime);
-
-	/** KnockBack의 조건이 만족하면 뒤로 밀림. */
 	IsKnockBack();
 }
 void AEnemy::PostInitializeComponents()
@@ -115,6 +118,7 @@ void AEnemy::SetupPlayerInputComponent(UInputComponent* PlayerInputComponent)
 	Super::SetupPlayerInputComponent(PlayerInputComponent);
 
 }
+
 #pragma region ATTACK
 void AEnemy::Attack(FString type) {
 	if(!Anim) Anim = Cast<UEnemyAnim>(GetMesh()->GetAnimInstance());
@@ -151,20 +155,30 @@ void AEnemy::SkillAttackEnd() {
 	if (SkillType == "Meteor") SkillFunction->GroundAttack();
 	else if (SkillType == "Lazer") SkillFunction->LazerEnd();
 }
-void AEnemy::AttackStart() {
+void AEnemy::AttackStart_Internal() {
 	FString Type = "Enemy";
-	AttackFunction->SkillAttackStart(GetActorLocation(),GetActorForwardVector(),EnemyDamageType, Type, GetHitParticle(),GetAttackRange(), AttackDamage);
+	AttackFunction->SkillAttackStart(GetActorLocation(),GetActorForwardVector(),InternalDamageType, Type, GetHitParticle(),GetAttackRange(), AttackDamage);
 }
-void AEnemy::OnAttackMontageEnded(UAnimMontage* Montage, bool bInterrupted)
-{
+void AEnemy::OnAttackMontageEnded(UAnimMontage* Montage, bool bInterrupted){
 	if (!IsAttacking) return;
 	IsAttacking = false;
 	OnAttackEnd.Broadcast();
 }
+void AEnemy::AttackStart_Collision(bool value) {
+	if (value) RightWeapon->SetCollisionEnabled(ECollisionEnabled::QueryOnly);
+	else LeftWeapon->SetCollisionEnabled(ECollisionEnabled::QueryOnly);
+	
+	AttackCnt++; 
+	if (AttackCnt > 2) AttackCnt = 0;
+}
+void AEnemy::AttackEnd_Collision() {
+	LeftWeapon->SetCollisionEnabled(ECollisionEnabled::NoCollision);
+	RightWeapon->SetCollisionEnabled(ECollisionEnabled::NoCollision);
+}
 float AEnemy::TakeDamage(float DamageAmount, struct FDamageEvent const& DamageEvent, class AController* EventInstigator, AActor* DamageCauser) {
 	if (LastAttack != CurrentAttack) LastAttack = CurrentAttack;
+	else if (DamageEvent.DamageTypeClass != InternalDamageType) return 0;
 	else return 0;
-
 
 	if (CurrentHealth <= 0) return 0.f;
 
@@ -175,6 +189,12 @@ float AEnemy::TakeDamage(float DamageAmount, struct FDamageEvent const& DamageEv
 		DeathEnd();
 	}
 	HealthBar->SetOwnerHealth(GetHealthRatio(),MaxHealth, CurrentHealth);
+
+	/** Balance Test */
+	Balance->SetCurrentBalance(20.f);
+	Balance->SetDecreaseBalance(false);
+	if (Balance->GetBalance() >= 100.f) BrokenBalance();
+	else GetWorldTimerManager().SetTimer(BalanceHandle, FTimerDelegate::CreateLambda([&] { Balance->SetDecreaseBalance(true); }), DecreaseBalanceTime, false);
 
 	/** ShowDamageText */
 	AttackFunction->SpawnDamageText(GetActorLocation(), DamageAmount, DamageTextWidget, EventInstigator);
@@ -244,8 +264,16 @@ void AEnemy::DeactiveFogEvent() {
 	Anim->Montage_Stop(0.1f);
 	SetVisibleInFog(false);
 }
+void AEnemy::OnWeaponOverlap(UPrimitiveComponent* OverlappedComponent, AActor* OtherActor, UPrimitiveComponent* OtherComp, int32 OtherBodyIndex, bool bFromSweep, const FHitResult& SweepResult) {
+	if (OtherActor) {
+		AMainPlayer* Player = Cast<AMainPlayer>(OtherActor);
+		if (Player) {
+			Player->SetCurrentAttack(GetName() + FString::FromInt(AttackCnt));
+			UGameplayStatics::ApplyDamage(Player, AttackDamage, EnemyController, GetController(), CollisionDamageType);
+		}
+	}
+}
 #pragma endregion
-
 #pragma region HUD
 void AEnemy::ShowEnemyTarget() {
 	if (!TargetingDecal) return;
@@ -265,5 +293,25 @@ void AEnemy::HideEnemyHUD() {
 }
 void AEnemy::SetHealthRatio() {
 	HealthRatio = CurrentHealth / MaxHealth;
+}
+#pragma endregion
+
+#pragma region BALANCE
+
+void AEnemy::BrokenBalance() {
+	UE_LOG(LogTemp, Warning, TEXT("Enemy is faint"));
+	//Balance->SetCurrentBalance(-100.f);
+	//기절로 상태 변환
+	//GetWorldTimerManager().ClearTimer(BalanceHandle);
+	//GetWorldTimerManager().SetTimer(BalanceHandle, this, &AEnemy::RecoverBalance, 1.5f, false);
+
+	/** Play Animation */
+	//if (!FaintMontage) return;
+	//Anim->Montage_Play(FaintMontage);
+	//Anim->Montage_JumpToSection("Faint", FaintMontage);
+}
+void AEnemy::RecoverBalance() {
+	Anim->Montage_Stop(0.1f);
+	//상태 복귀
 }
 #pragma endregion

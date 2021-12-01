@@ -75,11 +75,14 @@ public:
 
 	/** Sweap ½ÇÇà */
 	UFUNCTION(BlueprintCallable)	
-	void AttackStart();
+	void AttackStart_Internal();
 
 	//Component
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Attack")
-	TSubclassOf<UDamageType> EnemyDamageType;
+	TSubclassOf<UDamageType> CollisionDamageType;
+
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Attack")
+	TSubclassOf<UDamageType> InternalDamageType;
 
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Attack")
 	float AttackDamage;
@@ -132,6 +135,34 @@ public:
 
 	UFUNCTION()
 	void DeactiveFogEvent();
+
+public:
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Attack | Collision")
+	UCapsuleComponent* LeftWeapon;
+
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Attack | Collision")
+	UCapsuleComponent* RightWeapon;
+
+	UPROPERTY(VisibleAnywhere, BlueprintReadWrite, Category = "Attack")	//test
+	int AttackCnt;
+
+	UFUNCTION(BlueprintCallable)
+	void AttackStart_Collision(bool value);		/** if true then rightweapon On*/
+	
+	UFUNCTION(BlueprintCallable)
+	void AttackEnd_Collision();
+
+	UFUNCTION()
+	void OnWeaponOverlap(UPrimitiveComponent* OverlappedComponent, AActor* OtherActor, UPrimitiveComponent* OtherComp, int32 OtherBodyIndex, bool bFromSweep, const FHitResult& SweepResult);
+
+public:
+	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Attack")
+	FString LastAttack = "";
+
+	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Attack")
+	FString CurrentAttack = "";
+
+	FORCEINLINE void SetCurrentAttack(FString Value) { CurrentAttack = Value; }
 #pragma endregion
 #pragma region SKILL
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Skill")
@@ -211,12 +242,54 @@ public:
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "HUD")
 	TSubclassOf<class UDamageTextWidget> DamageTextWidget;
 #pragma endregion
+private:
+	UPROPERTY(VisibleAnywhere, Category = "BALANCE")
+	FTimerHandle BalanceHandle;
+
+	UPROPERTY(VisibleAnywhere, Category = "BALANCE")
+	float DecreaseBalanceTime;
+
+	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "BALANCE", Meta = (AllowPrivateAccess = true))
+	class UAnimMontage* FaintMontage;
+	
+	UPROPERTY(VisibleAnywhere, Category = "BALANCE")
+	class UBalance* Balance;
+
 public:
-	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Attack")
-	FString LastAttack = "";
+	UFUNCTION()
+	void BrokenBalance();
 
-	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Attack")
-	FString CurrentAttack = "";
+	UFUNCTION()
+	void RecoverBalance();
 
-	FORCEINLINE void SetCurrentAttack(FString Value) { CurrentAttack = Value; }
+
+
+	/*
+private:
+	UPROPERTY(VisibleAnywhere, Category = "BALANCE")
+	float balance;
+
+	UPROPERTY(VisibleAnywhere, Category = "BALANCE")
+	bool bIsDecreaseBalance;
+
+	UPROPERTY(VisibleAnywhere, Category = "BALANCE")
+	FTimerHandle BalanceHandle;
+
+	UPROPERTY(VisibleAnywhere, Category = "BALANCE")
+	float DecreaseBalanceTime;
+
+	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "BALANCE", Meta = (AllowPrivateAccess = true))
+	class UAnimMontage* FaintMontage;
+
+public:
+	UFUNCTION()
+	void BrokenBalance();
+
+	UFUNCTION()
+	void RecoverBalance();
+
+	UFUNCTION()
+	void SetBalance();
+
+	FORCEINLINE void SetDecreaseBalance(bool value) { bIsDecreaseBalance = value; }*/
 };
