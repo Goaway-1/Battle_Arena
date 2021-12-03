@@ -8,6 +8,7 @@ const FName AEnemyController::HomePosKey(TEXT("HomePosKey"));
 const FName AEnemyController::PatrolPosKey(TEXT("PatrolPosKey"));
 const FName AEnemyController::TargetActor(TEXT("TargetActor"));
 const FName AEnemyController::IsInFog(TEXT("IsInFog")); 
+const FName AEnemyController::IsFaint(TEXT("IsFaint"));
 
 AEnemyController::AEnemyController() {
     AIPerception = CreateDefaultSubobject<UAIPerceptionComponent>(TEXT("AIPerception"));
@@ -22,8 +23,7 @@ void AEnemyController::BeginPlay() {
     if (UseBlackboard(BData, Blackboard))
     {
         Blackboard->SetValueAsVector(HomePosKey, GetPawn()->GetActorLocation());	//Location을 HomePosKey에..
-        UE_LOG(LogTemp, Warning, TEXT("%s"), *GetPawn()->GetActorLocation().ToString());
-        if (!RunBehaviorTree(BTree)) return;    //수정
+        if (!RunBehaviorTree(BTree)) return;    
     }
 }
 
@@ -49,4 +49,8 @@ FVector AEnemyController::GetTargetVec() {
 
 void AEnemyController::SetVisibleInFog(bool bisin) {
     Blackboard->SetValueAsBool(IsInFog, bisin);
+}
+
+void AEnemyController::SetIsFaint(bool bisin) {
+    Blackboard->SetValueAsBool(IsFaint, bisin);
 }

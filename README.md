@@ -8505,7 +8505,7 @@
 ## **12.01**
 > **<h3>Today Dev Story</h3>**
 - ## <span style = "color:yellow;">Enemy의 공격 수정</span>
-- <img src="Image/EnemyAttack_NewDamageType.gif" height="300" title="EnemyAttack_NewDamageType"> 
+    - <img src="Image/EnemyAttack_NewDamageType.gif" height="300" title="EnemyAttack_NewDamageType"> 
   - Enemy 또한 특별한 범위 공격을 제한 모든 공격은 Collision의 On/Off로 지정하여 충돌 판단.
     - 기존 AttackFunction클래스를 사용한 공격 방식은 AttackStart_Internal()메서드라는 이름으로 변경.
     - [Player의 방식](#기존-외적을-통한-공격은-범위-공격을-진행할때로-수정하고-새로운-공격방식-설정)과 동일하게 진행.
@@ -8713,3 +8713,120 @@
 
 > **<h3>Realization</h3>**
   - null
+
+## **12.03**
+> **<h3>Today Dev Story</h3>**
+- ## <span style = "color:yellow;">Enemy의 Balance Widget</span>
+  - <img src="Image/Enemy_Balance_Widget.gif" height="300" title="Enemy_Balance_Widget"> 
+  - 적의 Balance를 PlayerStatus 위젯에 나타내기 위해 AMainController클래스에서 구현.
+    - AMainController에 Enemy Balance를 표시할 Widget과 적은 하나가 아니기 때문에 현재 타겟의 Balance를 나타나기 위한 AEnemy(BalanceTargetEnemy)를 생성
+    - SetBalanceTarget()메서드를 AttackWeapon클래스의 OnAttackOverlap()메서드에서 호출하여 BalanceTargetEnemy를 지정(위젯의 Owner 설정)
+    - BalanceTarget이 지정되어 있어야만 Controller에서 SetEnemyBalance()메서드를 사용하여 위젯을 갱신가능.
+    - AMainPlayer클래스의 Tick()에서 MainController클래스의 SetEnemyBalance()메서드를 계속 호출하여 계속 갱신 
+  - 조금 복잡한 로직 (Weapon에서 타깃 설정 -> 그 타깃의 정보를 위젯의 Owner로 지정 -> 매틱마다 갱신)
+
+    <details><summary>cpp 코드</summary> 
+
+    ```c++
+    //MainController.cpp
+    void AMainController::BeginPlay() {
+      if (WPlayerMainHealth) {
+        ...
+        if (PlayerWidget) {
+          EnemyBalanceBarOutLine = PlayerWidget->WidgetTree->FindWidget<UBalanceWidget>("EnemyBalance_BP");
+          SetEnemyBalance();
+        }
+      }
+    }
+    void AMainController::SetBalanceTarget(AEnemy* value) {
+      BalanceTargetEnemy = value;
+      EnemyBalanceBarOutLine->SetEnemyOwner(value);
+    }
+    void AMainController::SetEnemyBalance() {
+      if(!BalanceTargetEnemy) return;
+      EnemyBalanceBarOutLine->SetOwnerBalance(BalanceTargetEnemy->GetBalance()->GetBalanceRatio(), BalanceTargetEnemy->GetBalance()->GetMaxBalance(), BalanceTargetEnemy->GetBalance()->GetCurrentBalance());
+    }
+    ```
+    ```c++
+    //AttackWeapon.cpp
+    void AAttackWeapon::OnAttackOverlap(UPrimitiveComponent* OverlappedComponent, AActor* OtherActor, UPrimitiveComponent* OtherComp, int32 OtherBodyIndex, bool bFromSweep, const FHitResult& SweepResult) {
+      if (OtherActor) {
+        AEnemy* Enemy = Cast<AEnemy>(OtherActor);
+        if (Enemy) {
+          /** Set Enemy Balance */
+          AMainPlayer* Player = Cast<AMainPlayer>(AtOwner);
+          Player->PlayerController->SetBalanceTarget(Enemy);	
+
+          ....
+        }
+      }
+    }
+    ```
+    ```c++
+    //MainPlayer.cpp
+    void AMainPlayer::Tick(float DeltaTime){
+      SetBalanceRatio();          //Player의 Balance
+	    SetEnemyBalanceRatio();     //Enemy의 Balance
+    }
+    void AMainPlayer::SetEnemyBalanceRatio() {
+      PlayerController->SetEnemyBalance();
+    }
+    ```
+    </details> 
+
+    <details><summary>cpp 코드</summary> 
+
+    ```c++
+    //MainController.h
+    public:
+      UPROPERTY(VisibleAnywhere, Category = "Widget | EnemyWidget")
+      class UBalanceWidget* EnemyBalanceBarOutLine;
+
+      UPROPERTY(VisibleAnywhere, Category = "Widget | EnemyWidget")
+      class AEnemy* BalanceTargetEnemy;
+
+      UFUNCTION()
+      void SetBalanceTarget(AEnemy* value);
+
+      UFUNCTION()
+      void SetEnemyBalance();
+    ```
+    ```c++
+    //MainPlayer.h
+    public:
+      UFUNCTION()
+	    void SetEnemyBalanceRatio();
+    ```
+    </details> 
+    
+- ## <span style = "color:yellow;"></span>
+  - <img src="Image/" height="300" title=""> 
+  - 야 그 MainController의 SetEnemyBalance 0보다 클때를 기준으로 잡고해라.
+  EnemyController에 IsFaint추가
+  BTtask_Faint생성 수정해야됌.
+
+    <details><summary>cpp 코드</summary> 
+      
+    ```c++
+    //EnemyController.cpp
+    const FName AEnemyController::IsFaint(TEXT("IsFaint"));
+    
+    void AEnemyController::SetIsFaint(bool bisin) {
+      Blackboard->SetValueAsBool(IsFaint, bisin);
+    }
+    ```
+    </details>
+
+    <details><summary>h 코드</summary> 
+      
+    ```c++
+    //EnemyController.h
+  	static const FName IsFaint;
+
+    public:
+    	UFUNCTION()
+	    void SetIsFaint(bool bisin);
+    ```
+    </details> 
+> **<h3>Realization</h3>**
+  - 느낀점 : Behavior트리가 더 불편하다. 차라리 그냥 로직짜는게 쉽고 간편함.

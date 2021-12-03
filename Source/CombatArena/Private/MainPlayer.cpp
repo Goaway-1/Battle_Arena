@@ -175,8 +175,11 @@ void AMainPlayer::Tick(float DeltaTime)
 	/** Anim Charging */
 	BowAnimCharge();
 	CurrentHealth = 100.f;
-
+	
+	/** Player¿Í EnemyÀÇ Balance Ratio */
 	SetBalanceRatio();
+
+	SetEnemyBalanceRatio();		
 }
 
 void AMainPlayer::SetupPlayerInputComponent(UInputComponent* PlayerInputComponent)
@@ -669,6 +672,9 @@ void AMainPlayer::SetBalanceRatio() {
 	if (Balance->GetCurrentBalance() > 0.f) {
 		PlayerController->SetPlayerBalance();
 	}
+}
+void AMainPlayer::SetEnemyBalanceRatio() {
+	PlayerController->SetEnemyBalance();
 }
 void AMainPlayer::BrokenBalance() {
 	Balance->SetCurrentBalance(-100.f);

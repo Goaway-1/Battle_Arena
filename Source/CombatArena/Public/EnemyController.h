@@ -20,6 +20,7 @@ public:
 	static const FName PatrolPosKey;	
 	static const FName TargetActor;
 	static const FName IsInFog; 
+	static const FName IsFaint;
 
 	UPROPERTY(EditAnyWhere, BlueprintReadOnly, Category = "AI")
 	class UBehaviorTree* BTree;
@@ -33,7 +34,7 @@ public:
 	UFUNCTION()
 	void Sense(AActor* Actor, FAIStimulus Stimulus);
 
-	UFUNCTION()	//트리를 정지. (Enemy 사망시)
+	UFUNCTION()	//Enemy 사망시
 	void StopBeTree();
 
 	UFUNCTION()
@@ -42,4 +43,8 @@ public:
 	/** Is In Fog */
 	UFUNCTION()
 	void SetVisibleInFog(bool bisin);
+
+	/** IsFaint */
+	UFUNCTION()
+	void SetIsFaint(bool bisin);
 };

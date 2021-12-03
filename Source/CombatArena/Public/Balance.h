@@ -36,7 +36,6 @@ public:
 	UFUNCTION()
 	void BalancePercent();
 
-	FORCEINLINE float GetBalance(){ return Currentbalance; }
 	FORCEINLINE float GetMaxBalance() { return Maxbalance; }
 	FORCEINLINE float GetCurrentBalance() { return Currentbalance; }
 	FORCEINLINE float GetBalanceRatio() { return BalanceRatio; }

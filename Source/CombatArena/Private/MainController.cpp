@@ -25,6 +25,7 @@ void AMainController::BeginPlay() {
 			HealthBarOutLine = PlayerWidget->WidgetTree->FindWidget<UHealthWidget>("PlayerHealth_BP");
 			StaminaBarOutLine = PlayerWidget->WidgetTree->FindWidget<UStaminaWidget>("PlayerStanima_BP");
 			BalanceBarOutLine = PlayerWidget->WidgetTree->FindWidget<UBalanceWidget>("PlayerBalance_BP"); 
+			EnemyBalanceBarOutLine = PlayerWidget->WidgetTree->FindWidget<UBalanceWidget>("EnemyBalance_BP");
 
 			HealthBarOutLine->SetPlayerOwner(this);
 			StaminaBarOutLine->SetOwner(this);
@@ -33,6 +34,7 @@ void AMainController::BeginPlay() {
 			SetPlayerHealth();
 			SetPlayerStamina();
 			SetPlayerBalance();
+			SetEnemyBalance();
 		}
 	}
 	if (WPauseMenu) {	
@@ -61,6 +63,15 @@ void AMainController::SetPlayerStamina() {
 
 void AMainController::SetPlayerBalance() {	
 	BalanceBarOutLine->SetOwnerBalance(MainPlayer->GetBalance()->GetBalanceRatio(), MainPlayer->GetBalance()->GetMaxBalance(), MainPlayer->GetBalance()->GetCurrentBalance());
+}
+
+void AMainController::SetBalanceTarget(AEnemy* value) {
+	BalanceTargetEnemy = value;
+	EnemyBalanceBarOutLine->SetEnemyOwner(value);
+}
+void AMainController::SetEnemyBalance() {
+	if(!BalanceTargetEnemy || BalanceTargetEnemy->GetBalance()->GetCurrentBalance() <= 0.f) return;
+	EnemyBalanceBarOutLine->SetOwnerBalance(BalanceTargetEnemy->GetBalance()->GetBalanceRatio(), BalanceTargetEnemy->GetBalance()->GetMaxBalance(), BalanceTargetEnemy->GetBalance()->GetCurrentBalance());
 }
 
 void AMainController::DisplayPauseMenu_Implementation() {

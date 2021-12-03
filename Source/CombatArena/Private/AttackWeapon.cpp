@@ -32,9 +32,13 @@ void AAttackWeapon::OnAttackOverlap(UPrimitiveComponent* OverlappedComponent, AA
 	if (OtherActor) {
 		AEnemy* Enemy = Cast<AEnemy>(OtherActor);
 		if (Enemy) {
+			/** Set Enemy Balance */
+			AMainPlayer* Player = Cast<AMainPlayer>(AtOwner);
+			Player->PlayerController->SetBalanceTarget(Enemy);	
+
+			/** Attack */
 			FString text = AtOwner->GetName() + this->GetName() + FString::FromInt(AttackCnt);
-			//UE_LOG(LogTemp, Warning ,TEXT("Name : %s"), text)
-			Enemy->SetCurrentAttack(AtOwner->GetName() + this->GetName() + FString::FromInt(AttackCnt));	//test
+			Enemy->SetCurrentAttack(AtOwner->GetName() + this->GetName() + FString::FromInt(AttackCnt));	
 			UGameplayStatics::ApplyDamage(Enemy, Damage, AtController, AtOwner, AtDamageType);
 		}
 	}

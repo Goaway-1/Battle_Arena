@@ -272,6 +272,18 @@ public:
 	bool bIsAttackCheck;
 
 public:
+	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Melee")
+	FString LastAttack = "";
+
+	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Melee")
+	FString CurrentAttack = "";
+
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Melee")
+	TSubclassOf<UDamageType> InternalDamageType;
+
+	FORCEINLINE void SetCurrentAttack(FString Value) { CurrentAttack = Value; }
+
+public:
 	UFUNCTION(BlueprintCallable)
 	FORCEINLINE UPlayerAttackFunction* GetAttackFunction() { return AttackFunction; }
 
@@ -367,6 +379,7 @@ public:
 	void BowAnimCharge();
 
 #pragma endregion
+
 #pragma region BALANCE
 private:
 	UPROPERTY(VisibleAnywhere,  Category = "BALANCE")
@@ -384,6 +397,9 @@ private:
 public:
 	UFUNCTION()
 	void SetBalanceRatio();
+	
+	UFUNCTION()
+	void SetEnemyBalanceRatio();
 	
 	UFUNCTION()
 	void BrokenBalance();
@@ -550,15 +566,4 @@ public:
 	UFUNCTION(BlueprintCallable)
 	void LoadData();
 #pragma endregion
-public:
-	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Melee")
-	FString LastAttack = "";
-
-	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Melee")
-	FString CurrentAttack = "";
-
-	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Melee")
-	TSubclassOf<UDamageType> InternalDamageType;
-
-	FORCEINLINE void SetCurrentAttack(FString Value) { CurrentAttack = Value; }
 };

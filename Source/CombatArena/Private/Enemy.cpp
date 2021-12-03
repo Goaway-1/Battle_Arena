@@ -193,7 +193,7 @@ float AEnemy::TakeDamage(float DamageAmount, struct FDamageEvent const& DamageEv
 	/** Balance Test */
 	Balance->SetCurrentBalance(20.f);
 	Balance->SetDecreaseBalance(false);
-	if (Balance->GetBalance() >= 100.f) BrokenBalance();
+	if (Balance->GetCurrentBalance() >= 100.f) BrokenBalance();
 	else GetWorldTimerManager().SetTimer(BalanceHandle, FTimerDelegate::CreateLambda([&] { Balance->SetDecreaseBalance(true); }), DecreaseBalanceTime, false);
 
 	/** ShowDamageText */
@@ -297,21 +297,20 @@ void AEnemy::SetHealthRatio() {
 #pragma endregion
 
 #pragma region BALANCE
-
 void AEnemy::BrokenBalance() {
 	UE_LOG(LogTemp, Warning, TEXT("Enemy is faint"));
-	//Balance->SetCurrentBalance(-100.f);
-	//기절로 상태 변환
-	//GetWorldTimerManager().ClearTimer(BalanceHandle);
-	//GetWorldTimerManager().SetTimer(BalanceHandle, this, &AEnemy::RecoverBalance, 1.5f, false);
-
-	/** Play Animation */
-	//if (!FaintMontage) return;
-	//Anim->Montage_Play(FaintMontage);
-	//Anim->Montage_JumpToSection("Faint", FaintMontage);
+	Balance->SetCurrentBalance(-100.f);
+	EnemyController->SetIsFaint(true);
 }
-void AEnemy::RecoverBalance() {
-	Anim->Montage_Stop(0.1f);
+void AEnemy::ActiveFaint() {		//Animation과 연동
+	/** Play Animation */
+	if (!FaintMontage) return;
+	Anim->Montage_Play(FaintMontage);
+	Anim->Montage_JumpToSection("Faint", FaintMontage);
+}
+void AEnemy::DeactiveFaint() {		//Animation과 연동 -> 상태 도중 맞을때
 	//상태 복귀
+
+	UE_LOG(LogTemp, Warning, TEXT("Enemy Deactive Faint "));
 }
 #pragma endregion

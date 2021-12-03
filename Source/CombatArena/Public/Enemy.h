@@ -260,36 +260,10 @@ public:
 	void BrokenBalance();
 
 	UFUNCTION()
-	void RecoverBalance();
-
-
-
-	/*
-private:
-	UPROPERTY(VisibleAnywhere, Category = "BALANCE")
-	float balance;
-
-	UPROPERTY(VisibleAnywhere, Category = "BALANCE")
-	bool bIsDecreaseBalance;
-
-	UPROPERTY(VisibleAnywhere, Category = "BALANCE")
-	FTimerHandle BalanceHandle;
-
-	UPROPERTY(VisibleAnywhere, Category = "BALANCE")
-	float DecreaseBalanceTime;
-
-	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "BALANCE", Meta = (AllowPrivateAccess = true))
-	class UAnimMontage* FaintMontage;
-
-public:
-	UFUNCTION()
-	void BrokenBalance();
+	void ActiveFaint();
 
 	UFUNCTION()
-	void RecoverBalance();
+	void DeactiveFaint();
 
-	UFUNCTION()
-	void SetBalance();
-
-	FORCEINLINE void SetDecreaseBalance(bool value) { bIsDecreaseBalance = value; }*/
+	FORCEINLINE UBalance* GetBalance() { return Balance; } 
 };
