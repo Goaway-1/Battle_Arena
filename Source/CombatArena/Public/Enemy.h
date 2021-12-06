@@ -243,12 +243,6 @@ public:
 	TSubclassOf<class UDamageTextWidget> DamageTextWidget;
 #pragma endregion
 private:
-	UPROPERTY(VisibleAnywhere, Category = "BALANCE")
-	FTimerHandle BalanceHandle;
-
-	UPROPERTY(VisibleAnywhere, Category = "BALANCE")
-	float DecreaseBalanceTime;
-
 	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "BALANCE", Meta = (AllowPrivateAccess = true))
 	class UAnimMontage* FaintMontage;
 	
@@ -262,7 +256,7 @@ public:
 	UFUNCTION()
 	void ActiveFaint();
 
-	UFUNCTION()
+	UFUNCTION(BlueprintCallable)
 	void DeactiveFaint();
 
 	FORCEINLINE UBalance* GetBalance() { return Balance; } 

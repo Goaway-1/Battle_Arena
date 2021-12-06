@@ -302,15 +302,18 @@ void AEnemy::BrokenBalance() {
 	Balance->SetCurrentBalance(-100.f);
 	EnemyController->SetIsFaint(true);
 }
-void AEnemy::ActiveFaint() {		//Animation과 연동
+void AEnemy::ActiveFaint() {	
 	/** Play Animation */
 	if (!FaintMontage) return;
 	Anim->Montage_Play(FaintMontage);
 	Anim->Montage_JumpToSection("Faint", FaintMontage);
+
+	/** Special Attack Enable */
+
 }
 void AEnemy::DeactiveFaint() {		//Animation과 연동 -> 상태 도중 맞을때
 	//상태 복귀
-
+	EnemyController->SetIsFaint(false);
 	UE_LOG(LogTemp, Warning, TEXT("Enemy Deactive Faint "));
 }
 #pragma endregion

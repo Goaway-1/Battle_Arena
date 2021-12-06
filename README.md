@@ -8798,35 +8798,110 @@
 	    void SetEnemyBalanceRatio();
     ```
     </details> 
-    
-- ## <span style = "color:yellow;"></span>
-  - <img src="Image/" height="300" title=""> 
-  - 야 그 MainController의 SetEnemyBalance 0보다 클때를 기준으로 잡고해라.
-  EnemyController에 IsFaint추가
-  BTtask_Faint생성 수정해야됌.
 
-    <details><summary>cpp 코드</summary> 
-      
-    ```c++
-    //EnemyController.cpp
-    const FName AEnemyController::IsFaint(TEXT("IsFaint"));
-    
-    void AEnemyController::SetIsFaint(bool bisin) {
-      Blackboard->SetValueAsBool(IsFaint, bisin);
-    }
-    ```
-    </details>
-
-    <details><summary>h 코드</summary> 
-      
-    ```c++
-    //EnemyController.h
-  	static const FName IsFaint;
-
-    public:
-    	UFUNCTION()
-	    void SetIsFaint(bool bisin);
-    ```
-    </details> 
 > **<h3>Realization</h3>**
   - 느낀점 : Behavior트리가 더 불편하다. 차라리 그냥 로직짜는게 쉽고 간편함.
+
+## **12.06**
+> **<h3>Today Dev Story</h3>**
+- ## <span style = "color:yellow;">Enemy의 Balance</span>
+  - <img src="Image/" height="300" title=""> 
+  - EnemyController에 IsFaint추가 BTtask_Faint생성 수정해야됌.
+  - 
+      <details><summary>cpp 코드</summary> 
+
+      ```c++
+      //BTTask_Faint.cpp
+      UBTTask_Faint::UBTTask_Faint() {
+        NodeName = "Faint";
+
+        bNotifyTick = false;	//tick 사용
+        IsFaint = false;
+      }
+
+      EBTNodeResult::Type UBTTask_Faint::ExecuteTask(UBehaviorTreeComponent& OwnerComp, uint8* NodeMemory) {
+        Super::ExecuteTask(OwnerComp, NodeMemory);
+
+        auto Enemy = Cast<AEnemy>(OwnerComp.GetAIOwner()->GetPawn());
+        if (!Enemy)	return EBTNodeResult::Failed;
+
+        Enemy->ActiveFaint();
+        return EBTNodeResult::Succeeded;
+      }
+      ```
+      ```c++
+      //Enemy.cpp
+      void AEnemy::BrokenBalance() {
+        UE_LOG(LogTemp, Warning, TEXT("Enemy is faint"));
+        Balance->SetCurrentBalance(-100.f);
+        EnemyController->SetIsFaint(true);
+      }
+      void AEnemy::ActiveFaint() {	
+        /** Play Animation */
+        if (!FaintMontage) return;
+        Anim->Montage_Play(FaintMontage);
+        Anim->Montage_JumpToSection("Faint", FaintMontage);
+
+        /** Special Attack Enable */
+
+      }
+      void AEnemy::DeactiveFaint() {		//Animation과 연동 -> 상태 도중 맞을때
+        //상태 복귀
+        EnemyController->SetIsFaint(false);
+        UE_LOG(LogTemp, Warning, TEXT("Enemy Deactive Faint "));
+      }
+      ```  
+      ```c++
+      //EnemyController.cpp
+      const FName AEnemyController::IsFaint(TEXT("IsFaint"));
+      
+      void AEnemyController::SetIsFaint(bool bisin) {
+        Blackboard->SetValueAsBool(IsFaint, bisin);
+      }
+      ```
+      </details>
+
+      <details><summary>h 코드</summary> 
+        
+      ```c++
+      //BTTask_Faint.h
+      public:
+        UBTTask_Faint();
+        virtual EBTNodeResult::Type ExecuteTask(UBehaviorTreeComponent& OwnerComp, uint8* NodeMemory) override;
+      protected:
+        bool IsFaint = false;
+      ```
+      ```c++
+      //Enemy.h
+      private:
+        UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "BALANCE", Meta = (AllowPrivateAccess = true))
+        class UAnimMontage* FaintMontage;
+        
+        UPROPERTY(VisibleAnywhere, Category = "BALANCE")
+        class UBalance* Balance;
+
+      public:
+        UFUNCTION()
+        void BrokenBalance();
+
+        UFUNCTION()
+        void ActiveFaint();
+
+        UFUNCTION(BlueprintCallable)
+        void DeactiveFaint();
+
+        FORCEINLINE UBalance* GetBalance() { return Balance; } 
+      ```  
+      ```c++
+      //EnemyController.h
+      static const FName IsFaint;
+
+      public:
+        UFUNCTION()
+        void SetIsFaint(bool bisin);
+      ```
+      </details> 
+
+      
+> **<h3>Realization</h3>**
+  - null
