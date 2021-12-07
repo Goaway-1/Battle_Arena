@@ -65,8 +65,11 @@ AEnemy::AEnemy()
 #pragma region SKILL
 	SkillFunction = CreateDefaultSubobject<UEnemySkillFunction>(TEXT("SkillFunction"));
 #pragma endregion
+#pragma region BALANCE
 	Balance = CreateDefaultSubobject<UBalance>("Balance");
 	DecreaseBalanceTime = 1.0f;
+	bIsFainted = false;
+#pragma endregion
 }
 void AEnemy::PossessedBy(AController* NewController) {
 	Super::PossessedBy(NewController);
@@ -298,22 +301,19 @@ void AEnemy::SetHealthRatio() {
 
 #pragma region BALANCE
 void AEnemy::BrokenBalance() {
-	UE_LOG(LogTemp, Warning, TEXT("Enemy is faint"));
 	Balance->SetCurrentBalance(-100.f);
 	EnemyController->SetIsFaint(true);
 }
 void AEnemy::ActiveFaint() {	
-	/** Play Animation */
 	if (!FaintMontage) return;
 	Anim->Montage_Play(FaintMontage);
 	Anim->Montage_JumpToSection("Faint", FaintMontage);
 
 	/** Special Attack Enable */
-
+	bIsFainted = true;
 }
 void AEnemy::DeactiveFaint() {		//Animation과 연동 -> 상태 도중 맞을때
-	//상태 복귀
+	bIsFainted = false;		//test
 	EnemyController->SetIsFaint(false);
-	UE_LOG(LogTemp, Warning, TEXT("Enemy Deactive Faint "));
 }
 #pragma endregion

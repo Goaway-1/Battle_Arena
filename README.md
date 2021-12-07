@@ -8805,9 +8805,15 @@
 ## **12.06**
 > **<h3>Today Dev Story</h3>**
 - ## <span style = "color:yellow;">Enemy의 Balance</span>
-  - <img src="Image/" height="300" title=""> 
-  - EnemyController에 IsFaint추가 BTtask_Faint생성 수정해야됌.
-  - 
+  - <img src="Image/Enemy_Balance_Animation.gif" height="300" title="Enemy_Balance_Animation"> 
+  - <img src="Image/Enemy_IsFaint.png" height="200" title="Enemy_IsFaint"> 
+  - Enemy의 Balance의 무너짐 판정을 하기 위한 로직생성
+    - EnemyController에 const로 IsFaint추가 및 SetIsFaint()메서드 생성으로 IsFaint의 값을 지정
+    - BTtask_Faint생성하고 이는 실행 시 Enemy의 ActiveFaint()메서드를 실행 (애님메이션 실행)
+  - Enemy클래스에는 BrokenBalance(), ActiveFaint(), DeactiveFaint()메서드가 존재
+    - BrokenBalance()메서드는 Balance의 값이 100을 넘어갈때 발생되며 EnemyController의 SetIsFaint()메서드를 사용하여 True로 전환
+    - True로 전환되면 BTTask_Faint()가 실행되어 ActiveFaint()메서드가 호출되어 애니메이션 실행. 애니메이션 종료 시 DeactiveFaint()메서드 실행
+
       <details><summary>cpp 코드</summary> 
 
       ```c++
@@ -8902,6 +8908,39 @@
       ```
       </details> 
 
-      
 > **<h3>Realization</h3>**
   - null
+
+## **12.07**
+> **<h3>Today Dev Story</h3>**
+- ## <span style = "color:yellow;">Enemy의 Balance SpecialAttack</span>
+  - Enemy에 bIsFainted추가.
+
+      <details><summary>cpp 코드</summary> 
+
+      ```c++
+      //Enemy.cpp
+      void AEnemy::ActiveFaint() {	
+        ...
+        bIsFainted = true;
+      }
+      void AEnemy::DeactiveFaint() {	
+        ...
+        bIsFainted = false;		
+      }
+      ```
+      </details> 
+
+      <details><summary>h 코드</summary> 
+
+      ```c++
+      //Enemy.h
+      private:
+        UPROPERTY(VisibleAnywhere, Category = "Balance")
+        bool bIsFainted = false;
+
+      public:
+        UFUNCTION()
+        FORCEINLINE bool GetIsFainted() { return bIsFainted; }
+      ```
+      </details> 

@@ -98,6 +98,16 @@ AMainPlayer::AMainPlayer()
 #pragma region BALANCE
 	Balance = CreateDefaultSubobject<UBalance>("Balance");
 	DecreaseBalanceTime = 1.0f;
+	bCanSpecialAttack = false;
+
+	//test
+	EnemyBalanceOverlap = CreateDefaultSubobject<USphereComponent>(TEXT("EnemyBalanceOverlap"));
+	EnemyBalanceOverlap->SetupAttachment(GetRootComponent());
+	EnemyBalanceOverlap->SetSphereRadius(200.f);
+	EnemyBalanceOverlap->SetVisibility(true);
+
+	EnemyBalanceOverlap->OnComponentBeginOverlap.AddDynamic(this, &AMainPlayer::OnEnemyBalance_OverlapBegin);
+	EnemyBalanceOverlap->OnComponentEndOverlap.AddDynamic(this, &AMainPlayer::OnEnemyBalance_OverlapEnd);
 #pragma endregion
 #pragma region SKILL
 	SkillFunction = CreateDefaultSubobject<UPlayerSkillFunction>("SkillFunction");
@@ -124,7 +134,6 @@ AMainPlayer::AMainPlayer()
 	EnemyHUDOverlap = CreateDefaultSubobject<USphereComponent>(TEXT("EnemyHUDOverlap"));
 	EnemyHUDOverlap->SetupAttachment(GetRootComponent());
 	EnemyHUDOverlap->SetSphereRadius(700.f);
-	EnemyHUDOverlap->SetVisibility(false);
 
 	EnemyHUDOverlap->OnComponentBeginOverlap.AddDynamic(this, &AMainPlayer::OnEnemyHUD_OverlapBegin);
 	EnemyHUDOverlap->OnComponentEndOverlap.AddDynamic(this, &AMainPlayer::OnEnemyHUD_OverlapEnd);
@@ -179,7 +188,10 @@ void AMainPlayer::Tick(float DeltaTime)
 	/** Player와 Enemy의 Balance Ratio */
 	SetBalanceRatio();
 
-	SetEnemyBalanceRatio();		
+	SetEnemyBalanceRatio();	
+	
+	/** Active Special Attack */
+	CanEnemyBalance();
 }
 
 void AMainPlayer::SetupPlayerInputComponent(UInputComponent* PlayerInputComponent)
@@ -692,6 +704,25 @@ void AMainPlayer::RecoverBalance() {
 	if(GetMovementStatus() != EMovementStatus::EMS_Faint) return;
 	AnimInstance->Montage_Stop(0.1f);
 	SetMovementStatus(EMovementStatus::EMS_Normal);
+}
+void AMainPlayer::OnEnemyBalance_OverlapBegin(UPrimitiveComponent* OverlappedComponent, AActor* OtherActor, UPrimitiveComponent* OtherComp, int32 OtherBodyIndex, bool bFromSweep, const FHitResult& SweepResult) {
+	if (OtherActor) {
+		BalanceTarget = Cast<AEnemy>(OtherActor);
+	}
+}
+void AMainPlayer::OnEnemyBalance_OverlapEnd(UPrimitiveComponent* OverlappedComponent, AActor* OtherActor, UPrimitiveComponent* OtherComp, int32 OtherBodyIndex) {
+	if (OtherActor) {
+		AEnemy* EnemyTest = Cast<AEnemy>(OtherActor);
+		if (EnemyTest && BalanceTarget) BalanceTarget = nullptr;
+	}
+}
+void AMainPlayer::CanEnemyBalance() {
+	if (BalanceTarget && BalanceTarget->GetIsFainted() && !bCanSpecialAttack) {
+		UE_LOG(LogTemp, Warning, TEXT("Active!!!!!"));
+
+		//Active Special Attack 키를 활성화.....!
+		bCanSpecialAttack = true;
+	}
 }
 #pragma endregion
 

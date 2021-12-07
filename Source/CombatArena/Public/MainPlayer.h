@@ -566,4 +566,22 @@ public:
 	UFUNCTION(BlueprintCallable)
 	void LoadData();
 #pragma endregion
+public:
+	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Balance")
+	class AEnemy* BalanceTarget;
+
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Balance")
+	USphereComponent* EnemyBalanceOverlap;
+
+	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Balance")
+	bool bCanSpecialAttack = false;
+
+	UFUNCTION()
+	void OnEnemyBalance_OverlapBegin(UPrimitiveComponent* OverlappedComponent, AActor* OtherActor, UPrimitiveComponent* OtherComp, int32 OtherBodyIndex, bool bFromSweep, const FHitResult& SweepResult);
+
+	UFUNCTION()
+	void OnEnemyBalance_OverlapEnd(UPrimitiveComponent* OverlappedComponent, AActor* OtherActor, UPrimitiveComponent* OtherComp, int32 OtherBodyIndex);
+
+	UFUNCTION()
+	void CanEnemyBalance();
 };

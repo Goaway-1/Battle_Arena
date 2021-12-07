@@ -24,7 +24,6 @@ void UBalance::BalancePercent() {
 	if (bIsDecreaseBalance && Currentbalance > 0.f) {
 		Currentbalance -= 0.1f;
 		if (Currentbalance < 0.f) Currentbalance = 0.f;
-		UE_LOG(LogTemp, Warning, TEXT("Currentbalance : %f"), Currentbalance);
 	}
 	BalanceRatio = Currentbalance / Maxbalance;
 }
