@@ -126,6 +126,7 @@ void AEnemy::SetupPlayerInputComponent(UInputComponent* PlayerInputComponent)
 void AEnemy::Attack(FString type) {
 	if(!Anim) Anim = Cast<UEnemyAnim>(GetMesh()->GetAnimInstance());
 
+	Anim->StopAllMontages(0.f);
 	if (AttackMontage && Anim) {
 		IsAttacking = true;
 		if (type == "Melee") {
@@ -302,18 +303,25 @@ void AEnemy::SetHealthRatio() {
 #pragma region BALANCE
 void AEnemy::BrokenBalance() {
 	Balance->SetCurrentBalance(-100.f);
+	bIsFainted = true;
 	EnemyController->SetIsFaint(true);
 }
 void AEnemy::ActiveFaint() {	
 	if (!FaintMontage) return;
+	Anim->StopAllMontages(0.f);
 	Anim->Montage_Play(FaintMontage);
 	Anim->Montage_JumpToSection("Faint", FaintMontage);
-
-	/** Special Attack Enable */
-	bIsFainted = true;
 }
 void AEnemy::DeactiveFaint() {		//Animation과 연동 -> 상태 도중 맞을때
-	bIsFainted = false;		//test
+	bIsFainted = false;		
 	EnemyController->SetIsFaint(false);
+}
+void AEnemy::SpecialHit() {
+	if (!FaintMontage) return;
+	Anim->StopAllMontages(0.f);
+	Anim->Montage_Play(FaintMontage);
+	Anim->Montage_JumpToSection("SpecialHited", FaintMontage);
+
+	//데미지를 받는 부분 추가해야됌
 }
 #pragma endregion

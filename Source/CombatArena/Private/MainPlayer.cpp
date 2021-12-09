@@ -232,8 +232,8 @@ void AMainPlayer::SetupPlayerInputComponent(UInputComponent* PlayerInputComponen
 	PlayerInputComponent->BindAction("Kick", EInputEvent::IE_Pressed, this, &AMainPlayer::Kick);
 
 	//Active
-	PlayerInputComponent->BindAction("Equip", EInputEvent::IE_Pressed, this, &AMainPlayer::ItemEquip);
-	PlayerInputComponent->BindAction("Drop", EInputEvent::IE_Pressed, this, &AMainPlayer::ItemDrop);
+	PlayerInputComponent->BindAction("Active", EInputEvent::IE_Pressed, this, &AMainPlayer::ActiveInteraction);
+	PlayerInputComponent->BindAction("DeActive", EInputEvent::IE_Pressed, this, &AMainPlayer::DeactiveInteraction);	
 
 	/** Skill Test Input */
 	PlayerInputComponent->BindAction("SkillTest", EInputEvent::IE_Pressed, this, &AMainPlayer::SkillController);
@@ -428,7 +428,7 @@ void AMainPlayer::LMBDown() {
 	else if (!bAttacking) Attack();
 	else bIsAttackCheck = true;
 }	
-void AMainPlayer::Attack() {
+void AMainPlayer::Attack(bool bIsSpecial) {
 	UAnimMontage* PlayMontage = nullptr;
 	bAttacking = true;
 	
@@ -456,7 +456,12 @@ void AMainPlayer::Attack() {
 	
 	if (!AnimInstance) AnimInstance = GetMesh()->GetAnimInstance();
 
-	if (SkillFunction->bGround && PlayMontage) /** USEING SKILL */
+	if (bIsSpecial) {
+		AnimInstance->Montage_Play(PlayMontage);
+		AnimInstance->Montage_JumpToSection("SpecialAttack", PlayMontage);
+		ZoomInCam(SpringArm_Attacking, FRotator(0.f, -60.f, 0.f));
+	}
+	else if (SkillFunction->bGround && PlayMontage) /** USEING SKILL */
 	{
 		AnimInstance->Montage_Play(PlayMontage);
 		AnimInstance->Montage_JumpToSection("SkillEmpact", PlayMontage);
@@ -717,11 +722,10 @@ void AMainPlayer::OnEnemyBalance_OverlapEnd(UPrimitiveComponent* OverlappedCompo
 	}
 }
 void AMainPlayer::CanEnemyBalance() {
-	if (BalanceTarget && BalanceTarget->GetIsFainted() && !bCanSpecialAttack) {
-		UE_LOG(LogTemp, Warning, TEXT("Active!!!!!"));
-
-		//Active Special Attack 키를 활성화.....!
-		bCanSpecialAttack = true;
+	if(BalanceTarget == nullptr) bCanSpecialAttack = false;
+	if (BalanceTarget) {
+		if (BalanceTarget->GetIsFainted() && !bCanSpecialAttack) bCanSpecialAttack = true;
+		else if(!BalanceTarget->GetIsFainted()) bCanSpecialAttack = false;
 	}
 }
 #pragma endregion
@@ -787,37 +791,57 @@ void AMainPlayer::EndThrow() {
 #pragma endregion
 
 #pragma region ACTIVE
-void AMainPlayer::ItemEquip() {	
-	if (ActiveOverlappingItem != nullptr) {
-		if (ActiveOverlappingItem->GetItemType() == EItemType::EIT_Weapon) {
-			AWeapon* CurWeapon = Cast<AWeapon>(ActiveOverlappingItem);
-			CurWeapon->Equip(this); 
+void AMainPlayer::ActiveInteraction() {
+	/** Active SpecialAttack */
+	if(bCanSpecialAttack) ActiveSpecialAttack();
 
-			AAttackWeapon* ACurWeapon = Cast<AAttackWeapon>(CurWeapon);
-			if (ACurWeapon) ACurWeapon->SetAttackInit(PlayerController, this, PlayerDamageType);
-		}
-		else if(ActiveOverlappingItem->GetItemType() == EItemType::EIT_Item) {
-			APotion* Potion = Cast<APotion>(ActiveOverlappingItem);
-			CurrentHealth = Potion->UseItem(CurrentHealth);
-			SetHealthRatio();
-		}
-		SetActiveOverlappingItem(nullptr);
+	/** Item or Weapon */
+	else if (ActiveOverlappingItem != nullptr) ItemEquip();
+}
+
+void AMainPlayer::DeactiveInteraction() {
+
+	/** Weapon */
+	if (GetWeaponStatus() != EWeaponStatus::EWS_Normal) ItemDrop();
+}
+void AMainPlayer::ActiveSpecialAttack() {
+	UE_LOG(LogTemp, Warning, TEXT("ActiveSpecialAttack"));
+
+	if (!BalanceTarget) {
+		UE_LOG(LogTemp, Warning, TEXT("MainPlayer :: ActiveSpecialAttack Error!"));
+		return;
 	}
+	BalanceTarget->SpecialHit();
+	Attack(true);
+	//Enemy는 그냥 데미지 받도록 설정.
+}
+void AMainPlayer::ItemEquip() {	
+	if (ActiveOverlappingItem->GetItemType() == EItemType::EIT_Weapon) {
+		AWeapon* CurWeapon = Cast<AWeapon>(ActiveOverlappingItem);
+		CurWeapon->Equip(this);
+
+		AAttackWeapon* ACurWeapon = Cast<AAttackWeapon>(CurWeapon);
+		if (ACurWeapon) ACurWeapon->SetAttackInit(PlayerController, this, PlayerDamageType);
+	}
+	else if (ActiveOverlappingItem->GetItemType() == EItemType::EIT_Item) {
+		APotion* Potion = Cast<APotion>(ActiveOverlappingItem);
+		CurrentHealth = Potion->UseItem(CurrentHealth);
+		SetHealthRatio();
+	}
+	SetActiveOverlappingItem(nullptr);
 }
 void AMainPlayer::ItemDrop() {
-	if (GetWeaponStatus() != EWeaponStatus::EWS_Normal) {
-		if (CurrentAttackWeapon != nullptr) {
-			CurrentAttackWeapon->UnEquip();
-			CurrentAttackWeapon = nullptr;
-			AttackDamage = DefaultDamage;	
-			AttackRange = DefaultAttackRange;				//공격 범위 조절
-			if (CurrentShieldWeapon == nullptr) SetWeaponStatus(EWeaponStatus::EWS_Normal);
-		}
-		else if (CurrentShieldWeapon != nullptr) {
-			CurrentShieldWeapon->UnEquip();
-			CurrentShieldWeapon = nullptr;
-			if(CurrentAttackWeapon == nullptr) SetWeaponStatus(EWeaponStatus::EWS_Normal);
-		}
+	if (CurrentAttackWeapon != nullptr) {
+		CurrentAttackWeapon->UnEquip();
+		CurrentAttackWeapon = nullptr;
+		AttackDamage = DefaultDamage;
+		AttackRange = DefaultAttackRange;				//공격 범위 조절
+		if (CurrentShieldWeapon == nullptr) SetWeaponStatus(EWeaponStatus::EWS_Normal);
+	}
+	else if (CurrentShieldWeapon != nullptr) {
+		CurrentShieldWeapon->UnEquip();
+		CurrentShieldWeapon = nullptr;
+		if (CurrentAttackWeapon == nullptr) SetWeaponStatus(EWeaponStatus::EWS_Normal);
 	}
 }
 void AMainPlayer::SetShieldCurrentWeapon(AShieldWeapon* Weapon) {

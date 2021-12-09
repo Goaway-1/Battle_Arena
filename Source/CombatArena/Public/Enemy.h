@@ -275,4 +275,7 @@ private:
 public:
 	UFUNCTION()
 	FORCEINLINE bool GetIsFainted() { return bIsFainted; }
+
+	UFUNCTION()
+	void SpecialHit();
 };

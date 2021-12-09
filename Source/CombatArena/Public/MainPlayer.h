@@ -294,7 +294,7 @@ public:
 	UFUNCTION(BlueprintCallable)
 	FORCEINLINE EWeaponStatus GetWeaponStatus() { return WeaponStatus; }
 
-	void Attack();
+	void Attack(bool bIsSpecial = false);
 
 	FORCEINLINE void SetAttackDamage(float Value) { AttackDamage = Value; }
 
@@ -394,6 +394,14 @@ private:
 	UPROPERTY(VisibleAnywhere, Category = "BALANCE")
 	class UBalance* Balance;
 
+	UPROPERTY(VisibleAnywhere, Category = "Balance")
+	class AEnemy* BalanceTarget;
+
+	UPROPERTY(EditAnywhere, Category = "Balance")
+	USphereComponent* EnemyBalanceOverlap;
+
+	UPROPERTY(VisibleAnywhere, Category = "Balance")
+	bool bCanSpecialAttack = false;
 public:
 	UFUNCTION()
 	void SetBalanceRatio();
@@ -408,6 +416,15 @@ public:
 	void RecoverBalance();
 
 	FORCEINLINE UBalance* GetBalance() { return Balance; }
+
+	UFUNCTION()
+	void OnEnemyBalance_OverlapBegin(UPrimitiveComponent* OverlappedComponent, AActor* OtherActor, UPrimitiveComponent* OtherComp, int32 OtherBodyIndex, bool bFromSweep, const FHitResult& SweepResult);
+
+	UFUNCTION()
+	void OnEnemyBalance_OverlapEnd(UPrimitiveComponent* OverlappedComponent, AActor* OtherActor, UPrimitiveComponent* OtherComp, int32 OtherBodyIndex);
+
+	UFUNCTION()
+	void CanEnemyBalance();
 #pragma endregion
 
 #pragma region SKILL
@@ -494,19 +511,22 @@ public:
 #pragma endregion
 
 #pragma region ACTIVE
-
-	//현재 겹친 아이템
-	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category ="Weapon")
+private:
+	UPROPERTY(VisibleAnywhere, Category ="Weapon")
 	class AItem* ActiveOverlappingItem;
 
-	FORCEINLINE void SetActiveOverlappingItem(AItem* item) { ActiveOverlappingItem = item; }
-
-	//현재 장착중인 무기
-	UPROPERTY(VisibleAnywhere, BlueprintReadOnly,Category = "Weapon")
+	UPROPERTY(VisibleAnywhere, Category = "Weapon")
 	class AShieldWeapon* CurrentShieldWeapon;
 
-	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Weapon")
+	UPROPERTY(VisibleAnywhere, Category = "Weapon")
 	class AWeapon* CurrentAttackWeapon;
+
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Particle", Meta = (AllowPrivateAccess = true))	//피격 효과
+	class UParticleSystem* HitParticle;
+public:
+	FORCEINLINE void SetActiveOverlappingItem(AItem* item) { ActiveOverlappingItem = item; }
+
+	FORCEINLINE UParticleSystem* GetHitParticle() { return HitParticle; }
 
 	void SetShieldCurrentWeapon(AShieldWeapon* Weapon);
 	FORCEINLINE AShieldWeapon* GetShieldCurrentWeapon() { return CurrentShieldWeapon; }
@@ -519,13 +539,16 @@ public:
 
 	UFUNCTION()
 	void ItemDrop();
-
-	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Particle")	//피격 효과
-	class UParticleSystem* HitParticle;
-
-	FORCEINLINE UParticleSystem* GetHitParticle() { return HitParticle; }
 #pragma endregion
+public:
+	UFUNCTION()
+	void ActiveInteraction();
 
+	UFUNCTION()
+	void DeactiveInteraction();
+
+	UFUNCTION()
+	void ActiveSpecialAttack();
 #pragma region HUD
 
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "HUD")
@@ -566,22 +589,4 @@ public:
 	UFUNCTION(BlueprintCallable)
 	void LoadData();
 #pragma endregion
-public:
-	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Balance")
-	class AEnemy* BalanceTarget;
-
-	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Balance")
-	USphereComponent* EnemyBalanceOverlap;
-
-	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Balance")
-	bool bCanSpecialAttack = false;
-
-	UFUNCTION()
-	void OnEnemyBalance_OverlapBegin(UPrimitiveComponent* OverlappedComponent, AActor* OtherActor, UPrimitiveComponent* OtherComp, int32 OtherBodyIndex, bool bFromSweep, const FHitResult& SweepResult);
-
-	UFUNCTION()
-	void OnEnemyBalance_OverlapEnd(UPrimitiveComponent* OverlappedComponent, AActor* OtherActor, UPrimitiveComponent* OtherComp, int32 OtherBodyIndex);
-
-	UFUNCTION()
-	void CanEnemyBalance();
 };

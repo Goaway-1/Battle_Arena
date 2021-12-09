@@ -8911,10 +8911,18 @@
 > **<h3>Realization</h3>**
   - null
 
-## **12.07**
+## **12.09**
 > **<h3>Today Dev Story</h3>**
 - ## <span style = "color:yellow;">Enemy의 Balance SpecialAttack</span>
-  - Enemy에 bIsFainted추가.
+  - <img src="Image/MainPlayer_SpecialAttack_Active.gif" height="300" title="MainPlayer_SpecialAttack_Active"> 
+  - 일정 범위 내의 적이 기절한 상태라면 특별한 공격을 하기 위해서 적의 상태를 가져와 특별한 키 활성화를 위한 작업
+  - Enemy클래스에 bool 타입인 bIsFainted을 추가하여 기절시 상태 추가
+    - Animation진행 중에 활성화
+  - Main클래스에 새로운 SphereComponent를 추가하여 범위 이내의 적을 파악하고, bool 타입인 bCanSpecialAttack을 통해 키 활성화
+    - OnEnemyBalance_OverlapBegin/End() 메서드에서는 범위 내 적을 파악하여 
+    - CanEnemyBalance()메서드를 추가하여 Tick메서드에서 지속적으로 검사
+      - Target이 없거나 있지만 기절 상태가 아닌 경우는 bCanSpecialAttack은 false, 있고 기절 상태인 경우에는 true로 지정
+  - (※ 기존 Overlap을 사용하여 list로 관리하고 범위 내의 적들 중 가장 가까운 순으로 정렬하는 건 어떤가)
 
       <details><summary>cpp 코드</summary> 
 
@@ -8927,6 +8935,27 @@
       void AEnemy::DeactiveFaint() {	
         ...
         bIsFainted = false;		
+      }
+      ```
+      ```c++
+      //MainPlayer.cpp
+      void AMainPlayer::OnEnemyBalance_OverlapBegin(UPrimitiveComponent* OverlappedComponent, AActor* OtherActor, UPrimitiveComponent* OtherComp, int32 OtherBodyIndex, bool bFromSweep, const FHitResult& SweepResult) {
+        if (OtherActor) {
+          BalanceTarget = Cast<AEnemy>(OtherActor);
+        }
+      }
+      void AMainPlayer::OnEnemyBalance_OverlapEnd(UPrimitiveComponent* OverlappedComponent, AActor* OtherActor, UPrimitiveComponent* OtherComp, int32 OtherBodyIndex) {
+        if (OtherActor) {
+          AEnemy* EnemyTest = Cast<AEnemy>(OtherActor);
+          if (EnemyTest && BalanceTarget) BalanceTarget = nullptr;
+        }
+      }
+      void AMainPlayer::CanEnemyBalance() {
+        if(BalanceTarget == nullptr) bCanSpecialAttack = false;
+        if (BalanceTarget) {
+          if (BalanceTarget->GetIsFainted() && !bCanSpecialAttack) bCanSpecialAttack = true;
+          else if(!BalanceTarget->GetIsFainted()) bCanSpecialAttack = false;
+        }
       }
       ```
       </details> 
@@ -8943,4 +8972,110 @@
         UFUNCTION()
         FORCEINLINE bool GetIsFainted() { return bIsFainted; }
       ```
+      ```c++
+      //MainPlayer.h
+      public:
+        UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Balance")
+        class AEnemy* BalanceTarget;
+
+        UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Balance")
+        USphereComponent* EnemyBalanceOverlap;
+
+        UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Balance")
+        bool bCanSpecialAttack = false;
+
+        UFUNCTION()
+        void OnEnemyBalance_OverlapBegin(UPrimitiveComponent* OverlappedComponent, AActor* OtherActor, UPrimitiveComponent* OtherComp, int32 OtherBodyIndex, bool bFromSweep, const FHitResult& SweepResult);
+
+        UFUNCTION()
+        void OnEnemyBalance_OverlapEnd(UPrimitiveComponent* OverlappedComponent, AActor* OtherActor, UPrimitiveComponent* OtherComp, int32 OtherBodyIndex);
+
+        UFUNCTION()
+        void CanEnemyBalance();
+      ```
       </details> 
+
+- ## <span style = "color:yellow;">Enemy의 Balance SpecialAttack_2</span>
+  - <img src="Image/MainPlayer_SpecialAttack_Active_2.gif" height="300" title="MainPlayer_SpecialAttack_Active_2"> 
+  - 적이 스턴상태일때 특정 키(E)를 사용하여 처리
+  - Enemy클래스에는 SpecialHit()메서드를 제작하여 특별한 경우의 피격을 처리
+    - 아직은 단순 애니메이션 실행 (추후 데미지 피격 처리)
+  - MainPlayer클래스에 기존 존재하는 Attack()메서드에 매개변수를 추가하여 특별한 경우의 타격을 처리 void Attack(bool bIsSpecial = false)
+    - De/ActiveInteraction()메서드와 ActiveSpecialAttack()메서드를 추가하여 기존 아이템을 줍는 상호작용을 우선순위에 따라 SpecialAttack -> EquipItem으로 변경
+    - ActiveSpecialAttack()메서드에서는 Attack()메서드의 매개변수가 true로 넘겨 특별한 공격을 하며 이때는 카메라의 이동 또한 존재 + 적의 애니메이션 실행
+    - 각 Animation에 SpecialAttack 몽타주섹션 제작
+
+      <details><summary>cpp 코드</summary> 
+
+      ```c++
+      //MainPlayer.cpp
+      void AMainPlayer::Attack(bool bIsSpecial) {
+        ...
+        if (bIsSpecial) {
+          AnimInstance->Montage_Play(PlayMontage);
+          AnimInstance->Montage_JumpToSection("SpecialAttack", PlayMontage);
+          ZoomInCam(SpringArm_Attacking, FRotator(0.f, -60.f, 0.f));
+        }
+      }
+      void AMainPlayer::ActiveInteraction() {
+        /** Active SpecialAttack */
+        if(bCanSpecialAttack) ActiveSpecialAttack();
+
+        /** Item or Weapon */
+        else if (ActiveOverlappingItem != nullptr) ItemEquip();
+      }
+
+      void AMainPlayer::DeactiveInteraction() {
+        /** Weapon */
+        if (GetWeaponStatus() != EWeaponStatus::EWS_Normal) ItemDrop();
+      }
+      void AMainPlayer::ActiveSpecialAttack() {
+        UE_LOG(LogTemp, Warning, TEXT("ActiveSpecialAttack"));
+
+        if (!BalanceTarget) {
+          UE_LOG(LogTemp, Warning, TEXT("MainPlayer :: ActiveSpecialAttack Error!"));
+          return;
+        }
+        BalanceTarget->SpecialHit();
+        Attack(true);
+        //Enemy는 그냥 데미지 받도록 설정.
+      }
+      ```
+      ```c++
+      //Enemy.cpp
+      void AEnemy::SpecialHit() {
+        if (!FaintMontage) return;
+        Anim->StopAllMontages(0.f);
+        Anim->Montage_Play(FaintMontage);
+        Anim->Montage_JumpToSection("SpecialHited", FaintMontage);
+      }
+      ```
+      </details> 
+
+      <details><summary>h 코드</summary> 
+
+      ```c++
+      //MainPlayer.h
+      public:
+        UFUNCTION()
+        void ActiveInteraction();
+
+        UFUNCTION()
+        void DeactiveInteraction();
+
+        UFUNCTION()
+        void ActiveSpecialAttack();
+
+        //기존 Attack 수정 (매개변수 추가)
+        void Attack(bool bIsSpecial = false);
+      ```
+      ```c++
+      //Enemy.h
+      public:
+      	UFUNCTION()
+	      void SpecialHit();
+      ```
+      </details> 
+
+> **<h3>Realization</h3>**
+  - null
