@@ -42,5 +42,7 @@ public:
 	UFUNCTION(BlueprintCallable)
 	void KickEnd();
 
+	FORCEINLINE bool GetKicking() { return bKicking; }
+
 #pragma endregion
 };

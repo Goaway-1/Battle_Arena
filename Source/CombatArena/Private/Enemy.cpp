@@ -308,7 +308,7 @@ void AEnemy::BrokenBalance() {
 }
 void AEnemy::ActiveFaint() {	
 	if (!FaintMontage) return;
-	Anim->StopAllMontages(0.f);
+	Anim->Montage_Stop(0.f);
 	Anim->Montage_Play(FaintMontage);
 	Anim->Montage_JumpToSection("Faint", FaintMontage);
 }
@@ -316,12 +316,10 @@ void AEnemy::DeactiveFaint() {		//Animation과 연동 -> 상태 도중 맞을때
 	bIsFainted = false;		
 	EnemyController->SetIsFaint(false);
 }
-void AEnemy::SpecialHit() {
+void AEnemy::SpecialHitMontage() {
 	if (!FaintMontage) return;
-	Anim->StopAllMontages(0.f);
+	Anim->Montage_Stop(0.f);
 	Anim->Montage_Play(FaintMontage);
 	Anim->Montage_JumpToSection("SpecialHited", FaintMontage);
-
-	//데미지를 받는 부분 추가해야됌
 }
 #pragma endregion

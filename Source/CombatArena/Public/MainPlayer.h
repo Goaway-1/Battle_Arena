@@ -539,8 +539,8 @@ public:
 
 	UFUNCTION()
 	void ItemDrop();
-#pragma endregion
-public:
+
+	/** Special Attack */
 	UFUNCTION()
 	void ActiveInteraction();
 
@@ -549,6 +549,11 @@ public:
 
 	UFUNCTION()
 	void ActiveSpecialAttack();
+
+	UFUNCTION(BlueprintCallable)
+	void SpecialAttackApplyDamage();
+#pragma endregion
+
 #pragma region HUD
 
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "HUD")

@@ -277,5 +277,5 @@ public:
 	FORCEINLINE bool GetIsFainted() { return bIsFainted; }
 
 	UFUNCTION()
-	void SpecialHit();
+	void SpecialHitMontage();
 };

@@ -411,6 +411,7 @@ void AMainPlayer::RunCamShake() {
 
 #pragma region ATTACK
 void AMainPlayer::LMBDown() {
+	if(AttackFunction->GetKicking()) return;
 	bLMBDown = true;
 	
 	//Action
@@ -603,6 +604,7 @@ void AMainPlayer::SetStaminaRatio() {
 	PlayerController->SetPlayerStamina();
 }
 void AMainPlayer::Kick() {
+	if (!IsCanMove()) return;
 	AttackFunction->Kick(AnimInstance, AttackMontage);
 }
 void AMainPlayer::KickStart() {
@@ -798,7 +800,6 @@ void AMainPlayer::ActiveInteraction() {
 	/** Item or Weapon */
 	else if (ActiveOverlappingItem != nullptr) ItemEquip();
 }
-
 void AMainPlayer::DeactiveInteraction() {
 
 	/** Weapon */
@@ -806,14 +807,13 @@ void AMainPlayer::DeactiveInteraction() {
 }
 void AMainPlayer::ActiveSpecialAttack() {
 	UE_LOG(LogTemp, Warning, TEXT("ActiveSpecialAttack"));
-
-	if (!BalanceTarget) {
-		UE_LOG(LogTemp, Warning, TEXT("MainPlayer :: ActiveSpecialAttack Error!"));
-		return;
-	}
-	BalanceTarget->SpecialHit();
+	BalanceTarget->SpecialHitMontage();
 	Attack(true);
-	//Enemy는 그냥 데미지 받도록 설정.
+}
+void AMainPlayer::SpecialAttackApplyDamage() {
+	UE_LOG(LogTemp, Warning, TEXT("MainPlayer :: ActiveSpecialAttack"));
+	BalanceTarget->SetCurrentAttack("SpecialAttack");
+	UGameplayStatics::ApplyDamage(BalanceTarget, 15.f, PlayerController, this, PlayerDamageType);
 }
 void AMainPlayer::ItemEquip() {	
 	if (ActiveOverlappingItem->GetItemType() == EItemType::EIT_Weapon) {

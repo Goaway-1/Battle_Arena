@@ -9079,3 +9079,60 @@
 
 > **<h3>Realization</h3>**
   - null
+
+## **12.10**
+> **<h3>Today Dev Story</h3>**
+- ## <span style = "color:yellow;">Enemy의 Balance SpecialAttack_3</span>
+  - <img src="Image/Faint_Damage_Successed.gif" height="300" title="Faint_Damage_Successed"> 
+
+      <details><summary>cpp 코드</summary> 
+
+      ```c++
+      //MainPlayer.cpp
+      void AMainPlayer::SpecialAttackApplyDamage() {
+        UE_LOG(LogTemp, Warning, TEXT("MainPlayer :: ActiveSpecialAttack"));
+        BalanceTarget->SetCurrentAttack("SpecialAttack");
+        UGameplayStatics::ApplyDamage(BalanceTarget, 15.f, PlayerController, this, PlayerDamageType);
+      }
+      ```
+      </details> 
+
+      <details><summary>h 코드</summary> 
+
+      ```c++
+      //MainPlayer.h
+      public:
+        UFUNCTION(BlueprintCallable)
+	      void SpecialAttackApplyDamage();
+      ```
+      </details> 
+
+- ## <span style = "color:yellow;">잡다한 것</span>
+  1. 공격 도중 구르기 불가
+    - 공격 도중 다른 행동으로 인한 이동불가 오류 해결
+
+      <details><summary>cpp 코드</summary> 
+
+      ```c++
+      //MainPlayer.cpp
+      void AMainPlayer::LMBDown() {
+        if(AttackFunction->GetKicking()) return;    
+      }
+      void AMainPlayer::Kick() {
+        if (!IsCanMove()) return;
+        AttackFunction->Kick(AnimInstance, AttackMontage);
+      }
+      ```
+      </details> 
+
+      <details><summary>h 코드</summary> 
+
+      ```c++
+      //MainPlayer.h
+      public:
+        FORCEINLINE bool GetKicking() { return bKicking; }
+      ```
+      </details> 
+
+> **<h3>Realization</h3>**
+  - null
