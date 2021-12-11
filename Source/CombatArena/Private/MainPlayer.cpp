@@ -493,19 +493,11 @@ void AMainPlayer::Attack(bool bIsSpecial) {
 	}
 }
 void AMainPlayer::StartAttack() {
-	//그 범위 공격으로 빠질듯
-	if(GetAttackCurrentWeapon()->GetWeaponPos() == EWeaponPos::EWP_Melee){
-	}
-
 	/** Use AttackFunction */
 	//FString Type = "Player";
 	//AttackFunction->SkillAttackStart(GetActorLocation(), GetActorForwardVector(), PlayerDamageType, Type, GetHitParticle(), GetAttackRange(), AttackDamage);
 }
 void AMainPlayer::EndAttack() {
-	//그 범위 공격으로 빠질듯
-
-
-	/** Use AttackFunction */
 	bAttacking = false;
 	ZoomOutCam();
 }
@@ -795,7 +787,8 @@ void AMainPlayer::EndThrow() {
 #pragma region ACTIVE
 void AMainPlayer::ActiveInteraction() {
 	/** Active SpecialAttack */
-	if(bCanSpecialAttack) ActiveSpecialAttack();
+	float Inner = this->GetDotProductTo(BalanceTarget);
+	if (Inner > 0.3f && bCanSpecialAttack && !bAttacking) ActiveSpecialAttack();
 
 	/** Item or Weapon */
 	else if (ActiveOverlappingItem != nullptr) ItemEquip();

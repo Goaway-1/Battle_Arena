@@ -9084,28 +9084,29 @@
 > **<h3>Today Dev Story</h3>**
 - ## <span style = "color:yellow;">Enemy의 Balance SpecialAttack_3</span>
   - <img src="Image/Faint_Damage_Successed.gif" height="300" title="Faint_Damage_Successed"> 
+  - MainPlayer가 특별한 공격을 할때에는 중복여부와 관계없이 몽타주의 특정 노티파이에서 ApplyDamage()메서드 실행하여 타격
 
-      <details><summary>cpp 코드</summary> 
+    <details><summary>cpp 코드</summary> 
 
-      ```c++
-      //MainPlayer.cpp
-      void AMainPlayer::SpecialAttackApplyDamage() {
-        UE_LOG(LogTemp, Warning, TEXT("MainPlayer :: ActiveSpecialAttack"));
-        BalanceTarget->SetCurrentAttack("SpecialAttack");
-        UGameplayStatics::ApplyDamage(BalanceTarget, 15.f, PlayerController, this, PlayerDamageType);
-      }
-      ```
-      </details> 
+    ```c++
+    //MainPlayer.cpp
+    void AMainPlayer::SpecialAttackApplyDamage() {
+      UE_LOG(LogTemp, Warning, TEXT("MainPlayer :: ActiveSpecialAttack"));
+      BalanceTarget->SetCurrentAttack("SpecialAttack");
+      UGameplayStatics::ApplyDamage(BalanceTarget, 15.f, PlayerController, this, PlayerDamageType);
+    }
+    ```
+    </details> 
 
-      <details><summary>h 코드</summary> 
+    <details><summary>h 코드</summary> 
 
-      ```c++
-      //MainPlayer.h
-      public:
-        UFUNCTION(BlueprintCallable)
-	      void SpecialAttackApplyDamage();
-      ```
-      </details> 
+    ```c++
+    //MainPlayer.h
+    public:
+      UFUNCTION(BlueprintCallable)
+	    void SpecialAttackApplyDamage();
+    ```
+    </details> 
 
 - ## <span style = "color:yellow;">잡다한 것</span>
   1. 공격 도중 구르기 불가
@@ -9131,6 +9132,51 @@
       //MainPlayer.h
       public:
         FORCEINLINE bool GetKicking() { return bKicking; }
+      ```
+      </details> 
+
+> **<h3>Realization</h3>**
+  - null
+
+## **12.11**
+> **<h3>Today Dev Story</h3>**
+- ## <span style = "color:yellow;">Enemy의 Pattern</span>
+  - <img src="Image/" height="300" title=""> 
+
+- ## <span style = "color:yellow;">잡다한 것</span>
+  1. SpecialAttack의 중복 오류 제거
+    - Enemy가 기절 도중 특별한 공격을 받게 된다면 bIsFainted를 false로 하여 중복 공격을 막음.
+      
+      <details><summary>cpp 코드</summary> 
+      ```c++
+      //MainPlayer.h
+      void AMainPlayer::ActiveInteraction() {
+        if(bCanSpecialAttack && !bAttacking) ActiveSpecialAttack();
+      }
+      ```
+      ```c++
+      //Enemy.cpp
+      void AEnemy::SpecialHitMontage() {
+        if (!FaintMontage) return;
+        bIsFainted = false;
+        Anim->Montage_Stop(0.f);
+        Anim->Montage_Play(FaintMontage);
+        Anim->Montage_JumpToSection("SpecialHited", FaintMontage);
+      }
+      ```
+      </details> 
+
+  2. SpecialAttack의 일정 범위에서만 동작
+    - 내적의 크기를 구하여 일정 각도 내에서만 동작. 즉 Enemy를 바라보아야만 한다.
+      
+      <details><summary>cpp 코드</summary> 
+      
+      ```c++
+      void AMainPlayer::ActiveInteraction() {
+        /** Active SpecialAttack */
+        float Inner = this->GetDotProductTo(BalanceTarget);
+        if (Inner > 0.3f && bCanSpecialAttack && !bAttacking) ActiveSpecialAttack();
+      }
       ```
       </details> 
 

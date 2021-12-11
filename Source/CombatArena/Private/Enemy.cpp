@@ -318,6 +318,7 @@ void AEnemy::DeactiveFaint() {		//Animation과 연동 -> 상태 도중 맞을때
 }
 void AEnemy::SpecialHitMontage() {
 	if (!FaintMontage) return;
+	bIsFainted = false;
 	Anim->Montage_Stop(0.f);
 	Anim->Montage_Play(FaintMontage);
 	Anim->Montage_JumpToSection("SpecialHited", FaintMontage);
