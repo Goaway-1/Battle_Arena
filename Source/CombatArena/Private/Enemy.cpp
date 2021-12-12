@@ -299,7 +299,6 @@ void AEnemy::SetHealthRatio() {
 	HealthRatio = CurrentHealth / MaxHealth;
 }
 #pragma endregion
-
 #pragma region BALANCE
 void AEnemy::BrokenBalance() {
 	Balance->SetCurrentBalance(-100.f);
@@ -324,3 +323,7 @@ void AEnemy::SpecialHitMontage() {
 	Anim->Montage_JumpToSection("SpecialHited", FaintMontage);
 }
 #pragma endregion
+
+void AEnemy::LookAround() {
+	UE_LOG(LogTemp, Warning, TEXT("LookAround"));
+}

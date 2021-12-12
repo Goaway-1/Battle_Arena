@@ -256,6 +256,9 @@ private:
 	UPROPERTY(VisibleAnywhere, Category = "Balance")
 	float DecreaseBalanceTime;
 
+	UPROPERTY(VisibleAnywhere, Category = "Balance")
+	bool bIsFainted = false;
+
 public:
 	UFUNCTION()
 	void BrokenBalance();
@@ -267,15 +270,14 @@ public:
 	void DeactiveFaint();
 
 	FORCEINLINE UBalance* GetBalance() { return Balance; }
-#pragma endregion
-private:
-	UPROPERTY(VisibleAnywhere, Category = "Balance")
-	bool bIsFainted = false;
 
-public:
 	UFUNCTION()
 	FORCEINLINE bool GetIsFainted() { return bIsFainted; }
 
 	UFUNCTION()
 	void SpecialHitMontage();
+#pragma endregion
+public:
+	UFUNCTION()
+	void LookAround();
 };

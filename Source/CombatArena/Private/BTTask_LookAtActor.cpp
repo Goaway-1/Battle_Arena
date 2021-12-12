@@ -6,7 +6,7 @@
 #include "BehaviorTree/BlackboardComponent.h"
 
 UBTTask_LookAtActor::UBTTask_LookAtActor() {
-	NodeName = TEXT("LookAtAtor");
+	NodeName = TEXT("LookAtActor");
 }
 
 EBTNodeResult::Type UBTTask_LookAtActor::ExecuteTask(UBehaviorTreeComponent& OwnerComp, uint8* NodeMemory) {

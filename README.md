@@ -9140,9 +9140,6 @@
 
 ## **12.11**
 > **<h3>Today Dev Story</h3>**
-- ## <span style = "color:yellow;">Enemy의 Pattern</span>
-  - <img src="Image/" height="300" title=""> 
-
 - ## <span style = "color:yellow;">잡다한 것</span>
   1. SpecialAttack의 중복 오류 제거
     - Enemy가 기절 도중 특별한 공격을 받게 된다면 bIsFainted를 false로 하여 중복 공격을 막음.
@@ -9179,6 +9176,100 @@
       }
       ```
       </details> 
+
+> **<h3>Realization</h3>**
+  - null
+
+## **12.12**
+> **<h3>Today Dev Story</h3>**
+- ## <span style = "color:yellow;">Enemy의 패턴 분리</span>
+  - <img src="Image/Enemy_New_Logic.gif" height="300" title="Enemy_New_Logic"> 
+  - <img src="Image/Enemy_New_Logic.png" height="300" title="Enemy_New_Logic"> 
+  - Enemy의 BehaviorTree의 구조를 완성하기 위한 로직작성
+    - 적과 플레이어 사이의 거리가 가깝다면 무조건 근접공격, __멀다면 스킬 OR 움직임(간보기, 사용자에게 이동)__
+  - BTDecorator클래스를 상속받은 BTDecorator_MoveOrSkill 클래스를 생성하여 특정 비율에 따라 구분
+  - BTTask클래스를 상속받은 BTTask_LookAround 클래스 생성하여 간보고 이동하는 로직 생성
+    - 두 클래스 모두에서 KismetMathLibrary의 RandomIntegerInRange()메서드를 사용하여 특정 확률로 행동 지정
+    - 일단 확률로 움직일지 스킬을 사용할지 정하고 만약 움직임이라면 다가갈지 아니면 간보기를 할지 지정
+
+    <details><summary>cpp 코드</summary> 
+
+    ```c++
+    //BTDecorator_MoveOrSkill.cpp
+    #include "Kismet/KismetMathLibrary.h"
+
+    UBTDecorator_MoveOrSkill::UBTDecorator_MoveOrSkill(){
+      NodeName = TEXT("MoveOrSkill");
+    }
+
+    bool UBTDecorator_MoveOrSkill::CalculateRawConditionValue(UBehaviorTreeComponent& OwnerComp, uint8* NodeMemory) const{
+      bool bResult = Super::CalculateRawConditionValue(OwnerComp, NodeMemory);
+
+      /** 확률로 움직일지 스킬을 사용할지 측정 */
+      int rand = UKismetMathLibrary::RandomIntegerInRange(0,100);
+      bResult = (rand > 50) ? true : false;
+      
+      UE_LOG(LogTemp, Warning, TEXT("Move Or Skill : %d"),rand);
+
+      return bResult;
+    }
+    ```
+    ```c++
+    //BTTask_LookAround.cpp
+    #include "Enemy.h"
+    #include "Kismet/KismetMathLibrary.h"
+
+    UBTTask_LookAround::UBTTask_LookAround() {
+      NodeName = TEXT("LookAround");
+    }
+
+    EBTNodeResult::Type UBTTask_LookAround::ExecuteTask(UBehaviorTreeComponent& OwnerComp, uint8* NodeMemory) {
+      Super::ExecuteTask(OwnerComp, NodeMemory);
+
+      /** 실패 시 걸어가고 성공시 플레이어 주변 탐색 */
+      int rand = UKismetMathLibrary::RandomIntegerInRange(0, 100);
+      bool bResult = (rand > 50) ? true : false;
+      UE_LOG(LogTemp, Warning, TEXT("Move : %d"), rand);
+      if(!bResult) return EBTNodeResult::Failed; 
+
+      AEnemy* Enemy = Cast<AEnemy>(OwnerComp.GetAIOwner()->GetPawn());
+      if (!Enemy) return EBTNodeResult::Failed;
+
+      /** 주변 탐색 */
+      Enemy->LookAround();
+      return EBTNodeResult::Succeeded;
+    }
+    ```
+    ```c++
+    //Enemy.cpp
+    void AEnemy::LookAround() {
+      UE_LOG(LogTemp, Warning, TEXT("LookAround"));
+    }
+    ```
+    </details> 
+
+    <details><summary>h 코드</summary> 
+
+    ```c++
+    //BTDecorator_MoveOrSkill.h
+    public:
+      UBTDecorator_MoveOrSkill();
+    protected:
+      virtual bool CalculateRawConditionValue(UBehaviorTreeComponent& OwnerComp, uint8* NodeMemory) const override;
+    ```
+    ```c++
+    //BTTask_LookAround.h
+    public:
+      UBTTask_LookAround();
+      virtual EBTNodeResult::Type ExecuteTask(UBehaviorTreeComponent& OwnerComp, uint8* NodeMemory) override;
+    ```
+    ```c++
+    //Enemy.h
+    public:
+      UFUNCTION()
+      void LookAround();
+    ```
+    </details> 
 
 > **<h3>Realization</h3>**
   - null
