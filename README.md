@@ -9273,3 +9273,10 @@
 
 > **<h3>Realization</h3>**
   - null
+
+## **12.13**
+> **<h3>Today Dev Story</h3>**
+  - null
+
+**<h3>Realization</h3>**
+  - 좌우 이동은 rootmotion사용하고 돌진공격은 플레이어의 위치보다 더 지난 지점으로 빠르게 이동. 겹쳐지면 데미지
