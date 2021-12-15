@@ -278,6 +278,12 @@ public:
 	void SpecialHitMontage();
 #pragma endregion
 public:
+	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "Montage")
+	class UAnimMontage* LookAroundMontage;
+
 	UFUNCTION()
-	void LookAround();
+	void StartLookAround(bool isLeft);
+	
+	//UFUNCTION()
+	//void EndLookAround();
 };

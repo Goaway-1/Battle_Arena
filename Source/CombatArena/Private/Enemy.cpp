@@ -71,6 +71,7 @@ AEnemy::AEnemy()
 	bIsFainted = false;
 #pragma endregion
 }
+
 void AEnemy::PossessedBy(AController* NewController) {
 	Super::PossessedBy(NewController);
 
@@ -324,6 +325,8 @@ void AEnemy::SpecialHitMontage() {
 }
 #pragma endregion
 
-void AEnemy::LookAround() {
-	UE_LOG(LogTemp, Warning, TEXT("LookAround"));
+void AEnemy::StartLookAround(bool isLeft) {
+	Anim->Montage_Play(LookAroundMontage);
+	if(isLeft) Anim->Montage_JumpToSection("Left", LookAroundMontage);
+	else  Anim->Montage_JumpToSection("Right", LookAroundMontage);
 }

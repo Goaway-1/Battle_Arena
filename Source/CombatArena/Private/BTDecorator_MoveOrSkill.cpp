@@ -12,7 +12,7 @@ bool UBTDecorator_MoveOrSkill::CalculateRawConditionValue(UBehaviorTreeComponent
 
 	/** 확률로 움직일지 스킬을 사용할지 측정 */
 	int rand = UKismetMathLibrary::RandomIntegerInRange(0,100);
-	bResult = (rand > 50) ? true : false;
+	bResult = (rand > 98) ? true : false;
 	
 	UE_LOG(LogTemp, Warning, TEXT("Move Or Skill : %d"),rand);
 

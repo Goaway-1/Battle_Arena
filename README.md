@@ -9280,3 +9280,41 @@
 
 **<h3>Realization</h3>**
   - 좌우 이동은 rootmotion사용하고 돌진공격은 플레이어의 위치보다 더 지난 지점으로 빠르게 이동. 겹쳐지면 데미지
+
+## **12.14**
+> **<h3>Today Dev Story</h3>**
+- ## <span style = "color:yellow;">좌우로 간보기</span>
+  - <img src="Image/Enemy_MoveAround.gif" height="300" title="Enemy_MoveAround"> 
+  - Enemy가 사용자 주변을 돌때의 로직
+    - UBTTask_LookAround클래스에서 결정하며 한번은 주위를 돌거나 다가가거나의 판별을 위한 RandomIntegerInRange()메서드의 사용이고
+    - 한번 더 사용하는데 주위를 도는 것에 대한 좌우판별용도의 메서드 사용이다.
+
+      <details><summary>cpp 코드</summary> 
+
+      ```c++
+      //BTTask_LookAround.cpp
+      EBTNodeResult::Type UBTTask_LookAround::ExecuteTask(UBehaviorTreeComponent& OwnerComp, uint8* NodeMemory) {
+        /** 주변을 돌아다님 (간보기) */ 
+        rand = UKismetMathLibrary::RandomIntegerInRange(0, 1);
+        bResult = (rand == 0) ? true : false;
+        Enemy->StartLookAround(bResult);
+        return EBTNodeResult::Succeeded;
+      }
+      ```
+      ```c++
+      //Enemy.cpp
+      void AEnemy::StartLookAround(bool isLeft) {
+        Anim->Montage_Play(LookAroundMontage);
+
+        if(isLeft) Anim->Montage_JumpToSection("Left", LookAroundMontage);
+        else  Anim->Montage_JumpToSection("Right", LookAroundMontage);
+      }
+      ```
+      </details> 
+
+- ## <span style = "color:yellow;">돌진공격</span>
+  - <img src="Image/" height="300" title=""> 
+
+
+**<h3>Realization</h3>**
+ - 주변을 돌때 사용자를 보지 않는다...
