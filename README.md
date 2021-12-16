@@ -824,7 +824,7 @@
 > **<h3>Today Dev Story</h3>**
 - ## <span style = "color:yellow;">AI의 BehaviorTree_2 (센서)</span>
   - <img src="Image/AI_BehaviorTree_2.gif" height="300" title="AI_BehaviorTree_2"> <img src="Image/BehaviorTree_2.png" height="300" title="BehaviorTree_2">  
-  - AI의 시야에 있다면 MoveTo를 사용하기 위해서 AI Percoption System을 사용. ex) 소리, 히트, 시야 등... 
+  - AI의 시야에 있다면 MoveTo를 사용하기 위해서 AI Perception System을 사용. ex) 소리, 히트, 시야 등... 
   - Object타입으로 TargetActor 키를 생성후 해당 키는 Player를 어태치
   - 왼쪽 시퀀스에 Blackboard를 추가하여 활성화 조건은 TargetActor값의 유무로 판단. (관찰자 중단을 Both로 지정하여 값이 생성되면 바로 전환)
     - 미리 만들어진 기능들을 활성화 하여 사용하며 __Controller.cpp에 UAIPerceptionComponent 컴포넌트와 #include "Perception/AIPerceptionComponent.h"추가__
@@ -9317,4 +9317,31 @@
 
 
 **<h3>Realization</h3>**
- - 주변을 돌때 사용자를 보지 않는다...
+ - 주변을 돌때 사용자를 보지 않는다...  
+
+## **12.16**
+> **<h3>Today Dev Story</h3>**
+- ## <span style = "color:yellow;">좌우로 간보기_2</span>
+  - <img src="Image/Enemy_LookAround.gif" height="300" title="Enemy_LookAround"> 
+  - LookAround 클래스 동작 시 사용자를 보지 않고 단순히 도는 오류해결
+  - Enemy클래스의 StartLookAround()메서드 내에서 GetBrainComponent()에서 블랙보드에서 TargetActor을 찾고 그 위치간의 회전 행렬을 구함
+    - SetActorRotation()메서드를 통해서 Enemy을 방향을 회전
+
+      <details><summary>cpp 코드</summary> 
+
+      ```c++
+      //Enemy.cpp
+      void AEnemy::StartLookAround(bool isLeft) {
+        /** Look At the Target */
+        AMainPlayer* Target = Cast<AMainPlayer>(EnemyController->GetBrainComponent()->GetBlackboardComponent()->GetValueAsObject(AEnemyController::TargetActor));
+        FVector LookVec = Target->GetActorLocation() - GetActorLocation();
+        LookVec.Z = 0;
+        FRotator LookRot = FRotationMatrix::MakeFromX(LookVec).Rotator();
+        SetActorRotation(LookRot);
+        ...
+      }
+      ```
+      </details> 
+
+**<h3>Realization</h3>**
+ - null

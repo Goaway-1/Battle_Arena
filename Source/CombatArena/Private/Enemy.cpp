@@ -15,6 +15,9 @@
 #include "EnemySkillFunction.h"
 #include "Engine/World.h"
 #include "Balance.h"
+#include "BehaviorTree/BlackboardComponent.h"
+#include "BehaviorTree/BehaviorTreeComponent.h"
+#include "Perception/AIPerceptionComponent.h"
 
 AEnemy::AEnemy()
 {
@@ -326,6 +329,14 @@ void AEnemy::SpecialHitMontage() {
 #pragma endregion
 
 void AEnemy::StartLookAround(bool isLeft) {
+	/** Look At the Target */
+	AMainPlayer* Target = Cast<AMainPlayer>(EnemyController->GetBrainComponent()->GetBlackboardComponent()->GetValueAsObject(AEnemyController::TargetActor));
+	FVector LookVec = Target->GetActorLocation() - GetActorLocation();
+	LookVec.Z = 0;
+	FRotator LookRot = FRotationMatrix::MakeFromX(LookVec).Rotator();
+	SetActorRotation(LookRot);
+
+	/** Animation */
 	Anim->Montage_Play(LookAroundMontage);
 	if(isLeft) Anim->Montage_JumpToSection("Left", LookAroundMontage);
 	else  Anim->Montage_JumpToSection("Right", LookAroundMontage);
