@@ -18,34 +18,39 @@ protected:
 public:	
 	virtual void Tick(float DeltaTime) override;
 
-	UPROPERTY(EditAnywhere, BlueprintReadWrite)
+private:
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Meta = (AllowPrivateAccess = true))
 	USceneComponent* DefaultSceneRoot; 
 	
-	UPROPERTY(EditAnywhere, BlueprintReadWrite)
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Meta = (AllowPrivateAccess = true))
 	USkeletalMeshComponent* LazerMesh;
 
-	UPROPERTY(EditAnywhere, BlueprintReadWrite)
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Meta = (AllowPrivateAccess = true))
 	USpringArmComponent* LazerArm;
 	
-	UPROPERTY(EditAnywhere, BlueprintReadWrite)
+	UPROPERTY(EditAnywhere, BlueprintReadWrite ,Meta = (AllowPrivateAccess = true))
 	USphereComponent* LazerEndDetector;
 	
 	/** Overlap & Dealing */
-	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "HitInfo")
+	UPROPERTY(VisibleAnywhere, Category = "HitInfo", Meta = (AllowPrivateAccess = true))
 	TArray<class AMainPlayer*> OverlapingEnemies;
 
-	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "HitInfo")
+	UPROPERTY(VisibleAnywhere, Category = "HitInfo", Meta = (AllowPrivateAccess = true))
 	bool bContinueDealing;
 
-	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "HitInfo")
+	UPROPERTY(VisibleAnywhere, Category = "HitInfo", Meta = (AllowPrivateAccess = true))
 	FLatentActionInfo LatentInfo;
 
-	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "HitInfo")
+	UPROPERTY(EditAnywhere, Category = "HitInfo", Meta = (AllowPrivateAccess = true))
 	TSubclassOf<UDamageType> LazerDamageType;
 
-	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "HitInfo")
+	UPROPERTY(EditAnywhere, Category = "HitInfo", Meta = (AllowPrivateAccess = true))
 	AController* SpawnController;
 
+	UPROPERTY(VisibleAnywhere, Category = "HitInfo", Meta = (AllowPrivateAccess = true))
+	int HitCnt;
+
+public:
 	UFUNCTION()
 	void OverlapBeginActor(UPrimitiveComponent* OverlappedComponent, AActor* OtherActor, UPrimitiveComponent* OtherComp, int32 OtherBodyIndex, bool bFromSweep, const FHitResult& SweepResult);
 	

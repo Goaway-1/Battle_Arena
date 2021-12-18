@@ -53,10 +53,10 @@ public:
 
 	/** Lazer */
 	UFUNCTION()
-	void LazerAttack();
+	virtual void LazerAttack();
 
 	UFUNCTION()
-	void LazerEnd();
+	virtual void LazerEnd();
 
 	/** Ground */
 	UFUNCTION()

@@ -9315,9 +9315,8 @@
 - ## <span style = "color:yellow;">돌진공격</span>
   - <img src="Image/" height="300" title=""> 
 
-
 **<h3>Realization</h3>**
- - 주변을 돌때 사용자를 보지 않는다...  
+ - 주변을 돌때 사용자를 보지 않는다는 오류 존재
 
 ## **12.16**
 > **<h3>Today Dev Story</h3>**
@@ -9345,3 +9344,120 @@
 
 **<h3>Realization</h3>**
  - null
+
+## **12.16**
+> **<h3>Today Dev Story</h3>**
+- ## <span style = "color:yellow;">적의 대쉬 공격</span>
+  - 구조만 제작 
+    
+    <details><summary>cpp 코드</summary> 
+
+    ```c++
+    //Enemy.cpp
+    void AEnemy::SkillAttack() {
+      if(SkillType == "Meteor") SkillFunction->GroundAttack();
+      else if(SkillType == "Lazer") SkillFunction->LazerAttack();
+      else if(SkillType == "Rush") SkillFunction->RushAttack();
+    }
+    void AEnemy::SkillAttackEnd() {
+      if (SkillType == "Meteor") SkillFunction->GroundAttack();
+      else if (SkillType == "Lazer") SkillFunction->LazerEnd();
+      else if (SkillType == "Rush") SkillFunction->RushEnd();
+    }
+    FName AEnemy::GetAttackMontageSection(FString Type) {
+      else if (Type == "Skill") {
+        int range = FMath::RandRange(1, 3);
+        switch (range) {
+          case 1:
+            AttackDamage = 20.f;
+            SkillType = "Meteor";
+            break;
+          case 2:
+            AttackDamage = 30.f;
+            SkillType = "Lazer";
+            break;
+          case 3:
+            AttackDamage = 30.f;
+            SkillType = "Rush";
+            break;
+          default:
+            SkillType = "Error";
+            break;
+        }
+        return FName(*FString::Printf(TEXT("Attack%d"), range));
+      }
+    }
+    ```
+    ```c++
+    //EnemySkillFunction.cpp
+    void UEnemySkillFunction::RushAttack() {
+      UE_LOG(LogTemp, Warning, TEXT("RUSH"));
+    }
+
+    void UEnemySkillFunction::RushEnd() {
+      UE_LOG(LogTemp, Warning, TEXT("RUSH End"));
+    }
+    ```
+    </details> 
+
+    <details><summary>h 코드</summary> 
+
+    ```c++
+    //EnemySkillFunction.h
+    public:
+      UFUNCTION()
+      void RushAttack();
+
+      UFUNCTION()
+      void RushEnd();
+    ```
+    </details>
+
+- ## <span style = "color:yellow;">잡다한 것</span>
+  1. Lazer와 Meteor의 데미지 수정
+    - 기존 피격로직 중 한번의 데미지만 받기 위해서 최근 피격 이름을 저장했는데 Enemy의 Skill은 수정하지 않아서 지금 수정
+    
+      <details><summary>cpp 코드</summary> 
+
+      ```c++
+      //Enemy.cpp
+      void ALazer::Dealing() {
+        if (bContinueDealing) {
+          for (auto i : OverlapingEnemies) {
+            AMainPlayer* player = Cast<AMainPlayer>(i);
+            player->SetCurrentAttack(GetName() + "AttackLazer" + FString::FromInt(HitCnt)); //CurrentAttack
+            UGameplayStatics::ApplyDamage(player,5.f, SpawnController,this, LazerDamageType);
+            if(++HitCnt > 2) HitCnt = 0;
+          }
+          UKismetSystemLibrary::Delay(this, 1.0f, LatentInfo);
+        }
+      }
+      ```
+      ```c++
+      //EnemySkillFunction.cpp
+      void UEnemySkillFunction::ConfirmTargetAndContinue() {
+        /** Apply Damage for Player */
+        if (TryOverlap) {
+          for (auto i : OverlapedEnemy) {
+            AMainPlayer* PlayerOverlaped = Cast<AMainPlayer>(i);
+            PlayerOverlaped->SetCurrentAttack(GetName() + "AttackMeteor");    //CurrentAttack
+            UGameplayStatics::ApplyDamage(PlayerOverlaped, 10.f, OwnerController,OwnerPawn, MeteorDamageType); 
+          }
+        }
+      }
+      ```
+      </details> 
+
+      <details><summary>h 코드</summary> 
+
+      ```c++
+      //Lazer.h
+      private:
+        UPROPERTY(VisibleAnywhere, Category = "HitInfo", Meta = (AllowPrivateAccess = true))
+	      int HitCnt;
+      ```
+      </details>
+
+**<h3>Realization</h3>**
+  - 레이저는 지형으로 구분하고 적은 투사체를 던지는 것으로 교체 예정
+  - 대쉬 애니메이션 및 콜리전 설정

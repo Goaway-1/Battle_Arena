@@ -37,6 +37,8 @@ void ALazer::BeginPlay()
 	LatentInfo.ExecutionFunction = "Dealing";
 	LatentInfo.UUID = 123;
 	LatentInfo.Linkage = 1;
+
+	HitCnt = 0;
 }
 
 void ALazer::Tick(float DeltaTime)
@@ -70,8 +72,9 @@ void ALazer::Dealing() {
 	if (bContinueDealing) {
 		for (auto i : OverlapingEnemies) {
 			AMainPlayer* player = Cast<AMainPlayer>(i);
+			player->SetCurrentAttack(GetName() + "AttackLazer" + FString::FromInt(HitCnt));
 			UGameplayStatics::ApplyDamage(player,5.f, SpawnController,this, LazerDamageType);
-			
+			if(++HitCnt > 2) HitCnt = 0;
 		}
 		UKismetSystemLibrary::Delay(this, 1.0f, LatentInfo);
 	}

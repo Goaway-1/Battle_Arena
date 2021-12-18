@@ -35,6 +35,16 @@ public:
 	UPROPERTY()
 	class AEnemyController* EnemyController;
 
+#pragma region MOVEMENT
+private:
+	UPROPERTY(EditDefaultsOnly, Category = "Montage", Meta = (AllowPrivateAccess = true))
+	class UAnimMontage* LookAroundMontage;
+
+public:
+	UFUNCTION()
+	void StartLookAround(bool isLeft);
+#pragma endregion
+
 #pragma region ATTACK
 	UPROPERTY()
 	class UEnemyAttackFunction* AttackFunction;
@@ -277,13 +287,4 @@ public:
 	UFUNCTION()
 	void SpecialHitMontage();
 #pragma endregion
-public:
-	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "Montage")
-	class UAnimMontage* LookAroundMontage;
-
-	UFUNCTION()
-	void StartLookAround(bool isLeft);
-	
-	//UFUNCTION()
-	//void EndLookAround();
 };

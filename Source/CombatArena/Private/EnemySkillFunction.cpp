@@ -16,9 +16,8 @@ void UEnemySkillFunction::BeginPlay() {
 
 void UEnemySkillFunction::TickComponent(float DeltaTime, ELevelTick TickType, FActorComponentTickFunction* ThisTickFunction) {
 	Super::TickComponent(DeltaTime, TickType, ThisTickFunction);
-
-
 }
+
 void UEnemySkillFunction::GroundAttack() {
 	if (!bGround) {
 		bGround = true;
@@ -61,9 +60,24 @@ void UEnemySkillFunction::ConfirmTargetAndContinue() {
 		}
 		for (auto i : OverlapedEnemy) {
 			AMainPlayer* PlayerOverlaped = Cast<AMainPlayer>(i);
+			PlayerOverlaped->SetCurrentAttack(GetName() + "AttackMeteor");
 			UGameplayStatics::ApplyDamage(PlayerOverlaped, 10.f, OwnerController,OwnerPawn, MeteorDamageType); 
 		}
 	}
+}
+void UEnemySkillFunction::LazerAttack() {
+	Super::LazerAttack();
+}
+void UEnemySkillFunction::LazerEnd() {
+	Super::LazerEnd();
+}
+
+void UEnemySkillFunction::RushAttack() {
+	UE_LOG(LogTemp, Warning, TEXT("RUSH"));
+}
+
+void UEnemySkillFunction::RushEnd() {
+	UE_LOG(LogTemp, Warning, TEXT("RUSH End"));
 }
 
 void UEnemySkillFunction::SpawnMeteor() {

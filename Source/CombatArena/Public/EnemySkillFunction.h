@@ -28,13 +28,22 @@ private:
 
 	UPROPERTY(EditDefaultsOnly, BlueprintReadWrite, Category = "Skill | Meteor", meta = (AllowPrivateAccess = "true"))
 	TSubclassOf<class ASK_Meteor> MeteorClass;
-	
 public:
 	virtual void GroundAttack() override;
 
 	virtual void SetSkillLocation() override;
 
 	virtual void ConfirmTargetAndContinue() override;
+
+	virtual void LazerAttack() override;
+
+	virtual void LazerEnd() override;
+
+	UFUNCTION()
+	void RushAttack();
+
+	UFUNCTION()
+	void RushEnd();
 
 	/** Not Override */
 	UFUNCTION()

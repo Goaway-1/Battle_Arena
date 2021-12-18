@@ -126,6 +126,21 @@ void AEnemy::SetupPlayerInputComponent(UInputComponent* PlayerInputComponent)
 
 }
 
+#pragma region MOVEMENT
+void AEnemy::StartLookAround(bool isLeft) {
+	/** Look At the Target */
+	AMainPlayer* Target = Cast<AMainPlayer>(EnemyController->GetBrainComponent()->GetBlackboardComponent()->GetValueAsObject(AEnemyController::TargetActor));
+	FVector LookVec = Target->GetActorLocation() - GetActorLocation();
+	LookVec.Z = 0;
+	FRotator LookRot = FRotationMatrix::MakeFromX(LookVec).Rotator();
+	SetActorRotation(LookRot);
+
+	/** Animation */
+	Anim->Montage_Play(LookAroundMontage);
+	if (isLeft) Anim->Montage_JumpToSection("Left", LookAroundMontage);
+	else  Anim->Montage_JumpToSection("Right", LookAroundMontage);
+}
+#pragma endregion
 #pragma region ATTACK
 void AEnemy::Attack(FString type) {
 	if(!Anim) Anim = Cast<UEnemyAnim>(GetMesh()->GetAnimInstance());
@@ -154,6 +169,7 @@ void AEnemy::SkillAttack() {
 	/** Random */
 	if(SkillType == "Meteor") SkillFunction->GroundAttack();
 	else if(SkillType == "Lazer") SkillFunction->LazerAttack();
+	else if(SkillType == "Rush") SkillFunction->RushAttack();
 	
 	GetWorldTimerManager().SetTimer(SKillCoolTimer,this,&AEnemy::SkillAttackEnd,1.0f,false);
 }
@@ -162,6 +178,7 @@ void AEnemy::SkillAttackEnd() {
 	
 	if (SkillType == "Meteor") SkillFunction->GroundAttack();
 	else if (SkillType == "Lazer") SkillFunction->LazerEnd();
+	else if (SkillType == "Rush") SkillFunction->RushEnd();
 }
 void AEnemy::AttackStart_Internal() {
 	FString Type = "Enemy";
@@ -250,10 +267,28 @@ FName AEnemy::GetAttackMontageSection(FString Type) {
 		return FName(*FString::Printf(TEXT("Attack%d"), range));
 	}
 	else if (Type == "Skill") {
-		int range = FMath::RandRange(1, 2);
-		AttackDamage = (range == 1) ? 20.f : 30.f;
-		SkillType = (range == 1) ? "Meteor" : "Lazer";
-		return FName(*FString::Printf(TEXT("Attack%d"), range));
+		/*int range = FMath::RandRange(1, 3);
+		switch (range) {
+			case 1:
+				AttackDamage = 20.f;
+				SkillType = "Meteor";
+				break;
+			case 2:
+				AttackDamage = 30.f;
+				SkillType = "Lazer";
+				break;
+			case 3:
+				AttackDamage = 30.f;
+				SkillType = "Rush";
+				break;
+			default:
+				SkillType = "Error";
+				break;
+		}
+		return FName(*FString::Printf(TEXT("Attack%d"), range));*/
+		AttackDamage = 30.f;
+		SkillType = "Rush";
+		return FName(*FString::Printf(TEXT("Attack%d"), 3));
 	}
 	else return "Error";
 }
@@ -327,17 +362,3 @@ void AEnemy::SpecialHitMontage() {
 	Anim->Montage_JumpToSection("SpecialHited", FaintMontage);
 }
 #pragma endregion
-
-void AEnemy::StartLookAround(bool isLeft) {
-	/** Look At the Target */
-	AMainPlayer* Target = Cast<AMainPlayer>(EnemyController->GetBrainComponent()->GetBlackboardComponent()->GetValueAsObject(AEnemyController::TargetActor));
-	FVector LookVec = Target->GetActorLocation() - GetActorLocation();
-	LookVec.Z = 0;
-	FRotator LookRot = FRotationMatrix::MakeFromX(LookVec).Rotator();
-	SetActorRotation(LookRot);
-
-	/** Animation */
-	Anim->Montage_Play(LookAroundMontage);
-	if(isLeft) Anim->Montage_JumpToSection("Left", LookAroundMontage);
-	else  Anim->Montage_JumpToSection("Right", LookAroundMontage);
-}
