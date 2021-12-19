@@ -84,7 +84,7 @@ void AEnemy::PossessedBy(AController* NewController) {
 
 	RightWeapon->OnComponentBeginOverlap.AddDynamic(this, &AEnemy::OnWeaponOverlap);
 	LeftWeapon->OnComponentBeginOverlap.AddDynamic(this, &AEnemy::OnWeaponOverlap);
-	AttackStart_Collision(false);
+	AttackEnd_Collision();
 }
 void AEnemy::BeginPlay()
 {
@@ -130,6 +130,7 @@ void AEnemy::SetupPlayerInputComponent(UInputComponent* PlayerInputComponent)
 void AEnemy::StartLookAround(bool isLeft) {
 	/** Look At the Target */
 	AMainPlayer* Target = Cast<AMainPlayer>(EnemyController->GetBrainComponent()->GetBlackboardComponent()->GetValueAsObject(AEnemyController::TargetActor));
+	if(Target == nullptr) return;
 	FVector LookVec = Target->GetActorLocation() - GetActorLocation();
 	LookVec.Z = 0;
 	FRotator LookRot = FRotationMatrix::MakeFromX(LookVec).Rotator();
@@ -169,16 +170,24 @@ void AEnemy::SkillAttack() {
 	/** Random */
 	if(SkillType == "Meteor") SkillFunction->GroundAttack();
 	else if(SkillType == "Lazer") SkillFunction->LazerAttack();
-	else if(SkillType == "Rush") SkillFunction->RushAttack();
-	
-	GetWorldTimerManager().SetTimer(SKillCoolTimer,this,&AEnemy::SkillAttackEnd,1.0f,false);
+	else if (SkillType == "Rush") {
+		float dis = GetDistanceTo(EnemyController->GetCurrentTarget()) / 950.f;
+		GetWorldTimerManager().SetTimer(SKillCoolTimer, this, &AEnemy::DashSkill, dis, false);
+		return;
+	}
+
+	GetWorldTimerManager().SetTimer(SKillCoolTimer, this, &AEnemy::SkillAttackEnd, 1.0f, false);
+}
+void AEnemy::DashSkill() {
+	Anim->Montage_JumpToSection("Attack4", SkillAttackMontage);
+	GetWorldTimerManager().SetTimer(SKillCoolTimer, this, &AEnemy::SkillAttackEnd, 0.79f, false);
 }
 void AEnemy::SkillAttackEnd() {
 	bisSkill = false; 
-	
+
+	Anim->StopAllMontages(0.f);
 	if (SkillType == "Meteor") SkillFunction->GroundAttack();
 	else if (SkillType == "Lazer") SkillFunction->LazerEnd();
-	else if (SkillType == "Rush") SkillFunction->RushEnd();
 }
 void AEnemy::AttackStart_Internal() {
 	FString Type = "Enemy";

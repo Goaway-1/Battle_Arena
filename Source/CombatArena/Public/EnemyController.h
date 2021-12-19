@@ -31,6 +31,7 @@ public:
 	UPROPERTY(EditAnyWhere, BlueprintReadWrite, Category= "AI")
 	class UAIPerceptionComponent* AIPerception;
 
+public:
 	UFUNCTION()
 	void Sense(AActor* Actor, FAIStimulus Stimulus);
 
@@ -39,6 +40,9 @@ public:
 
 	UFUNCTION()
 	FVector GetTargetVec();
+
+	UFUNCTION()
+	class AActor* GetCurrentTarget();
 
 	/** Is In Fog */
 	UFUNCTION()

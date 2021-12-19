@@ -9349,7 +9349,7 @@
 > **<h3>Today Dev Story</h3>**
 - ## <span style = "color:yellow;">적의 대쉬 공격</span>
   - 구조만 제작 
-    
+
     <details><summary>cpp 코드</summary> 
 
     ```c++
@@ -9459,5 +9459,66 @@
       </details>
 
 **<h3>Realization</h3>**
-  - 레이저는 지형으로 구분하고 적은 투사체를 던지는 것으로 교체 예정
+  - 레이저는 지형으로 구분하고 투사체를 던지는 것으로 교체 예정
   - 대쉬 애니메이션 및 콜리전 설정
+
+## **12.17**
+> **<h3>Today Dev Story</h3>**
+- ## <span style = "color:yellow;">적의 대쉬 공격_2</span>
+  - <img src="Image/Enemy_Dash_Attack.gif" height="300" title="Enemy_Dash_Attack"> 
+  - 돌진하는 애니메이션과 돌진하며 공격하는 애니메이션을 혼합하여 돌진 공격을 구현
+    - 애니메이션 돌진 1회는 약 350m 거리를 이동하고 이는 약 0.8초가 소요, 공격하며 돌진하는 애니메이션 또한 동일
+    - 적과 플레이어와의 거리에 대해 일정값으로 나누어 그 값을 SetTimer와 연동하여 DashSkill()을 호출
+  - EnemyController클래스의 블랙보드에서 TragetActor의 값을 가져와 Enemy클래스의 SkillAttakc()에서 계산
+  - EnemySkillFunction클래스의 RushAttack/End 메서드 삭제
+      
+      <details><summary>cpp 코드</summary> 
+
+      ```c++
+      //EnemyController.cpp
+      AActor* AEnemyController::GetCurrentTarget() {
+        AActor* Player = Cast<AActor>(Blackboard->GetValueAsObject(TargetActor));
+        return Player;
+      } 
+      ```
+      ```c++
+      //Enemy.cpp
+      void AEnemy::SkillAttack() {
+        if(SkillType == "Meteor") SkillFunction->GroundAttack();
+        else if(SkillType == "Lazer") SkillFunction->LazerAttack();
+        else if (SkillType == "Rush") {
+          float dis = GetDistanceTo(EnemyController->GetCurrentTarget()) / 950.f;
+          GetWorldTimerManager().SetTimer(SKillCoolTimer, this, &AEnemy::DashSkill, dis, false);
+          return;
+        }
+
+        GetWorldTimerManager().SetTimer(SKillCoolTimer, this, &AEnemy::SkillAttackEnd, 1.0f, false);
+      }
+      void AEnemy::DashSkill() {
+        Anim->Montage_JumpToSection("Attack4", SkillAttackMontage);
+        GetWorldTimerManager().SetTimer(SKillCoolTimer, this, &AEnemy::SkillAttackEnd, 0.79f, false);
+      }
+      ```
+      </details> 
+
+      <details><summary>h 코드</summary> 
+
+      ```c++
+      //EnemyController.h
+      public:
+        UFUNCTION()
+        class AActor* GetCurrentTarget();
+      ```
+      ```c++
+      //Enemy.h
+      public:
+        UFUNCTION(BlueprintCallable)
+        void DashSkill();
+      ```
+      </details>
+
+- ## <span style = "color:yellow;">투사체</span>
+  - 생성되며 던저져 중력 X 맞으면 데미지 ~ 화살
+
+**<h3>Realization</h3>**
+  - 레이저는 지형으로 구분하고 투사체를 던지는 것으로 교체 예정

@@ -47,6 +47,11 @@ FVector AEnemyController::GetTargetVec() {
     else return FVector(0.f);
 }
 
+AActor* AEnemyController::GetCurrentTarget() {
+    AActor* Player = Cast<AActor>(Blackboard->GetValueAsObject(TargetActor));
+    return Player;
+}
+
 void AEnemyController::SetVisibleInFog(bool bisin) {
     Blackboard->SetValueAsBool(IsInFog, bisin);
 }

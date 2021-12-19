@@ -39,12 +39,6 @@ public:
 
 	virtual void LazerEnd() override;
 
-	UFUNCTION()
-	void RushAttack();
-
-	UFUNCTION()
-	void RushEnd();
-
 	/** Not Override */
 	UFUNCTION()
 	void SpawnMeteor();

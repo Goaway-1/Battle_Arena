@@ -190,6 +190,9 @@ public:
 
 	UFUNCTION(BlueprintCallable)
 	void SkillAttackEnd();
+
+	UFUNCTION()
+	void DashSkill();
 #pragma endregion
 #pragma region HEALTH
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Particle")	//피격 효과
@@ -287,4 +290,5 @@ public:
 	UFUNCTION()
 	void SpecialHitMontage();
 #pragma endregion
+
 };

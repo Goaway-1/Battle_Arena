@@ -72,14 +72,6 @@ void UEnemySkillFunction::LazerEnd() {
 	Super::LazerEnd();
 }
 
-void UEnemySkillFunction::RushAttack() {
-	UE_LOG(LogTemp, Warning, TEXT("RUSH"));
-}
-
-void UEnemySkillFunction::RushEnd() {
-	UE_LOG(LogTemp, Warning, TEXT("RUSH End"));
-}
-
 void UEnemySkillFunction::SpawnMeteor() {
 	FActorSpawnParameters SpawnParams;
 	SpawnParams.Owner = OwnerActor;
