@@ -176,7 +176,7 @@ public:
 #pragma endregion
 #pragma region SKILL
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Skill")
-	class UEnemySkillFunction* SkillFunction;
+	class UEnemySkillFunction* ESkillFunction;
 
 	bool bisSkill = false;
 

@@ -9345,7 +9345,7 @@
 **<h3>Realization</h3>**
  - null
 
-## **12.16**
+## **12.18**
 > **<h3>Today Dev Story</h3>**
 - ## <span style = "color:yellow;">적의 대쉬 공격</span>
   - 구조만 제작 
@@ -9462,7 +9462,7 @@
   - 레이저는 지형으로 구분하고 투사체를 던지는 것으로 교체 예정
   - 대쉬 애니메이션 및 콜리전 설정
 
-## **12.17**
+## **12.19**
 > **<h3>Today Dev Story</h3>**
 - ## <span style = "color:yellow;">적의 대쉬 공격_2</span>
   - <img src="Image/Enemy_Dash_Attack.gif" height="300" title="Enemy_Dash_Attack"> 
@@ -9517,8 +9517,152 @@
       ```
       </details>
 
-- ## <span style = "color:yellow;">투사체</span>
-  - 생성되며 던저져 중력 X 맞으면 데미지 ~ 화살
-
 **<h3>Realization</h3>**
   - 레이저는 지형으로 구분하고 투사체를 던지는 것으로 교체 예정
+
+## **12.21**
+> **<h3>Today Dev Story</h3>**
+- ## <span style = "color:yellow;">SkillFunction 오류</span>
+  - SkillFunction클래스를 상속받아 구현한 EnemySkillFunction, PlayerSkillFunction클래스에서 오류발생
+    - EnemySkillFunction와 PlayerSkillFunction은 각각 Enemy와 Player에서 인스턴스화하여 생성했는데 여기서 같은 이름인 SkillFunction을 사용
+    - 다른 클래스에 생성되었고 다른 클래스를 상속받았는데 이름이 같다고 오류 발생... 또한 SkillFunction 클래스에서 생성한 Decal에서도 오류
+  - 해결방안 : 각 클래스에서는 ESkillFunctino, PSkillFunction으로 인스턴스화하고 Decal 또한 각각의 클래스(EnemySkillFunction, PlayerSkillFunction)에서 생성  
+    
+    <details><summary>cpp 코드</summary> 
+
+    ```c++
+    //USkillFunction.cpp
+    USkillFunction::USkillFunction(){
+      PrimaryComponentTick.bCanEverTick = true;
+      bGround = false;
+    }
+
+    void USkillFunction::TickComponent(float DeltaTime, ELevelTick TickType, FActorComponentTickFunction* ThisTickFunction)
+    {
+      Super::TickComponent(DeltaTime, TickType, ThisTickFunction);
+
+      /** Targeting On Ground */
+      SetSkillLocation();
+    }
+
+    void USkillFunction::SetInitial(APawn* P, USkeletalMeshComponent* S, AController* C,AActor* A) {
+      OwnerInstigator = P;
+      OwnerSkeletal = S;
+      OwnerController = C;
+      OwnerActor = A;
+    }
+
+    void USkillFunction::LazerAttack() {
+      FActorSpawnParameters SpawnParams;
+      SpawnParams.Owner = OwnerActor;
+      SpawnParams.Instigator = OwnerInstigator;
+
+      FVector Loc = OwnerActor->GetActorLocation();
+      Loc.X += 50.f;
+      Lazer = GetWorld()->SpawnActor<AActor>(LazerClass, Loc, OwnerActor->GetActorRotation(), SpawnParams);
+    }
+    void USkillFunction::LazerEnd() {
+      if (Lazer) {
+        Lazer->Destroy();
+      }
+    }
+    void USkillFunction::GroundAttack() {
+    }
+    void USkillFunction::SetSkillLocation() {
+    }
+    void USkillFunction::ConfirmTargetAndContinue() {
+    }
+    ```
+    ```c++
+    //PlayerSkillFunction.cpp
+    UPlayerSkillFunction::UPlayerSkillFunction() {
+      PSkillDecal = CreateDefaultSubobject<UDecalComponent>("PSkillDecal");
+      PSkillDecal->DecalSize = FVector(10.f, 200.f, 200.f);
+      PSkillDecal->SetVisibility(false);
+    }
+    void UPlayerSkillFunction::SetInitial(APawn* P, USkeletalMeshComponent* S, AController* C, AActor* A) {
+      Super::SetInitial(P, S, C, A);
+
+      PSkillDecal->SetRelativeRotation(FRotator(90.f, 0.f, 0.f));
+      PSkillDecal->SetDecalMaterial(DecalMaterial);
+    }
+    ```
+    ```c++
+    //EnemySkillFunction.cpp
+    UEnemySkillFunction::UPlayerSkillFunction() {
+      ESkillDecal = CreateDefaultSubobject<UDecalComponent>("ESkillDecal");
+      ESkillDecal->DecalSize = FVector(10.f, 200.f, 200.f);
+      ESkillDecal->SetVisibility(false);
+    }
+    void UEnemySkillFunction::SetInitial(APawn* P, USkeletalMeshComponent* S, AController* C, AActor* A) {
+      Super::SetInitial(P, S, C, A);
+
+      ESkillDecal->SetRelativeRotation(FRotator(90.f, 0.f, 0.f));
+      ESkillDecal->SetDecalMaterial(DecalMaterial);
+    }
+    ```
+    </details> 
+
+    <details><summary>h 코드</summary> 
+
+    ```c++
+    //PlayerSkillFunction.h
+      UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Skill | Decal")
+	    class UDecalComponent* PSkillDecal;
+
+	    UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Skill")
+    	class UMaterialInterface* DecalMaterial;
+    ```
+    ```c++
+    //EnemySkillFunction.h
+    	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Skill | Decal")
+    	class UDecalComponent* ESkillDecal;
+
+	    UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Skill")
+	    class UMaterialInterface* DecalMaterial;
+    ```
+    </details> 
+
+- ## <span style = "color:yellow;">투사체</span>
+  - <img src="Image/Enemy_Magic_Water.gif" height="300" title="Enemy_Magic_Water"> 
+  - 단순 생성
+
+    <details><summary>cpp 코드</summary> 
+
+    ```c++
+    //EnemySkillFunction.cpp
+    void UEnemySkillFunction::MagicAttack() {
+      FActorSpawnParameters SpawnParams;
+      SpawnParams.Owner = OwnerActor;
+      SpawnParams.Instigator = OwnerInstigator;
+
+      FVector Loc = OwnerActor->GetActorLocation();
+      Loc.X += 50.f;
+      Magic = GetWorld()->SpawnActor<AActor>(MagicClass, Loc, OwnerActor->GetActorRotation(), SpawnParams);
+    }
+    void UEnemySkillFunction::MagicEnd() {
+      if (Magic) Magic->Destroy();
+    }
+    ```
+    </details>
+
+    <details><summary>h 코드</summary> 
+
+    ```c++
+    //EnemySkillFunction.h
+    	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Skill | Magic")
+      AActor* Magic;
+
+      UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Skill | Magic")
+      TSubclassOf<class AActor> MagicClass;
+
+      UFUNCTION()
+      void MagicAttack();
+
+      UFUNCTION()
+      void MagicEnd();
+    ```
+    </details>
+
+**<h3>Realization</h3>**
+  - Lazer를 배열 처리

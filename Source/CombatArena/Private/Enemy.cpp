@@ -66,7 +66,7 @@ AEnemy::AEnemy()
 	bIsback = false;
 #pragma endregion
 #pragma region SKILL
-	SkillFunction = CreateDefaultSubobject<UEnemySkillFunction>(TEXT("SkillFunction"));
+	ESkillFunction = CreateDefaultSubobject<UEnemySkillFunction>("ESkillFunction");
 #pragma endregion
 #pragma region BALANCE
 	Balance = CreateDefaultSubobject<UBalance>("Balance");
@@ -80,7 +80,7 @@ void AEnemy::PossessedBy(AController* NewController) {
 
 	EnemyController = Cast<AEnemyController>(NewController);
 	AttackFunction->SetOwner(GetMesh(),EnemyController);
-	SkillFunction->SetInitial(GetController()->GetPawn(), GetMesh(), GetController(), this);
+	ESkillFunction->SetInitial(GetController()->GetPawn(), GetMesh(), GetController(), this);
 
 	RightWeapon->OnComponentBeginOverlap.AddDynamic(this, &AEnemy::OnWeaponOverlap);
 	LeftWeapon->OnComponentBeginOverlap.AddDynamic(this, &AEnemy::OnWeaponOverlap);
@@ -168,26 +168,28 @@ void AEnemy::SkillAttack() {
 	bisSkill = true;
 
 	/** Random */
-	if(SkillType == "Meteor") SkillFunction->GroundAttack();
-	else if(SkillType == "Lazer") SkillFunction->LazerAttack();
+	if(SkillType == "Meteor") ESkillFunction->GroundAttack();
+	else if(SkillType == "Lazer") ESkillFunction->LazerAttack();
 	else if (SkillType == "Rush") {
 		float dis = GetDistanceTo(EnemyController->GetCurrentTarget()) / 950.f;
 		GetWorldTimerManager().SetTimer(SKillCoolTimer, this, &AEnemy::DashSkill, dis, false);
 		return;
 	}
+	else if(SkillType == "Magic") ESkillFunction->MagicAttack();
 
 	GetWorldTimerManager().SetTimer(SKillCoolTimer, this, &AEnemy::SkillAttackEnd, 1.0f, false);
 }
 void AEnemy::DashSkill() {
-	Anim->Montage_JumpToSection("Attack4", SkillAttackMontage);
+	Anim->Montage_JumpToSection("Attack5", SkillAttackMontage);
 	GetWorldTimerManager().SetTimer(SKillCoolTimer, this, &AEnemy::SkillAttackEnd, 0.79f, false);
 }
 void AEnemy::SkillAttackEnd() {
 	bisSkill = false; 
 
 	Anim->StopAllMontages(0.f);
-	if (SkillType == "Meteor") SkillFunction->GroundAttack();
-	else if (SkillType == "Lazer") SkillFunction->LazerEnd();
+	if (SkillType == "Meteor") ESkillFunction->GroundAttack();
+	else if (SkillType == "Lazer") ESkillFunction->LazerEnd();
+	else if (SkillType == "Magic") ESkillFunction->MagicEnd();
 }
 void AEnemy::AttackStart_Internal() {
 	FString Type = "Enemy";
@@ -276,7 +278,7 @@ FName AEnemy::GetAttackMontageSection(FString Type) {
 		return FName(*FString::Printf(TEXT("Attack%d"), range));
 	}
 	else if (Type == "Skill") {
-		/*int range = FMath::RandRange(1, 3);
+		/*int range = FMath::RandRange(1, 4);
 		switch (range) {
 			case 1:
 				AttackDamage = 20.f;
@@ -288,6 +290,10 @@ FName AEnemy::GetAttackMontageSection(FString Type) {
 				break;
 			case 3:
 				AttackDamage = 30.f;
+				SkillType = "Throw";
+				break;
+			case 4:
+				AttackDamage = 30.f;
 				SkillType = "Rush";
 				break;
 			default:
@@ -296,7 +302,7 @@ FName AEnemy::GetAttackMontageSection(FString Type) {
 		}
 		return FName(*FString::Printf(TEXT("Attack%d"), range));*/
 		AttackDamage = 30.f;
-		SkillType = "Rush";
+		SkillType = "Lazer";
 		return FName(*FString::Printf(TEXT("Attack%d"), 3));
 	}
 	else return "Error";

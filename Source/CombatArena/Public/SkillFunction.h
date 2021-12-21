@@ -22,24 +22,24 @@ public:
 	virtual void TickComponent(float DeltaTime, ELevelTick TickType, FActorComponentTickFunction* ThisTickFunction) override;
 
 	/** Initial */
+	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Skill")
 	APawn* OwnerInstigator;
+
+	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Skill")
 	USkeletalMeshComponent* OwnerSkeletal;
+
+	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Skill")
 	AController* OwnerController;
+
+	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Skill")
 	AActor* OwnerActor;
 
 	/** Lazer */
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Skill | Lazer")
-	AActor* Lazer;
+	TArray<AActor*> Lazer;
 
 	UPROPERTY(EditDefaultsOnly, Category = "Skill | Lazer")
 	TSubclassOf<class AActor> LazerClass;
-
-	/** Ground */
-	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Skill")
-	class UMaterialInterface* DecalMaterial;
-
-	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Skill | Decal")
-	class UDecalComponent* SkillDecal;
 
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Skill | Ground")
 	bool bGround;
@@ -49,7 +49,7 @@ public:
 
 	/** 초기 설정 */
 	UFUNCTION()
-	void SetInitial(APawn* P, USkeletalMeshComponent* S, AController* C, AActor* A);
+	virtual void SetInitial(APawn* P, USkeletalMeshComponent* S, AController* C, AActor* A);
 
 	/** Lazer */
 	UFUNCTION()
@@ -58,7 +58,6 @@ public:
 	UFUNCTION()
 	virtual void LazerEnd();
 
-	/** Ground */
 	UFUNCTION()
 	virtual void GroundAttack();
 

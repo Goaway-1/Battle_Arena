@@ -4,7 +4,9 @@
 #include "SK_Meteor.h"
 
 UEnemySkillFunction::UEnemySkillFunction() {
-	
+	ESkillDecal = CreateDefaultSubobject<UDecalComponent>("ESkillDecal");
+	ESkillDecal->DecalSize = FVector(10.f, 200.f, 200.f);
+	ESkillDecal->SetVisibility(false);
 }
 
 void UEnemySkillFunction::BeginPlay() {
@@ -13,31 +15,50 @@ void UEnemySkillFunction::BeginPlay() {
 	/** Set Delegate */
 	SkillDelegate.BindUObject(this, &UEnemySkillFunction::ConfirmTargetAndContinue);
 }
-
 void UEnemySkillFunction::TickComponent(float DeltaTime, ELevelTick TickType, FActorComponentTickFunction* ThisTickFunction) {
 	Super::TickComponent(DeltaTime, TickType, ThisTickFunction);
 }
+void UEnemySkillFunction::SetInitial(APawn* P, USkeletalMeshComponent* S, AController* C, AActor* A) {
+	Super::SetInitial(P, S, C, A);
 
+	ESkillDecal->SetRelativeRotation(FRotator(90.f, 0.f, 0.f));
+	ESkillDecal->SetDecalMaterial(DecalMaterial);
+}
+void UEnemySkillFunction::LazerAttack() {
+	FActorSpawnParameters SpawnParams;
+	SpawnParams.Owner = OwnerActor;
+	SpawnParams.Instigator = OwnerInstigator;
+
+	FVector Loc = OwnerActor->GetActorLocation();
+	Loc.X += 50.f;
+	for (int i = 0; i < 2; i++){
+		Lazer.Add(GetWorld()->SpawnActor<AActor>(LazerClass, Loc, OwnerActor->GetActorRotation() * (10 * i), SpawnParams));
+	}
+}
+void UEnemySkillFunction::LazerEnd() {
+	for (auto& index : Lazer)
+	{
+		index->Destroy();
+	}
+}
 void UEnemySkillFunction::GroundAttack() {
 	if (!bGround) {
 		bGround = true;
-		SkillDecal->SetVisibility(true);
+		ESkillDecal->SetVisibility(true);
 	}
 	else {
 		bGround = false;
-		SkillDecal->SetVisibility(false);
+		ESkillDecal->SetVisibility(false);
 		SpawnMeteor();
 	}
 }
-
 void UEnemySkillFunction::SetSkillLocation() {
 	if (!bGround) return;
 
 	AEnemyController* Con = Cast<AEnemyController>(OwnerController);
 	out = Con->GetTargetVec();
-	SkillDecal->SetWorldLocation(out);
+	ESkillDecal->SetWorldLocation(out);
 }
-
 void UEnemySkillFunction::ConfirmTargetAndContinue() {
 	TArray<FOverlapResult> Overlaps;
 	TArray<TWeakObjectPtr<AMainPlayer>> OverlapedEnemy;
@@ -65,13 +86,6 @@ void UEnemySkillFunction::ConfirmTargetAndContinue() {
 		}
 	}
 }
-void UEnemySkillFunction::LazerAttack() {
-	Super::LazerAttack();
-}
-void UEnemySkillFunction::LazerEnd() {
-	Super::LazerEnd();
-}
-
 void UEnemySkillFunction::SpawnMeteor() {
 	FActorSpawnParameters SpawnParams;
 	SpawnParams.Owner = OwnerActor;
@@ -83,4 +97,16 @@ void UEnemySkillFunction::SpawnMeteor() {
 
 	Meteor = GetWorld()->SpawnActor<ASK_Meteor>(MeteorClass, FVector(tmp), FRotator(0.f), SpawnParams);
 	Meteor->SetInitial(this);
+}
+void UEnemySkillFunction::MagicAttack() {
+	FActorSpawnParameters SpawnParams;
+	SpawnParams.Owner = OwnerActor;
+	SpawnParams.Instigator = OwnerInstigator;
+
+	FVector Loc = OwnerActor->GetActorLocation();
+	Loc.X += 50.f;
+	Magic = GetWorld()->SpawnActor<AActor>(MagicClass, Loc, OwnerActor->GetActorRotation(), SpawnParams);
+}
+void UEnemySkillFunction::MagicEnd() {
+	if (Magic) Magic->Destroy();
 }
