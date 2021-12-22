@@ -2,6 +2,7 @@
 #include "MainPlayer.h"
 #include "EnemyController.h"
 #include "SK_Meteor.h"
+#include "Kismet/KismetMathLibrary.h"
 
 UEnemySkillFunction::UEnemySkillFunction() {
 	ESkillDecal = CreateDefaultSubobject<UDecalComponent>("ESkillDecal");
@@ -25,21 +26,47 @@ void UEnemySkillFunction::SetInitial(APawn* P, USkeletalMeshComponent* S, AContr
 	ESkillDecal->SetDecalMaterial(DecalMaterial);
 }
 void UEnemySkillFunction::LazerAttack() {
-	FActorSpawnParameters SpawnParams;
-	SpawnParams.Owner = OwnerActor;
-	SpawnParams.Instigator = OwnerInstigator;
-
-	FVector Loc = OwnerActor->GetActorLocation();
-	Loc.X += 50.f;
-	for (int i = 0; i < 2; i++){
-		Lazer.Add(GetWorld()->SpawnActor<AActor>(LazerClass, Loc, OwnerActor->GetActorRotation() * (10 * i), SpawnParams));
+	/** Lazer 생성 (존재한다면 무시) */
+	if (Lazer.Num() == 0) {
+		FActorSpawnParameters SpawnParams;
+		SpawnParams.Owner = OwnerActor;
+		SpawnParams.Instigator = OwnerInstigator;
+		for (int i = 0; i < LazerCnt; i++) {
+			Lazer.Add(GetWorld()->SpawnActor<AActor>(LazerClass, FVector::ZeroVector, FRotator::ZeroRotator, SpawnParams));
+		}
 	}
+
+	/** Lazer들의 위치 및 활성화 */
+	for (int32 i = 0; i < Lazer.Num(); i++) {
+		RandPos(LazerLoc, LazerRot);
+		Lazer[i]->SetActorLocationAndRotation(LazerLoc, LazerRot);
+
+		Lazer[i]->SetActorHiddenInGame(false);
+		Lazer[i]->SetActorEnableCollision(true);
+		Lazer[i]->SetActorTickEnabled(true);
+	}
+	
+
 }
 void UEnemySkillFunction::LazerEnd() {
-	for (auto& index : Lazer)
-	{
-		index->Destroy();
+	for (int32 i = 0; i < Lazer.Num(); i++){
+		Lazer[i]->SetActorHiddenInGame(true);
+		Lazer[i]->SetActorEnableCollision(false);
+		Lazer[i]->SetActorTickEnabled(false);
 	}
+}
+
+void UEnemySkillFunction::RandPos(FVector& Loc, FRotator& Rot) {
+	Loc = OwnerActor->GetActorLocation();
+	Rot = OwnerActor->GetActorRotation();
+	
+
+	Loc.X += UKismetMathLibrary::RandomFloatInRange(-1000.f, 1000.f);
+	Loc.Y += UKismetMathLibrary::RandomFloatInRange(-1000.f, 1000.f);
+	Loc.Z += 300.f;
+	Rot.Roll += UKismetMathLibrary::RandomFloatInRange(-1000.f, 1000.f);
+	Rot.Pitch = -90.f;
+	Rot.Yaw += UKismetMathLibrary::RandomFloatInRange(-1000.f, 1000.f);
 }
 void UEnemySkillFunction::GroundAttack() {
 	if (!bGround) {

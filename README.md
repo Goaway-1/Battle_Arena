@@ -9666,3 +9666,103 @@
 
 **<h3>Realization</h3>**
   - Lazer를 배열 처리
+
+## **12.21**
+> **<h3>Today Dev Story</h3>**
+- ## <span style = "color:yellow;">Lazer 배열</span>
+  - <img src="Image/Enemy_Lazer_Tarray.gif" height="300" title="Enemy_Lazer_Tarray"> 
+  - 기존 Lazer를 하나만 정면으로 발사했는데 이를 수정하여 일정 범위내에서 다수의 Lazer가 아래를 향하도록 수정
+  - SkillFunction클래스의 기존 Lazer객체 하나를 TArray로 전환하고 EnemySkillFunction클래스에서는 최대 수, 위치, 회전값 변수를 생성
+    - LazerAttack()메서드가 호출되었을때 만약 Lazer배열이 비어있다면 Lazer를 생성(Add)하여 월드에 배치
+    - 배치 후 RandPos()메서드를 사용하여 랜덤한 위치를 받아오고 위치, 회전을 설정, Active관련 메서드를 모두 활성화
+    - 기존에는 사용후 파괴하였지만 이는 파괴하지 않고 DeActive하여 비활성화만 진행 -> 추후 LazerAttack() 호출 시 기존 존재하는 Lazer 재사용
+
+      <details><summary>cpp 코드</summary> 
+
+      ```c++
+      //EnemySkillFunction.cpp
+      void UEnemySkillFunction::LazerAttack() {
+        /** Lazer 생성 (존재한다면 무시) */
+        if (Lazer.Num() == 0) {
+          FActorSpawnParameters SpawnParams;
+          SpawnParams.Owner = OwnerActor;
+          SpawnParams.Instigator = OwnerInstigator;
+          for (int i = 0; i < LazerCnt; i++) {
+            Lazer.Add(GetWorld()->SpawnActor<AActor>(LazerClass, FVector::ZeroVector, FRotator::ZeroRotator, SpawnParams));
+          }
+        }
+
+        /** Lazer들의 위치 및 활성화 */
+        for (int32 i = 0; i < Lazer.Num(); i++) {
+          RandPos(LazerLoc, LazerRot);
+          Lazer[i]->SetActorLocationAndRotation(LazerLoc, LazerRot);
+
+          Lazer[i]->SetActorHiddenInGame(false);
+          Lazer[i]->SetActorEnableCollision(true);
+          Lazer[i]->SetActorTickEnabled(true);
+        }
+        
+
+      }
+      void UEnemySkillFunction::LazerEnd() {
+        for (int32 i = 0; i < Lazer.Num(); i++){
+          Lazer[i]->SetActorHiddenInGame(true);
+          Lazer[i]->SetActorEnableCollision(false);
+          Lazer[i]->SetActorTickEnabled(false);
+        }
+      }
+
+      void UEnemySkillFunction::RandPos(FVector& Loc, FRotator& Rot) {
+        Loc = OwnerActor->GetActorLocation();
+        Rot = OwnerActor->GetActorRotation();
+        
+
+        Loc.X += UKismetMathLibrary::RandomFloatInRange(-1000.f, 1000.f);
+        Loc.Y += UKismetMathLibrary::RandomFloatInRange(-1000.f, 1000.f);
+        Loc.Z += 300.f;
+        Rot.Roll += UKismetMathLibrary::RandomFloatInRange(-1000.f, 1000.f);
+        Rot.Pitch = -90.f;
+        Rot.Yaw += UKismetMathLibrary::RandomFloatInRange(-1000.f, 1000.f);
+      }
+      ```
+      </details>
+
+      <details><summary>h 코드</summary> 
+
+      ```c++
+      //EnemySkillFunction.h
+      private:
+        UPROPERTY(VisibleAnywhere, Category = "Skill | Lazer")
+        FVector LazerLoc;
+
+        UPROPERTY(VisibleAnywhere, Category = "Skill | Lazer")
+        FRotator LazerRot;
+
+        UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Skill | Lazer", Meta = (AllowPrivateAccess = true))
+        int LazerCnt = 12;
+
+      public:
+        UFUNCTION()
+        void RandPos(FVector& Loc, FRotator& Rot);
+      ```
+      ```c++
+      //SkillFunction.h
+      private:
+        UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Skill | Lazer")
+        TArray<AActor*> Lazer;
+      ```
+      </details>
+
+**<h3>Realization</h3>**
+  - SetActive와 비슷하게 사용을 원한다면 아래와 같이 사용
+    
+    ```c++
+    // 액터를 감춤 
+    MyActor->SetActorHiddenInGame(true); 
+    
+    // 충돌 계산 비활성화
+    MyActor->SetActorEnableCollision(false); 
+
+    // 틱(업데이트 함수) 중지 
+    MyActor->SetActorTickEnabled(false);
+    ```

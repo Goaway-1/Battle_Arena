@@ -32,6 +32,21 @@ private:
 	UPROPERTY(EditDefaultsOnly, Category = "Skill | Meteor")
 	TSubclassOf<class ASK_Meteor> MeteorClass;
 
+	UPROPERTY(VisibleAnywhere, Category = "Skill | Lazer")
+	FVector LazerLoc;
+
+	UPROPERTY(VisibleAnywhere, Category = "Skill | Lazer")
+	FRotator LazerRot;
+
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Skill | Lazer", Meta = (AllowPrivateAccess = true))
+	int LazerCnt = 12;
+
+	UPROPERTY(VisibleAnywhere, Category = "Skill | Magic")
+	AActor* Magic;
+
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Skill | Magic", Meta = (AllowPrivateAccess = true))
+	TSubclassOf<class AActor> MagicClass;
+
 public:
 	virtual void TickComponent(float DeltaTime, ELevelTick TickType, FActorComponentTickFunction* ThisTickFunction) override;
 
@@ -47,23 +62,17 @@ public:
 
 	virtual void ConfirmTargetAndContinue() override;
 
-	/** Not Override */
 	UFUNCTION()
 	void SpawnMeteor();
 
 	FSkillEnd SkillDelegate;
-
-	//@@@@
-
-	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Skill | Magic")
-	AActor* Magic;
-
-	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Skill | Magic")
-	TSubclassOf<class AActor> MagicClass;
 
 	UFUNCTION()
 	void MagicAttack();
 
 	UFUNCTION()
 	void MagicEnd();
+
+	UFUNCTION()
+	void RandPos(FVector& Loc, FRotator& Rot);
 };
