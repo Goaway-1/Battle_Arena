@@ -35,10 +35,7 @@
 
 > **추후 할일**
   1. Infinity Blade : fire Lands 를 사용하여 꾸미기
-  2. 로마 관련 에셋
   3. 카오스 디스트럭션 툴을 사용하여 무너짐 표현
-  6. 보스 패턴
-  7. 던지기, 파쿠르
 
 ## **07.27**
 > **<h3>Today Dev Story</h3>**
@@ -9667,7 +9664,7 @@
 **<h3>Realization</h3>**
   - Lazer를 배열 처리
 
-## **12.21**
+## **12.22**
 > **<h3>Today Dev Story</h3>**
 - ## <span style = "color:yellow;">Lazer 배열</span>
   - <img src="Image/Enemy_Lazer_Tarray.gif" height="300" title="Enemy_Lazer_Tarray"> 
@@ -9766,3 +9763,167 @@
     // 틱(업데이트 함수) 중지 
     MyActor->SetActorTickEnabled(false);
     ```
+
+## **12.26**
+> **<h3>Today Dev Story</h3>**
+- ## <span style = "color:yellow;">MagicBall 발사</span>
+  - <img src="Image/Enemy_Magic_Logic.gif" height="300" title="Enemy_Magic_Logic"> 
+  - MagicBall은 ProjectileMovement를 사용하여 이동하며 일시적인 발사속도를 지정하여 사용
+    - OnConstruction은 에디터에 배치될대 호출되며 Particle을 변경
+    - 충돌은 다른 것들과 마찬가지로 OverlapBegin()메서드를 사용하여 처리
+
+      <details><summary>cpp 코드</summary> 
+
+      ```c++
+      //MagicBall.cpp
+      #include "MagicBall.h"
+      #include "GameFramework/ProjectileMovementComponent.h"
+      #include "Kismet/GameplayStatics.h"
+      #include "Kismet/KismetSystemLibrary.h"
+      #include "MainPlayer.h"
+
+      AMagicBall::AMagicBall(){
+        PrimaryActorTick.bCanEverTick = true;
+
+        Projectile = CreateDefaultSubobject<UProjectileMovementComponent>(TEXT("Projectile"));
+        Projectile->InitialSpeed = 1200;
+        Projectile->bRotationFollowsVelocity = true;
+
+        Sphere = CreateDefaultSubobject<USphereComponent>(TEXT("Sphere"));
+        SetRootComponent(Sphere);
+        Sphere->OnComponentBeginOverlap.AddDynamic(this, &AMagicBall::OnOverlapBegin);
+
+        Flying_Particle = CreateDefaultSubobject<UParticleSystemComponent>(TEXT("Flying_Particle"));
+        Flying_Particle->SetupAttachment(GetRootComponent());
+      }
+      void AMagicBall::OnConstruction(const FTransform& Transform) {
+        if(!Moving_Particle) return;
+        Flying_Particle->SetTemplate(Moving_Particle);
+      }
+      void AMagicBall::OnOverlapBegin(UPrimitiveComponent* OverlappedComponent, AActor* OtherActor, UPrimitiveComponent* OtherComp, int32 OtherBodyIndex, bool bFromSweep, const FHitResult& SweepResult) {
+        UGameplayStatics::SpawnEmitterAtLocation(GetWorld(), Impact_Particle, GetActorLocation() + Location_Offset_Impact_Particle, Rotate_Impact_Particle);
+        Flying_Particle->Deactivate();
+        FTimerHandle handle;
+        GetWorld()->GetTimerManager().SetTimer(handle, [this]() {
+          Flying_Particle->DestroyComponent();
+          Destroy();
+          }, 2.0f, 1);
+
+        if (OtherActor) {
+          AMainPlayer* Player = Cast<AMainPlayer>(OtherActor);
+          if (Player) {
+            Player->SetCurrentAttack(GetName() + "AttackMagic" + FString::FromInt(HitCnt));
+            UGameplayStatics::ApplyDamage(Player, 15.f, Player->GetController(), this, MagicDamageType);
+          }
+        }
+      }
+      ```
+      </details>
+      <details><summary>h 코드</summary> 
+
+      ```c++
+      //MagicBall.h
+      private: 
+        UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "MagicBall", Meta = (AllowPrivateAccess = true))
+        class UProjectileMovementComponent* Projectile;
+
+        UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "MagicBall", Meta = (AllowPrivateAccess = true))
+        class USphereComponent* Sphere;
+
+        UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "MagicBall", Meta = (AllowPrivateAccess = true))
+        class UParticleSystemComponent* Flying_Particle;
+
+        UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "MagicBall | Particle", Meta = (AllowPrivateAccess = true))
+        class UParticleSystem* Moving_Particle;
+
+        UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "MagicBall | Particle", Meta = (AllowPrivateAccess = true))
+        class UParticleSystem* Impact_Particle;
+
+        UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "MagicBall | Pos", Meta = (AllowPrivateAccess = true))
+        FRotator Rotate_Impact_Particle;
+        
+        UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "MagicBall | Pos", Meta = (AllowPrivateAccess = true))
+        FVector Location_Offset_Impact_Particle;
+
+        UPROPERTY(EditAnywhere, Category = "MagicBall | HitInfo", Meta = (AllowPrivateAccess = true))
+        TSubclassOf<UDamageType> MagicDamageType;
+      public:
+        virtual void OnConstruction(const FTransform& Transform) override;
+
+        UFUNCTION()
+        void OnOverlapBegin(UPrimitiveComponent* OverlappedComponent, AActor* OtherActor, UPrimitiveComponent* OtherComp, int32 OtherBodyIndex, bool bFromSweep, const FHitResult& SweepResult);
+      ```
+      </details>
+
+- ## <span style = "color:yellow;">cnt 수정</span>
+  - 적이 공격을 사용할때 사용자에게 넘기는 이름을 EnemySkillFunction에서 변경 및 적용
+  - EnemySkillFucntion클래스에 HitCnt, SetHitCnt()메서드를 정의하고 스킬 사용시마다 증가 및 적용
+  - 각 Lazer, MagicBall에 SetCnt()메서드를 정의하여 해당 클래스 내의 HitCnt의 값을 변경하여 타격시 Player에게 적용
+
+    <details><summary>cpp 코드</summary> 
+
+    ```c++
+    //EnemySkillFunction.cpp
+    void UEnemySkillFunction::LazerAttack() {
+      for (int32 i = 0; i < Lazer.Num(); i++) {
+        ...
+        laz->SetCnt(HitCnt);  //Lazer cnt 설정
+      }
+      SetHitCnt();
+    }
+    void UEnemySkillFunction::ConfirmTargetAndContinue() {
+      ...
+      if (TryOverlap) {
+        ...
+        for (auto i : OverlapedEnemy) {
+          ...
+          SetHitCnt();    //Meteor cnt 설정
+        }
+      }
+    }
+    void UEnemySkillFunction::MagicAttack() {
+      ...
+      Magic->SetCnt(HitCnt);  //MagicBall cnt 설정
+      SetHitCnt();
+    }
+    void UEnemySkillFunction::SetHitCnt() {
+      if (++HitCnt > 2) HitCnt = 0;
+    }
+    ```
+    </details>
+
+    <details><summary>h 코드</summary> 
+
+    ```c++
+    //EnemySkillFunction.ㅗ
+    private:
+    	UPROPERTY(VisibleAnywhere, Category = "Skill | Info", Meta = (AllowPrivateAccess = true))
+	    int HitCnt;
+    public:
+	    void SetHitCnt();
+    ```
+    ```c++
+    //ALazer.h
+    private:
+      UPROPERTY(VisibleAnywhere, Category = "HitInfo", Meta = (AllowPrivateAccess = true))
+	    int HitCnt;
+    public:
+	    FORCEINLINE void SetCnt(int cnt) { HitCnt = cnt; }
+    ```
+    ```c++
+    //MagicBall.h
+    private:
+      UPROPERTY(VisibleAnywhere, Category = "MagicBall | HitInfo", Meta = (AllowPrivateAccess = true))
+	    int HitCnt;
+    public:
+	    FORCEINLINE void SetCnt(int cnt) { HitCnt = cnt; }
+    ```
+    </details>
+
+**<h3>Realization</h3>**
+  - 오류 수정, 저장, 맵, 구르기 -> 데미지안받으
+
+## **12.27**
+> **<h3>Today Dev Story</h3>**
+- ## <span style = "color:yellow;">구르기 </span>
+  - <img src="Image/" height="300" title=""> 

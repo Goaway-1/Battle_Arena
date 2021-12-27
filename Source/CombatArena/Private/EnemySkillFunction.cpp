@@ -3,13 +3,14 @@
 #include "EnemyController.h"
 #include "SK_Meteor.h"
 #include "Kismet/KismetMathLibrary.h"
+#include "MagicBall.h"
+#include "Lazer.h"
 
 UEnemySkillFunction::UEnemySkillFunction() {
 	ESkillDecal = CreateDefaultSubobject<UDecalComponent>("ESkillDecal");
 	ESkillDecal->DecalSize = FVector(10.f, 200.f, 200.f);
 	ESkillDecal->SetVisibility(false);
 }
-
 void UEnemySkillFunction::BeginPlay() {
 	Super::BeginPlay();
 	
@@ -39,14 +40,15 @@ void UEnemySkillFunction::LazerAttack() {
 	/** Lazer들의 위치 및 활성화 */
 	for (int32 i = 0; i < Lazer.Num(); i++) {
 		RandPos(LazerLoc, LazerRot);
-		Lazer[i]->SetActorLocationAndRotation(LazerLoc, LazerRot);
-
-		Lazer[i]->SetActorHiddenInGame(false);
-		Lazer[i]->SetActorEnableCollision(true);
-		Lazer[i]->SetActorTickEnabled(true);
+		ALazer* laz = Cast<ALazer>(Lazer[i]);
+		laz->SetActorLocationAndRotation(LazerLoc, LazerRot);
+		
+		laz->SetCnt(HitCnt);
+		laz->SetActorHiddenInGame(false);
+		laz->SetActorEnableCollision(true);
+		laz->SetActorTickEnabled(true);
 	}
-	
-
+	SetHitCnt();
 }
 void UEnemySkillFunction::LazerEnd() {
 	for (int32 i = 0; i < Lazer.Num(); i++){
@@ -55,7 +57,6 @@ void UEnemySkillFunction::LazerEnd() {
 		Lazer[i]->SetActorTickEnabled(false);
 	}
 }
-
 void UEnemySkillFunction::RandPos(FVector& Loc, FRotator& Rot) {
 	Loc = OwnerActor->GetActorLocation();
 	Rot = OwnerActor->GetActorRotation();
@@ -108,8 +109,9 @@ void UEnemySkillFunction::ConfirmTargetAndContinue() {
 		}
 		for (auto i : OverlapedEnemy) {
 			AMainPlayer* PlayerOverlaped = Cast<AMainPlayer>(i);
-			PlayerOverlaped->SetCurrentAttack(GetName() + "AttackMeteor");
-			UGameplayStatics::ApplyDamage(PlayerOverlaped, 10.f, OwnerController,OwnerPawn, MeteorDamageType); 
+			PlayerOverlaped->SetCurrentAttack(GetName() + "AttackMeteor" + FString::FromInt(HitCnt));
+			UGameplayStatics::ApplyDamage(PlayerOverlaped, 10.f, OwnerController,OwnerPawn, MeteorDamageType);
+			SetHitCnt();
 		}
 	}
 }
@@ -131,9 +133,16 @@ void UEnemySkillFunction::MagicAttack() {
 	SpawnParams.Instigator = OwnerInstigator;
 
 	FVector Loc = OwnerActor->GetActorLocation();
+	FRotator Rot =  OwnerActor->GetActorRotation();
 	Loc.X += 50.f;
-	Magic = GetWorld()->SpawnActor<AActor>(MagicClass, Loc, OwnerActor->GetActorRotation(), SpawnParams);
+	Rot.Pitch += 10.f;		
+	Magic = GetWorld()->SpawnActor<AMagicBall>(MagicClass, Loc, Rot, SpawnParams);
+	Magic->SetCnt(HitCnt);
+	SetHitCnt();
 }
 void UEnemySkillFunction::MagicEnd() {
-	if (Magic) Magic->Destroy();
+	if (Magic) Magic = nullptr;
+}
+void UEnemySkillFunction::SetHitCnt() {
+	if (++HitCnt > 2) HitCnt = 0;
 }

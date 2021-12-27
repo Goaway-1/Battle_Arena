@@ -59,4 +59,6 @@ public:
 
 	UFUNCTION()
 	void Dealing();
+
+	FORCEINLINE void SetCnt(int cnt) { HitCnt = cnt; }
 };

@@ -42,10 +42,13 @@ private:
 	int LazerCnt = 12;
 
 	UPROPERTY(VisibleAnywhere, Category = "Skill | Magic")
-	AActor* Magic;
+	class AMagicBall* Magic;
 
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Skill | Magic", Meta = (AllowPrivateAccess = true))
 	TSubclassOf<class AActor> MagicClass;
+
+	UPROPERTY(VisibleAnywhere, Category = "Skill | Info", Meta = (AllowPrivateAccess = true))
+	int HitCnt;
 
 public:
 	virtual void TickComponent(float DeltaTime, ELevelTick TickType, FActorComponentTickFunction* ThisTickFunction) override;
@@ -75,4 +78,6 @@ public:
 
 	UFUNCTION()
 	void RandPos(FVector& Loc, FRotator& Rot);
+
+	void SetHitCnt();
 };

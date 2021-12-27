@@ -180,7 +180,7 @@ void AEnemy::SkillAttack() {
 	GetWorldTimerManager().SetTimer(SKillCoolTimer, this, &AEnemy::SkillAttackEnd, 1.0f, false);
 }
 void AEnemy::DashSkill() {
-	Anim->Montage_JumpToSection("Attack5", SkillAttackMontage);
+	Anim->Montage_JumpToSection("Attack6", SkillAttackMontage);
 	GetWorldTimerManager().SetTimer(SKillCoolTimer, this, &AEnemy::SkillAttackEnd, 0.79f, false);
 }
 void AEnemy::SkillAttackEnd() {
@@ -278,32 +278,30 @@ FName AEnemy::GetAttackMontageSection(FString Type) {
 		return FName(*FString::Printf(TEXT("Attack%d"), range));
 	}
 	else if (Type == "Skill") {
-		/*int range = FMath::RandRange(1, 4);
+		int range = FMath::RandRange(1, 5);
 		switch (range) {
 			case 1:
-				AttackDamage = 20.f;
 				SkillType = "Meteor";
 				break;
 			case 2:
-				AttackDamage = 30.f;
 				SkillType = "Lazer";
 				break;
 			case 3:
-				AttackDamage = 30.f;
-				SkillType = "Throw";
+				SkillType = "Magic";
 				break;
 			case 4:
-				AttackDamage = 30.f;
+				SkillType = "Throw";
+				break;
+			case 5:
 				SkillType = "Rush";
 				break;
 			default:
 				SkillType = "Error";
 				break;
 		}
-		return FName(*FString::Printf(TEXT("Attack%d"), range));*/
-		AttackDamage = 30.f;
-		SkillType = "Lazer";
-		return FName(*FString::Printf(TEXT("Attack%d"), 3));
+		return FName(*FString::Printf(TEXT("Attack%d"), range));
+		//SkillType = "Magic";
+		//return FName(*FString::Printf(TEXT("Attack%d"), 3));
 	}
 	else return "Error";
 }

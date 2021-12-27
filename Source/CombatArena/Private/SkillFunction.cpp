@@ -1,4 +1,5 @@
 #include "SkillFunction.h"
+#include "Lazer.h"
 
 USkillFunction::USkillFunction()
 {
