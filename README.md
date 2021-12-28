@@ -9921,9 +9921,47 @@
     </details>
 
 **<h3>Realization</h3>**
-  - 오류 수정, 저장, 맵, 구르기 -> 데미지안받으
+  - 오류 수정, 저장, 맵, 구르기
 
-## **12.27**
+## **12.28**
 > **<h3>Today Dev Story</h3>**
-- ## <span style = "color:yellow;">구르기 </span>
-  - <img src="Image/" height="300" title=""> 
+- ## <span style = "color:yellow;">구르기 피격처리</span>
+  - <img src="Image/MainPlayer_Dodge_Damage.gif" height="300" title="MainPlayer_Dodge_Damage"> 
+  - 구르기 상황시 피격을 무효화하기 위한 작업
+    - CapuleComponent의 CollisionEnabled를 NoCollision으로 전환하려 했으나 RootMotion이 적용되지 않음
+  - TakeDamage()메서드에서 상태를 체크하여 EMovementStatus의 상태가 구르기 상태라면 데미지를 받지 않도록 설정
+    - EMovementStatus에 Dodge 상태 추가 후 Dodge/End()메서드에서 Dodge로 상태 변경
+
+      <details><summary>cpp 코드</summary> 
+
+      ```c++
+      //MainPlayer.cpp
+      void AMainPlayer::Dodge() {
+        ...
+        if (DirX !=0 || DirY != 0) {
+          bCanDodge = false;
+          SetMovementStatus(EMovementStatus::EMS_Dodge);
+        }
+      }
+      void AMainPlayer::DodgeEnd() {
+        SetMovementStatus(EMovementStatus::EMS_Walk);
+      }
+      float AMainPlayer::TakeDamage(float DamageAmount, struct FDamageEvent const& DamageEvent, class AController* EventInstigator, AActor* DamageCauser) {
+        if(GetMovementStatus() == EMovementStatus::EMS_Dodge) return 0;
+      }
+      ```
+      </details>
+      <details><summary>h 코드</summary> 
+
+      ```c++
+      //MainPlayer.h
+      UENUM(BlueprintType)
+      enum class EMovementStatus : uint8 {
+        ...
+        EMS_Dodge		UMETA(DisplayName = "Dodge"),
+      }
+      ```
+      </details>
+
+**<h3>Realization</h3>**
+  - 오류 수정, 저장, 맵

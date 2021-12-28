@@ -12,6 +12,7 @@ enum class EMovementStatus : uint8 {
 	EMS_Normal		UMETA(DisplayName = "Normal"),
 	EMS_Walk		UMETA(DisplayName = "Walk"),
 	EMS_Sprinting	UMETA(DisplayName = "Sprinting"),
+	EMS_Dodge		UMETA(DisplayName = "Dodge"),
 	EMS_Drawing		UMETA(DisplayName = "Drawing"),
 	EMS_Throwing	UMETA(DisplayName = "Throwing"),
 	EMS_Faint		UMETA(DisplayName = "Faint"),

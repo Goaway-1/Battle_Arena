@@ -337,10 +337,12 @@ void AMainPlayer::Dodge() {
 	if (DirX !=0 || DirY != 0) {
 		AnimDodge();		
 		bCanDodge = false;
+		SetMovementStatus(EMovementStatus::EMS_Dodge);
 		GetWorldTimerManager().SetTimer(DodgeHandle, this, &AMainPlayer::DodgeEnd, DodgeCoolDownTime, false);
 	}
 }
 void AMainPlayer::DodgeEnd() {
+	SetMovementStatus(EMovementStatus::EMS_Walk);
 	bCanDodge = true;
 }
 void AMainPlayer::AnimDodge() {
@@ -532,6 +534,7 @@ FName AMainPlayer::GetAttackMontageSection(FString Type, int32 Section) {
 }
 float AMainPlayer::TakeDamage(float DamageAmount, struct FDamageEvent const& DamageEvent, class AController* EventInstigator, AActor* DamageCauser) {
 	Super::TakeDamage(DamageAmount, DamageEvent, EventInstigator, DamageCauser);
+	if(GetMovementStatus() == EMovementStatus::EMS_Dodge) return 0;
 
 	if (LastAttack != CurrentAttack) LastAttack = CurrentAttack;
 	else if (DamageEvent.DamageTypeClass != InternalDamageType) return 0;
