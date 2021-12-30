@@ -135,7 +135,7 @@ void UEnemySkillFunction::MagicAttack() {
 	FVector Loc = OwnerActor->GetActorLocation();
 	FRotator Rot =  OwnerActor->GetActorRotation();
 	Loc.X += 50.f;
-	Rot.Pitch += 10.f;		
+	Rot.Pitch += 5.f;		
 	Magic = GetWorld()->SpawnActor<AMagicBall>(MagicClass, Loc, Rot, SpawnParams);
 	Magic->SetCnt(HitCnt);
 	SetHitCnt();

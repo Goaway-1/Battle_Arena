@@ -73,7 +73,6 @@ AMainPlayer::AMainPlayer()
 	//Dodge
 	DodgeSpeed = 5000.f;
 	bCanDodge = true;
-	DodgeCoolDownTime = 1.f;
 	DirX = 0.f;
 	DirY = 0.f;
 
@@ -338,7 +337,6 @@ void AMainPlayer::Dodge() {
 		AnimDodge();		
 		bCanDodge = false;
 		SetMovementStatus(EMovementStatus::EMS_Dodge);
-		GetWorldTimerManager().SetTimer(DodgeHandle, this, &AMainPlayer::DodgeEnd, DodgeCoolDownTime, false);
 	}
 }
 void AMainPlayer::DodgeEnd() {
@@ -566,13 +564,14 @@ float AMainPlayer::TakeDamage(float DamageAmount, struct FDamageEvent const& Dam
 	SetBalanceRatio();
 
 	/** KnockBack */
+	// 이거를 Root 모션으로 변경
 	FVector Loc = DamageCauser->GetActorForwardVector();
 	Loc.Z = 0;
 	LaunchCharacter(Loc * 500.f, true, true);
 	UGameplayStatics::SpawnEmitterAtLocation(GetWorld(), HitParticle, GetActorLocation(), FRotator(0.f));
 
 	/** CameraShake */
-	if (PlayerController) CameraManager->StartCameraShake(CamShake, 1.f);
+	if (PlayerController) CameraManager->StartCameraShake(CamShake, 3.f);
 
 	/** ShowDamageText */
 	AttackFunction->SpawnDamageText(GetActorLocation(), DamageAmount, DamageTextWidget,GetController());

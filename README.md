@@ -9456,8 +9456,7 @@
       </details>
 
 **<h3>Realization</h3>**
-  - 레이저는 지형으로 구분하고 투사체를 던지는 것으로 교체 예정
-  - 대쉬 애니메이션 및 콜리전 설정
+  - null
 
 ## **12.19**
 > **<h3>Today Dev Story</h3>**
@@ -9515,7 +9514,7 @@
       </details>
 
 **<h3>Realization</h3>**
-  - 레이저는 지형으로 구분하고 투사체를 던지는 것으로 교체 예정
+  - null
 
 ## **12.21**
 > **<h3>Today Dev Story</h3>**
@@ -9662,7 +9661,7 @@
     </details>
 
 **<h3>Realization</h3>**
-  - Lazer를 배열 처리
+  - null
 
 ## **12.22**
 > **<h3>Today Dev Story</h3>**
@@ -9921,7 +9920,7 @@
     </details>
 
 **<h3>Realization</h3>**
-  - 오류 수정, 저장, 맵, 구르기
+  - null
 
 ## **12.28**
 > **<h3>Today Dev Story</h3>**
@@ -9964,4 +9963,33 @@
       </details>
 
 **<h3>Realization</h3>**
-  - 오류 수정, 저장, 맵
+  - null
+
+## **12.30**
+> **<h3>Today Dev Story</h3>**
+- ## <span style = "color:yellow;">Enemy 수정</span>
+  1. 적의 크기가 커져서 기본 공격을 범위 공격으로 처리 ||  AttackRange = 430.f
+    - Skill 중 돌진 공격도 동일시하게 적용
+    - IsInAttackRange클래스의 범위를 기본공격 범위를 520.f로 지정
+
+  2. MagicBall 사이즈를 크게 설정
+
+    <details><summary>cpp 코드</summary> 
+
+    ```c++
+    AMagicBall::AMagicBall(){
+      ...
+      Sphere->SetSphereRadius(100.f);
+      
+      ...
+      Flying_Particle->SetRelativeScale3D(FVector(3.0f));
+    }
+    ```
+    </details>
+
+- ## <span style = "color:yellow;">Player 수정</span>
+  - 기존 dodge 애니메이션을 수정하고 Time이상 지나면 다시 재사용가능하던 것 또한 수정
+    - 애니메이션 노티파이를 사용하여 재사용 가능하도록 구현
+    - 기존 Time과 Handle은 삭제
+
+**<h3>Realization</h3>**

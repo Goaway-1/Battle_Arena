@@ -61,7 +61,7 @@ AEnemy::AEnemy()
 
 	AttackDamage = 10.f;
 	IsAttacking = false;
-	AttackRange = 200.f;
+	AttackRange = 430.f;	//º¯µ¿
 	KnockBackPower = 800.f;
 	bIsback = false;
 #pragma endregion
@@ -171,16 +171,18 @@ void AEnemy::SkillAttack() {
 	if(SkillType == "Meteor") ESkillFunction->GroundAttack();
 	else if(SkillType == "Lazer") ESkillFunction->LazerAttack();
 	else if (SkillType == "Rush") {
-		float dis = GetDistanceTo(EnemyController->GetCurrentTarget()) / 950.f;
+		float dis = GetDistanceTo(EnemyController->GetCurrentTarget()) / 1500.f;
 		GetWorldTimerManager().SetTimer(SKillCoolTimer, this, &AEnemy::DashSkill, dis, false);
 		return;
 	}
 	else if(SkillType == "Magic") ESkillFunction->MagicAttack();
 
+	UE_LOG(LogTemp, Warning, TEXT("%s"), *SkillType);
+
 	GetWorldTimerManager().SetTimer(SKillCoolTimer, this, &AEnemy::SkillAttackEnd, 1.0f, false);
 }
 void AEnemy::DashSkill() {
-	Anim->Montage_JumpToSection("Attack6", SkillAttackMontage);
+	Anim->Montage_JumpToSection("Attack5", SkillAttackMontage);
 	GetWorldTimerManager().SetTimer(SKillCoolTimer, this, &AEnemy::SkillAttackEnd, 0.79f, false);
 }
 void AEnemy::SkillAttackEnd() {
@@ -278,7 +280,7 @@ FName AEnemy::GetAttackMontageSection(FString Type) {
 		return FName(*FString::Printf(TEXT("Attack%d"), range));
 	}
 	else if (Type == "Skill") {
-		int range = FMath::RandRange(1, 5);
+		int range = FMath::RandRange(1, 4);
 		switch (range) {
 			case 1:
 				SkillType = "Meteor";
@@ -290,9 +292,6 @@ FName AEnemy::GetAttackMontageSection(FString Type) {
 				SkillType = "Magic";
 				break;
 			case 4:
-				SkillType = "Throw";
-				break;
-			case 5:
 				SkillType = "Rush";
 				break;
 			default:
@@ -300,8 +299,6 @@ FName AEnemy::GetAttackMontageSection(FString Type) {
 				break;
 		}
 		return FName(*FString::Printf(TEXT("Attack%d"), range));
-		//SkillType = "Magic";
-		//return FName(*FString::Printf(TEXT("Attack%d"), 3));
 	}
 	else return "Error";
 }

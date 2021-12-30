@@ -17,7 +17,7 @@ bool UBTDecorator_IsInAttackRange::CalculateRawConditionValue(UBehaviorTreeCompo
 
 	auto Target = Cast<AMainPlayer>(OwnerComp.GetBlackboardComponent()->GetValueAsObject(AEnemyController::TargetActor));
 	if (nullptr == Target) return false;
-	bResult = (Target->GetDistanceTo(ControllingPawn) <= 300.0f);
+	bResult = (Target->GetDistanceTo(ControllingPawn) <= 520.0f);
 
 	return bResult;
 }

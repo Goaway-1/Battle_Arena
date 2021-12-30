@@ -13,11 +13,12 @@ AMagicBall::AMagicBall(){
 
 	Sphere = CreateDefaultSubobject<USphereComponent>(TEXT("Sphere"));
 	SetRootComponent(Sphere);
-	Sphere->SetSphereRadius(45.f);
+	Sphere->SetSphereRadius(100.f);
 	Sphere->OnComponentBeginOverlap.AddDynamic(this, &AMagicBall::OnOverlapBegin);
 
 	Flying_Particle = CreateDefaultSubobject<UParticleSystemComponent>(TEXT("Flying_Particle"));
 	Flying_Particle->SetupAttachment(GetRootComponent());
+	Flying_Particle->SetRelativeScale3D(FVector(3.0f));
 }
 
 void AMagicBall::BeginPlay(){

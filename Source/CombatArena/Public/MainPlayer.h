@@ -166,9 +166,6 @@ public:
 	float DodgeSpeed;
 
 	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "Movement | Dodge")
-	float DodgeCoolDownTime;
-
-	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "Movement | Dodge")
 	bool bCanDodge;
 
 	//πÊ«‚
@@ -181,13 +178,10 @@ public:
 	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "Anims")
 	UAnimMontage* DodgeMontage;
 
-	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "Movement | Dodge")
-	FTimerHandle DodgeHandle;
-
 	UFUNCTION()
 	void Dodge();
 
-	UFUNCTION()
+	UFUNCTION(BlueprintCallable)
 	void DodgeEnd();
 
 	UFUNCTION()
