@@ -9993,3 +9993,62 @@
     - 기존 Time과 Handle은 삭제
 
 **<h3>Realization</h3>**
+  - null
+
+# Happy New Year
+
+## **01.01**
+> **<h3>Today Dev Story</h3>**
+- ## <span style = "color:yellow;">Player Hited 수정</span>
+  - <img src="Image/Player_Hited_Montage.gif" height="300" title="Player_Hited_Montage"> 
+  - <img src="Image/Player_HitEnd_Function.png" height="300" title="Player_HitEnd_Function"> 
+  - 적에게 피격시 기존 LaunchedCharacter()메서드를 사용하는 것이 아닌 자연스러운 움직임을 위해 RootMotion사용
+  - MainPlayer클래스에 Montage를 추가하고 할당
+    - EMovementStatus에 Hited상태 추가하여 IsCanMove()메서드에 조건 추가
+    - Hited/HitEnd()메서드를 통해서 MovementStatus의 상태를 변경
+
+    <details><summary>cpp 코드</summary> 
+
+    ```c++
+    //MainPlayer.cpp
+    bool AMainPlayer::IsCanMove() {
+      if (... || GetMovementStatus() == EMovementStatus::EMS_Hited || ...) return false;
+      else return true;
+    }
+    float AMainPlayer::TakeDamage(float DamageAmount, struct FDamageEvent const& DamageEvent, class AController* EventInstigator, AActor* DamageCauser) {
+      Super::TakeDamage(DamageAmount, DamageEvent, EventInstigator, DamageCauser);
+      ...
+      /** KnockBack */
+      if (!AnimInstance) AnimInstance = GetMesh()->GetAnimInstance();
+      AnimInstance->Montage_Play(HitedMontage);
+      Hited();
+    }
+    void AMainPlayer::Hited() {
+      UE_LOG(LogTemp, Warning , TEXT("Hited"));
+      SetMovementStatus(EMovementStatus::EMS_Hited);
+    }
+    void AMainPlayer::HitEnd() {
+      UE_LOG(LogTemp, Warning, TEXT("HitEnd"));
+      SetMovementStatus(EMovementStatus::EMS_Default);
+    }
+    ```
+    </details>
+
+    <details><summary>h 코드</summary> 
+
+    ```c++
+    //MainPlayer.h
+    private:
+    	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "Anims", Meta = (AllowPrivateAccess = true))
+	    class UAnimMontage* HitedMontage;
+    public:
+      UFUNCTION()
+      void Hited();
+
+      UFUNCTION(BlueprintCallable)
+      void HitEnd();
+    ```
+    </details>
+
+**<h3>Realization</h3>**
+  - 피격시 콤보 초기화 및 공격 및 

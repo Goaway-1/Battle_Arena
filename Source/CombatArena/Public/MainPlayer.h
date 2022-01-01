@@ -15,6 +15,7 @@ enum class EMovementStatus : uint8 {
 	EMS_Dodge		UMETA(DisplayName = "Dodge"),
 	EMS_Drawing		UMETA(DisplayName = "Drawing"),
 	EMS_Throwing	UMETA(DisplayName = "Throwing"),
+	EMS_Hited		UMETA(DisplayName = "Hited"),
 	EMS_Faint		UMETA(DisplayName = "Faint"),
 	EMS_Death		UMETA(DisplayName = "Death"),
 
@@ -211,50 +212,56 @@ public:
 #pragma endregion
 
 #pragma region ATTACK
-public:
+private:
 	UPROPERTY()
 	class UPlayerAttackFunction* AttackFunction;
 
-	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Anims")
+	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Anims", Meta = (AllowPrivateAccess = true))
 	class UAnimInstance* AnimInstance;
 
-	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "Anims")
+	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "Anims", Meta = (AllowPrivateAccess = true))
 	class UAnimMontage* AttackMontage;
 
-	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "Anims")
+	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "Anims", Meta = (AllowPrivateAccess = true))
 	class UAnimMontage* SwordAttackMontage;
 
-	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "Anims")
+	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "Anims", Meta = (AllowPrivateAccess = true))
 	class UAnimMontage* MaceAttackMontage;	
 	
-	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "Anims")
+	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "Anims", Meta = (AllowPrivateAccess = true))
 	class UAnimMontage* SpearAttackMontage;
 
-	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "Anims")
+	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "Anims", Meta = (AllowPrivateAccess = true))
 	class UAnimMontage* SkillAttackMontage;
+
+	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "Anims", Meta = (AllowPrivateAccess = true))
+	class UAnimMontage* HitedMontage;
+
+	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "Anims", Meta = (AllowPrivateAccess = true))
+	class UAnimMontage* DeathMontage;
 
 	int ComboCnt;			
 
-	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Attack")
-	float DefaultAttackRange;		//공격 범위
+	UPROPERTY(VisibleAnywhere,  Category = "Attack")
+	float DefaultAttackRange;		
 
-	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Attack")
-	float AttackRange;		//공격 범위
+	UPROPERTY(VisibleAnywhere, Category = "Attack")
+	float AttackRange;		
 	
-	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "Anims")
-	int ComboMaxCnt;		//최대 공격 횟수
+	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "Anims", Meta = (AllowPrivateAccess = true))
+	int ComboMaxCnt;		
 
 	/** Weapon의 장착 여부 */
-	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Weapon")
+	UPROPERTY(VisibleAnywhere, BlueprintReadWrite, Category = "Weapon", Meta = (AllowPrivateAccess = true))
 	EWeaponStatus WeaponStatus;
 
-	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Combat")
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Combat", Meta = (AllowPrivateAccess = true))
 	TSubclassOf<UDamageType> PlayerDamageType;
 
-	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Combat")
+	UPROPERTY(VisibleAnywhere,  Category = "Combat")
 	float DefaultDamage;
 
-	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Combat")
+	UPROPERTY(VisibleAnywhere, Category = "Combat")
 	float AttackDamage;
 
 	/** Powerful Attack */
@@ -265,6 +272,18 @@ public:
 	bool bAttacking;
 
 	bool bIsAttackCheck;
+
+	UPROPERTY(VisibleAnywhere, BlueprintReadOnly,Category = "Combat", Meta = (AllowPrivateAccess = true))
+	ECombatStatus CombatStatus;
+
+	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Bow", Meta = (AllowPrivateAccess = true))
+	class ABowWeapon* Bow;
+
+	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Bow", Meta = (AllowPrivateAccess = true))
+	float ChargeAmount = 0;
+
+	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Bow", Meta = (AllowPrivateAccess = true))
+	bool bBowCharging = false;
 
 public:
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Melee")
@@ -282,6 +301,7 @@ public:
 	UFUNCTION(BlueprintCallable)
 	FORCEINLINE UPlayerAttackFunction* GetAttackFunction() { return AttackFunction; }
 
+	FORCEINLINE void SetAttackRange(float value) { AttackRange = value; }
 	FORCEINLINE float GetAttackRange() { return AttackRange; }
 
 	FORCEINLINE void SetWeaponStatus(EWeaponStatus Status) { WeaponStatus = Status; }
@@ -329,19 +349,20 @@ public:
 	void KickStart();
 
 	/** Death */
-	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "Anims")
-	UAnimMontage* DeathMontage;
-
 	UFUNCTION()
 	void Death();
 
 	UFUNCTION(BlueprintCallable)
 	void DeathEnd();
 
-	/** Shield */
-	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Combat")
-	ECombatStatus CombatStatus;
+	/** Hited */
+	UFUNCTION()
+	void Hited();
 
+	UFUNCTION(BlueprintCallable)
+	void HitEnd();
+
+	/** Shield */
 	FORCEINLINE void SetCombatStatus(ECombatStatus State) { CombatStatus = State; }
 	FORCEINLINE ECombatStatus GetCombatStatus() { return CombatStatus; }
 
@@ -355,15 +376,6 @@ public:
 	bool IsBlockingSuccess(AActor* DamageCauser);
 
 	/** Bow */
-	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Bow")
-	class ABowWeapon* Bow;
-
-	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Bow")
-	float ChargeAmount = 0;
-
-	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Bow")
-	bool bBowCharging = false;
-
 	UFUNCTION()
 	void BeginCharge();
 

@@ -358,7 +358,7 @@ void AMainPlayer::AnimDodge() {
 	}
 }
 bool AMainPlayer::IsCanMove() {
-	if (bAttacking || AttackFunction->bKicking || GetMovementStatus() == EMovementStatus::EMS_Death 
+	if (bAttacking || AttackFunction->bKicking || GetMovementStatus() == EMovementStatus::EMS_Death || GetMovementStatus() == EMovementStatus::EMS_Hited
 	|| GetMovementStatus() == EMovementStatus::EMS_Faint || !bCanDodge || !GetCharacterMovement()->CurrentFloor.IsWalkableFloor()) return false;
 	else return true;
 }
@@ -559,22 +559,24 @@ float AMainPlayer::TakeDamage(float DamageAmount, struct FDamageEvent const& Dam
 	/** Balance */
 	Balance->SetCurrentBalance(20.f);
 	Balance->SetDecreaseBalance(false);
-	if (Balance->GetCurrentBalance() >= 100.f) BrokenBalance();
+	if (Balance->GetCurrentBalance() >= 100.f) {
+		BrokenBalance();
+		return DamageAmount;
+	}
 	else GetWorldTimerManager().SetTimer(BalanceHandle, FTimerDelegate::CreateLambda([&] { Balance->SetDecreaseBalance(true);}), DecreaseBalanceTime, false);
 	SetBalanceRatio();
 
 	/** KnockBack */
-	// 이거를 Root 모션으로 변경
-	FVector Loc = DamageCauser->GetActorForwardVector();
-	Loc.Z = 0;
-	LaunchCharacter(Loc * 500.f, true, true);
-	UGameplayStatics::SpawnEmitterAtLocation(GetWorld(), HitParticle, GetActorLocation(), FRotator(0.f));
+	if (!AnimInstance) AnimInstance = GetMesh()->GetAnimInstance();
+	AnimInstance->Montage_Play(HitedMontage);
+	Hited();
+	//FVector Loc = DamageCauser->GetActorForwardVector();
+	//AnimInstance->Montage_JumpToSection("SpecialAttack", HitedMontage);
 
-	/** CameraShake */
+	/** Effect */
 	if (PlayerController) CameraManager->StartCameraShake(CamShake, 3.f);
-
-	/** ShowDamageText */
 	AttackFunction->SpawnDamageText(GetActorLocation(), DamageAmount, DamageTextWidget,GetController());
+	UGameplayStatics::SpawnEmitterAtLocation(GetWorld(), HitParticle, GetActorLocation(), FRotator(0.f));
 
 	return DamageAmount;
 }
@@ -618,6 +620,15 @@ void AMainPlayer::DeathEnd() {
 	GetMesh()->bPauseAnims = true;
 	GetMesh()->bNoSkeletonUpdate = true;
 	Destroy();
+}
+void AMainPlayer::Hited() {
+	UE_LOG(LogTemp, Warning , TEXT("Hited"));
+	SetMovementStatus(EMovementStatus::EMS_Hited);
+}
+
+void AMainPlayer::HitEnd() {
+	UE_LOG(LogTemp, Warning, TEXT("HitEnd"));
+	SetMovementStatus(EMovementStatus::EMS_Default);
 }
 void AMainPlayer::Blocking() {
 	if (!IsCanMove()) return;

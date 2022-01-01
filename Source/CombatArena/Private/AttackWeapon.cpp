@@ -68,7 +68,7 @@ void AAttackWeapon::Equip(class AMainPlayer* Player) {
 			HandSocket->AttachActor(this, Player->GetMesh());
 			Player->SetWeaponStatus(EWeaponStatus::EWS_Melee);
 
-			Player->AttackRange = GetAttackRange();		//오른쪽 무기만 거리 지정
+			Player->SetAttackRange(GetAttackRange());		//오른쪽 무기만 거리 지정
 			Player->SetAttackCurrentWeapon(this);
 			Player->SetAttackDamage(Damage);	
 
