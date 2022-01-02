@@ -126,6 +126,9 @@ public:
 	void TurnInPlace(float value);
 
 	UFUNCTION()
+	void TurnMove();
+
+	UFUNCTION()
 	FORCEINLINE int GetTurnAxis() {return TurnAxis; }
 
 	UFUNCTION()

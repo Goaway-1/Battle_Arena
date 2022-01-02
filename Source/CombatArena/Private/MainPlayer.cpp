@@ -256,12 +256,14 @@ void AMainPlayer::SetupPlayerInputComponent(UInputComponent* PlayerInputComponen
 #pragma region CAMERA
 void AMainPlayer::Lookup(float value) {
 	if (GetMovementStatus() == EMovementStatus::EMS_Faint) return;
-	AddControllerYawInput(value * CameraSpeed * GetWorld()->GetDeltaSeconds());
-	TurnInPlace(value);
+	AddControllerPitchInput(value * CameraSpeed * GetWorld()->GetDeltaSeconds());
 }
 void AMainPlayer::Turn(float value) {
 	if (GetMovementStatus() == EMovementStatus::EMS_Faint) return;
-	AddControllerPitchInput(value * CameraSpeed * GetWorld()->GetDeltaSeconds());
+	AddControllerYawInput(value * CameraSpeed * GetWorld()->GetDeltaSeconds());
+
+	if (GetVelocity().Size() <= 0.1f) TurnInPlace(value);
+	else TurnMove();
 }
 void AMainPlayer::TurnInPlace(float value) {
 	FVector ViewPoint;
@@ -282,6 +284,12 @@ void AMainPlayer::TurnInPlace(float value) {
 			else if (value < -0.1f) TurnAxis = -1;
 		}
 	}
+}
+void AMainPlayer::TurnMove() {
+	GetCharacterMovement()->bOrientRotationToMovement = false;	//이동방향 회전
+	FRotator ViewRotation = CameraManager->GetCameraRotation();
+	ViewRotation.Pitch = ViewRotation.Roll = 0;
+	SetActorRotation(ViewRotation);
 }
 void AMainPlayer::SetArms(USpringArmComponent* Arm) {
 	Arm->SetupAttachment(SpringArmSence);
@@ -334,9 +342,9 @@ void AMainPlayer::OffSprinting() {
 void AMainPlayer::Dodge() {
 	if (!IsCanMove()) return;
 	if (DirX !=0 || DirY != 0) {
-		AnimDodge();		
-		bCanDodge = false;
 		SetMovementStatus(EMovementStatus::EMS_Dodge);
+		bCanDodge = false;
+		AnimDodge();		
 	}
 }
 void AMainPlayer::DodgeEnd() {
@@ -358,8 +366,8 @@ void AMainPlayer::AnimDodge() {
 	}
 }
 bool AMainPlayer::IsCanMove() {
-	if (bAttacking || AttackFunction->bKicking || GetMovementStatus() == EMovementStatus::EMS_Death || GetMovementStatus() == EMovementStatus::EMS_Hited
-	|| GetMovementStatus() == EMovementStatus::EMS_Faint || !bCanDodge || !GetCharacterMovement()->CurrentFloor.IsWalkableFloor()) return false;
+	if (bAttacking || AttackFunction->GetKicking() || GetMovementStatus() == EMovementStatus::EMS_Death || GetMovementStatus() == EMovementStatus::EMS_Hited
+	|| GetMovementStatus() == EMovementStatus::EMS_Faint || GetMovementStatus() == EMovementStatus::EMS_Dodge || !GetCharacterMovement()->CurrentFloor.IsWalkableFloor()) return false;
 	else return true;
 }
 void AMainPlayer::Targeting() {
@@ -411,7 +419,7 @@ void AMainPlayer::RunCamShake() {
 
 #pragma region ATTACK
 void AMainPlayer::LMBDown() {
-	if(AttackFunction->GetKicking()) return;
+	if(AttackFunction->GetKicking() || GetMovementStatus() == EMovementStatus::EMS_Dodge || !GetCharacterMovement()->CurrentFloor.IsWalkableFloor()) return;
 	bLMBDown = true;
 	
 	//Action
@@ -432,7 +440,7 @@ void AMainPlayer::LMBDown() {
 void AMainPlayer::Attack(bool bIsSpecial) {
 	UAnimMontage* PlayMontage = nullptr;
 	bAttacking = true;
-	
+
 	/** Set Montage */
 	if(SkillFunction->bGround) PlayMontage = SkillAttackMontage;
 	else if (GetAttackCurrentWeapon() == nullptr) PlayMontage = AttackMontage;
@@ -563,15 +571,13 @@ float AMainPlayer::TakeDamage(float DamageAmount, struct FDamageEvent const& Dam
 		BrokenBalance();
 		return DamageAmount;
 	}
-	else GetWorldTimerManager().SetTimer(BalanceHandle, FTimerDelegate::CreateLambda([&] { Balance->SetDecreaseBalance(true);}), DecreaseBalanceTime, false);
-	SetBalanceRatio();
+	else {
+		GetWorldTimerManager().ClearTimer(BalanceHandle);
+		GetWorldTimerManager().SetTimer(BalanceHandle, FTimerDelegate::CreateLambda([&] { Balance->SetDecreaseBalance(true);}), DecreaseBalanceTime, false);
+	}SetBalanceRatio();
 
 	/** KnockBack */
-	if (!AnimInstance) AnimInstance = GetMesh()->GetAnimInstance();
-	AnimInstance->Montage_Play(HitedMontage);
 	Hited();
-	//FVector Loc = DamageCauser->GetActorForwardVector();
-	//AnimInstance->Montage_JumpToSection("SpecialAttack", HitedMontage);
 
 	/** Effect */
 	if (PlayerController) CameraManager->StartCameraShake(CamShake, 3.f);
@@ -622,13 +628,15 @@ void AMainPlayer::DeathEnd() {
 	Destroy();
 }
 void AMainPlayer::Hited() {
-	UE_LOG(LogTemp, Warning , TEXT("Hited"));
+	if (!AnimInstance) AnimInstance = GetMesh()->GetAnimInstance();
 	SetMovementStatus(EMovementStatus::EMS_Hited);
+	AnimInstance->StopAllMontages(0.f);
+	AnimInstance->Montage_Play(HitedMontage);
 }
-
 void AMainPlayer::HitEnd() {
-	UE_LOG(LogTemp, Warning, TEXT("HitEnd"));
 	SetMovementStatus(EMovementStatus::EMS_Default);
+	bAttacking = false;
+	bLMBDown = false;
 }
 void AMainPlayer::Blocking() {
 	if (!IsCanMove()) return;

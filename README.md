@@ -10052,3 +10052,72 @@
 
 **<h3>Realization</h3>**
   - 피격시 콤보 초기화 및 공격 및 
+
+## **01.02**
+> **<h3>Today Dev Story</h3>**
+- ## <span style = "color:yellow;">Player Hited 수정</span>
+  - 구르기, 점프 도중 공격 불가능 하도록 LMBDown()메서드 내부에 조건 추가 
+  - 공격 중 적에게 피격 후 움직이지 않는 오류 수정
+    - Hited()메서드에 모든 몽타주를 종료하고 HitEnd()메서드에서 bAttacking과 bLMBDown을 false로 전환하여 공격중이 아님을 표시 
+
+    <details><summary>cpp 코드</summary> 
+
+    ```c++
+    //MainPlayer.cpp
+    void AMainPlayer::LMBDown() {
+	    if(AttackFunction->GetKicking() || GetMovementStatus() == EMovementStatus::EMS_Dodge ||  !GetCharacterMovement()->CurrentFloor.IsWalkableFloor()) return;
+      ...
+    }
+    void AMainPlayer::Hited() {
+      if (!AnimInstance) AnimInstance = GetMesh()->GetAnimInstance();
+      AnimInstance->StopAllMontages(0.f);
+      AnimInstance->Montage_Play(HitedMontage);
+      SetMovementStatus(EMovementStatus::EMS_Hited);
+    }
+
+    void AMainPlayer::HitEnd() {
+      bAttacking = false;
+      bLMBDown = false;
+      SetMovementStatus(EMovementStatus::EMS_Default);
+    }
+    ```
+    </details>
+  
+- ## <span style = "color:yellow;">Player 회전</span>
+  - <img src="Image/Player_TurnInPlace_TurnMove.gif" height="300" title="Player_TurnInPlace_TurnMove"> 
+  - 플레이어가 이동 중에 회전시 바로 회전이 되지 않아 컨트롤에 방해
+  - GetVelocity().size()를 통해 속도값을 반환하여 0이라면 제자리에서 회전하고 그렇지 않다면 카메라 시점으로 캐릭터 회전
+    - Turn()메서드에서 속도값을 판정하며 CameraManager의 Roatation을 받아 Pitch, Roll을 0으로 변환하고 SetActorRotation()메서드 사용
+
+    <details><summary>cpp 코드</summary> 
+
+    ```c++
+    //MainPlayer.cpp
+    void AMainPlayer::Turn(float value) {
+      if (GetMovementStatus() == EMovementStatus::EMS_Faint) return;
+      AddControllerYawInput(value * CameraSpeed * GetWorld()->GetDeltaSeconds());
+
+      if (GetVelocity().Size() <= 0.1f) TurnInPlace(value);
+      else TurnMove();
+    }
+    void AMainPlayer::TurnMove() {
+    	GetCharacterMovement()->bOrientRotationToMovement = false;	//이동방향 회전
+      FRotator ViewRotation = CameraManager->GetCameraRotation();
+      ViewRotation.Pitch = ViewRotation.Roll = 0;
+      SetActorRotation(ViewRotation);
+    }
+    ```
+    </details>
+
+    <details><summary>h 코드</summary> 
+
+    ```c++
+    //MainPlayer.h
+    public:
+      UFUNCTION()
+	    void TurnMove();
+    ```
+    </details>
+
+**<h3>Realization</h3>**
+  - Null
