@@ -10121,3 +10121,146 @@
 
 **<h3>Realization</h3>**
   - Null
+
+## **01.05**
+> **<h3>Today Dev Story</h3>**
+- ## <span style = "color:yellow;">Player AttackCnt 위치 수정</span>
+  - 기존 AttackWeapon에서 AttackCnt를 관리하여 공격 중복 판정하였는데 수정하여 MainPlayer에서 관리하여 모든 공격(강공격,마법...)을 관리
+    - Enemy또한 동일하게 적용 예정
+  - AttackWeapon클래스에서 AttackCnt를 제거하고 MainPlayer로 옮기고 SetAttackCnt()와 GetAttackCnt()메서드 생성 후 관리
+    - LMBDown()메서드 호출 시 AttackCnt가 증가하며 이는 AttackWeapon의 Overlap에서 GetAttackCnt()메서드를 호출하여 중복 관리
+    - AttackFunction()의 __범위 공격은__ SkillAttackStart()메서드의 마지막 매개변수에 AttackCnt()를 추가하여 할당
+    <details><summary>cpp 코드</summary> 
+
+    ```c++
+    //MainPlayer.cpp
+    void AMainPlayer::LMBDown() {
+      ...
+      SetAttackCnt(); 
+      ...
+    }
+    void AMainPlayer::SetAttackCnt() {
+      AttackCnt++;
+      if(AttackCnt > 2) AttackCnt = 0;
+    }
+    ```
+    ```c++
+    //AttackWeapon.cpp
+    void AAttackWeapon::SetAttackCollision(bool value) {	
+      if(!value) AttackCollision->SetCollisionEnabled(ECollisionEnabled::NoCollision);
+      else AttackCollision->SetCollisionEnabled(ECollisionEnabled::QueryOnly);
+    }
+    void AAttackWeapon::OnAttackOverlap(UPrimitiveComponent* OverlappedComponent, AActor* OtherActor, UPrimitiveComponent* OtherComp, int32 OtherBodyIndex, bool bFromSweep, const FHitResult& SweepResult) {
+      if (OtherActor) {
+        AEnemy* Enemy = Cast<AEnemy>(OtherActor);
+        if (Enemy) {
+          /** Set Enemy Balance */
+          AMainPlayer* Player = Cast<AMainPlayer>(AtOwner);
+          Player->PlayerController->SetBalanceTarget(Enemy);	
+
+          /** Attack */
+          Enemy->SetCurrentAttack(AtOwner->GetName() + this->GetName() + FString::FromInt(Player->GetAttackCnt()));	
+          UGameplayStatics::ApplyDamage(Enemy, Damage, AtController, AtOwner, AtDamageType);
+        }
+      }
+    }
+    ```
+    ```c++
+    //AttackFunction.cpp
+    void UAttackFunction::SkillAttackStart(FVector Location, FVector Forward, TSubclassOf<UDamageType> DamageType,FString Type, UParticleSystem* HitParticle,float AttackRange,float Damage, int AttackCnt)
+    { 
+      ...
+      if (bResult) {
+      for (auto& HitActor : OutActors)
+      {
+        ...
+        if (Inner > 0.3f) {
+          if (Type == "Player"){
+            /** 수정 내용 */
+            AEnemy* EHited = Cast<AEnemy>(HitActor);
+            EHited->SetCurrentAttack(Owner->GetName() + EHited->GetName() + FString::FromInt(AttackCnt));
+            if (EHited) UGameplayStatics::ApplyDamage(EHited, Damage, Controller, Owner, DamageType);
+          }
+          else if (Type == "Enemy") {
+            /** 수정 내용 */
+            AMainPlayer* MHited = Cast<AMainPlayer>(HitActor);
+            MHited->SetCurrentAttack(Owner->GetName() + MHited->GetName() + FString::FromInt(AttackCnt));
+            if (MHited) UGameplayStatics::ApplyDamage(MHited, Damage, Controller, Owner, DamageType);
+          }
+        }
+      }
+    }
+    ```
+    </details>
+    <details><summary>h 코드</summary> 
+
+    ```c++
+    //MainPlayer.h
+    private:
+      UPROPERTY(VisibleAnywhere, Category = "Combat")
+      int AttackCnt = 0;
+    public:
+      UFUNCTION()
+      FORCEINLINE int GetAttackCnt() {return AttackCnt;}
+
+      UFUNCTION()
+      void SetAttackCnt();
+    ```
+    ```c++
+    //AttackFunction.h
+    public:
+     	UFUNCTION(BlueprintCallable)
+    	virtual void SkillAttackStart(FVector Location, FVector Forward, TSubclassOf<UDamageType> DamageType, FString Type, UParticleSystem* HitParticle,float AttackRange, float Damage,int AttackCnt);
+    ```
+    </details>
+
+- ## <span style = "color:yellow;">Player Bow/Arrow Attack Cnt</span>
+  - MainPlayer클래스에서 Cnt를 끌어다 쓰는 것은 동일하나 매개변수로 넘겨 사용
+
+    <details><summary>cpp 코드</summary> 
+
+    ```c++
+    //BowWeapon.cpp
+    void ABowWeapon::Fire(int Cnt) {
+      ...
+      Arrow->Fire(ChargeAmount, Cnt);
+      ...
+    }
+    ```
+    ```c++
+    //Arrow.cpp
+    void AArrow::Fire(float Amount,int Cnt) {
+      ...
+      this->AttackCnt = Cnt;
+    }
+    void AArrow::OnOverlapBegin(UPrimitiveComponent* OverlappedComponent, AActor* OtherActor, UPrimitiveComponent* OtherComp, int32 OtherBodyIndex, bool bFromSweep, const FHitResult& SweepResult) {
+      if (OtherActor) {
+        ...
+        if (Enemy) {
+          Enemy->SetCurrentAttack(GetName() + Enemy->GetName() + FString::FromInt(AttackCnt));
+          UGameplayStatics::ApplyDamage(Enemy, 10.f, ArrowController, ArrowOwner, DamageType);
+          ...
+        }
+      }
+    }
+    ```
+    </details>
+    <details><summary>h 코드</summary> 
+    
+    ```c++
+    //BowWeapon.h
+    public:
+    	UFUNCTION()
+	    void Fire(int Cnt);
+    ```
+    ```c++
+    //Arrow.h
+    public:
+      UFUNCTION()
+	    void Fire(float Amount,int Cnt);
+    ```
+    </details>
+
+**<h3>Realization</h3>**
+  - 맵, 기본 공격 몬스터, 적의 Balance 수정, Asset Cleaner
+  - https://www.youtube.com/watch?v=hHZwvYIkuwg

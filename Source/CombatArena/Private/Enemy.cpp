@@ -177,8 +177,6 @@ void AEnemy::SkillAttack() {
 	}
 	else if(SkillType == "Magic") ESkillFunction->MagicAttack();
 
-	UE_LOG(LogTemp, Warning, TEXT("%s"), *SkillType);
-
 	GetWorldTimerManager().SetTimer(SKillCoolTimer, this, &AEnemy::SkillAttackEnd, 1.0f, false);
 }
 void AEnemy::DashSkill() {
@@ -195,7 +193,7 @@ void AEnemy::SkillAttackEnd() {
 }
 void AEnemy::AttackStart_Internal() {
 	FString Type = "Enemy";
-	AttackFunction->SkillAttackStart(GetActorLocation(),GetActorForwardVector(),InternalDamageType, Type, GetHitParticle(),GetAttackRange(), AttackDamage);
+	AttackFunction->SkillAttackStart(GetActorLocation(),GetActorForwardVector(),InternalDamageType, Type, GetHitParticle(),GetAttackRange(), AttackDamage,1);
 }
 void AEnemy::OnAttackMontageEnded(UAnimMontage* Montage, bool bInterrupted){
 	if (!IsAttacking) return;

@@ -389,7 +389,15 @@ public:
 	void BowAnimCharge();
 
 #pragma endregion
+private:
+	UPROPERTY(VisibleAnywhere, Category = "Combat")
+	int AttackCnt = 0;
+public:
+	UFUNCTION()
+	FORCEINLINE int GetAttackCnt() {return AttackCnt;}
 
+	UFUNCTION()
+	void SetAttackCnt();
 #pragma region BALANCE
 private:
 	UPROPERTY(VisibleAnywhere,  Category = "BALANCE")

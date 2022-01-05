@@ -49,10 +49,10 @@ void ABowWeapon::EndCharge_Implementation() {
 		Arrow = nullptr;
 	}
 }
-void ABowWeapon::Fire() {
+void ABowWeapon::Fire(int Cnt) {
 	if(!Arrow) return;
 
-	Arrow->Fire(ChargeAmount);
+	Arrow->Fire(ChargeAmount, Cnt);
 	Arrow = nullptr;
 	EndCharge();
 }

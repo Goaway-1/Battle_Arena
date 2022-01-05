@@ -24,7 +24,7 @@ void UAttackFunction::SetOwner(USkeletalMeshComponent* TakeMesh,AController* Tak
 	Controller = TakeController;
 }
 
-void UAttackFunction::SkillAttackStart(FVector Location, FVector Forward, TSubclassOf<UDamageType> DamageType,FString Type, UParticleSystem* HitParticle,float AttackRange,float Damage)
+void UAttackFunction::SkillAttackStart(FVector Location, FVector Forward, TSubclassOf<UDamageType> DamageType,FString Type, UParticleSystem* HitParticle,float AttackRange,float Damage, int AttackCnt)
 {
 	//찾아낼 액터의 트레이스 채널
 	TArray<TEnumAsByte<EObjectTypeQuery>> TraceObjectTypes;
@@ -61,10 +61,15 @@ void UAttackFunction::SkillAttackStart(FVector Location, FVector Forward, TSubcl
 			// 내적의 크기
 			float Inner = Owner->GetDotProductTo(HitActor);
 			if (Inner > 0.3f) {
-				if (Type == "Player") Hited = Cast<AEnemy>(HitActor);
-				else if (Type == "Enemy") Hited = Cast<AMainPlayer>(HitActor);
-				if (Hited) {
-					UGameplayStatics::ApplyDamage(Hited, Damage, Controller, Owner, DamageType);
+				if (Type == "Player"){
+					AEnemy* EHited = Cast<AEnemy>(HitActor);
+					EHited->SetCurrentAttack(Owner->GetName() + EHited->GetName() + FString::FromInt(AttackCnt));
+					if (EHited) UGameplayStatics::ApplyDamage(EHited, Damage, Controller, Owner, DamageType);
+				}
+				else if (Type == "Enemy") {
+					AMainPlayer* MHited = Cast<AMainPlayer>(HitActor);
+					MHited->SetCurrentAttack(Owner->GetName() + MHited->GetName() + FString::FromInt(AttackCnt));
+					if (MHited) UGameplayStatics::ApplyDamage(MHited, Damage, Controller, Owner, DamageType);
 				}
 			}
 		}

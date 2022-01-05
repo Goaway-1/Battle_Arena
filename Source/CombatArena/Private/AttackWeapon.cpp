@@ -3,8 +3,7 @@
 AAttackWeapon::AAttackWeapon() {
 	WeaponPos = EWeaponPos::EWP_Melee;
 	Damage = 20.f;
-	AttackRange = 200.f;
-	AttackCnt = 0;		
+	AttackRange = 200.f;	
 
 	AttackCollision = CreateDefaultSubobject<UCapsuleComponent>("AttackCollision");
 	AttackCollision->SetupAttachment(SkeletalMesh);
@@ -19,12 +18,8 @@ void AAttackWeapon::BeginPlay()
 	SetAttackCollision(false);
 }
 
-void AAttackWeapon::SetAttackCollision(bool value) {
-	if(!value){
-		AttackCollision->SetCollisionEnabled(ECollisionEnabled::NoCollision);	
-		AttackCnt++;
-		if (AttackCnt > 2) AttackCnt = 0;
-	}
+void AAttackWeapon::SetAttackCollision(bool value) {	
+	if(!value) AttackCollision->SetCollisionEnabled(ECollisionEnabled::NoCollision);
 	else AttackCollision->SetCollisionEnabled(ECollisionEnabled::QueryOnly);
 }
 
@@ -37,8 +32,7 @@ void AAttackWeapon::OnAttackOverlap(UPrimitiveComponent* OverlappedComponent, AA
 			Player->PlayerController->SetBalanceTarget(Enemy);	
 
 			/** Attack */
-			FString text = AtOwner->GetName() + this->GetName() + FString::FromInt(AttackCnt);
-			Enemy->SetCurrentAttack(AtOwner->GetName() + this->GetName() + FString::FromInt(AttackCnt));	
+			Enemy->SetCurrentAttack(AtOwner->GetName() + this->GetName() + FString::FromInt(Player->GetAttackCnt()));	
 			UGameplayStatics::ApplyDamage(Enemy, Damage, AtController, AtOwner, AtDamageType);
 		}
 	}

@@ -421,6 +421,7 @@ void AMainPlayer::RunCamShake() {
 void AMainPlayer::LMBDown() {
 	if(AttackFunction->GetKicking() || GetMovementStatus() == EMovementStatus::EMS_Dodge || !GetCharacterMovement()->CurrentFloor.IsWalkableFloor()) return;
 	bLMBDown = true;
+	SetAttackCnt(); 
 	
 	//Action
 	if (GetMovementStatus() == EMovementStatus::EMS_Throwing) {
@@ -429,7 +430,7 @@ void AMainPlayer::LMBDown() {
 	else if (GetAttackCurrentWeapon() != nullptr && GetAttackCurrentWeapon()->GetWeaponPos() == EWeaponPos::EWP_Bow) {
 		Bow = Cast<ABowWeapon>(CurrentAttackWeapon);
 		if (Bow && ChargeAmount >= 0.7f) {
-			Bow->Fire(); 
+			Bow->Fire(GetAttackCnt()); 
 			bBowCharging = false;
 			EndCharge();
 		}
@@ -523,7 +524,7 @@ void AMainPlayer::OffWeaponCollision() {
 }
 void AMainPlayer::StartPowerfulAttack() {
 	FString Type = "Player";
-	AttackFunction->SkillAttackStart(GetActorLocation(), GetActorForwardVector(), PlayerDamageType, Type, GetHitParticle(), GetAttackRange(), AttackDamage * 2);
+	AttackFunction->SkillAttackStart(GetActorLocation(), GetActorForwardVector(), PlayerDamageType, Type, GetHitParticle(), GetAttackRange(), AttackDamage * 2,GetAttackCnt());
 }
 void AMainPlayer::AttackInputCheck() {
 	if (bIsAttackCheck) {
@@ -699,6 +700,10 @@ void AMainPlayer::BowAnimCharge() {
 }
 #pragma endregion
 
+void AMainPlayer::SetAttackCnt() {
+	AttackCnt++;
+	if(AttackCnt > 2) AttackCnt = 0;
+}
 #pragma region BALANCE
 void AMainPlayer::SetBalanceRatio() {
 	if (Balance->GetCurrentBalance() > 0.f) {

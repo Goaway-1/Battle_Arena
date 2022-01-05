@@ -65,9 +65,6 @@ public:
 	UPROPERTY(VisibleAnywhere, BlueprintReadWrite, Category = "Combat")
 	TSubclassOf<UDamageType> AtDamageType;
 
-	UPROPERTY(VisibleAnywhere, BlueprintReadWrite, Category = "Combat")
-	int AttackCnt;
-
 	UFUNCTION()
 	void SetAttackInit(AController* CauserController, AActor* Causer, TSubclassOf<UDamageType> Type);
 };

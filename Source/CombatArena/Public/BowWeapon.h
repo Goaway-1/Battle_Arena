@@ -54,12 +54,11 @@ public:
 	void EndCharge();
 
 	UFUNCTION()
-	void Fire();
+	void Fire(int Cnt);
 	
 	UFUNCTION()
 	void Reload();
 
 	UFUNCTION()
 	void InitalBow(AActor* BOwner, AController* BController);
-
 };

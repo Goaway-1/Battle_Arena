@@ -50,6 +50,9 @@ private:
 	UPROPERTY(VisibleAnywhere, Category = "Arrow | Damage")
 	float Damage;
 
+	UPROPERTY(VisibleAnywhere, Category = "Arrow | Damage")
+	int AttackCnt;
+
 	UPROPERTY(VisibleAnywhere, BlueprintReadWrite, Category = "Arrow | Physic", Meta = (AllowPrivateAccess = true))
 	class URadialForceComponent* RadiaForce;
 
@@ -61,7 +64,6 @@ private:
 
 	UPROPERTY(VisibleAnywhere, Category = "Arrow | Destory")
 	float DestroyTime;
-
 public:
 	UFUNCTION()
 	void DestroyArrow();
@@ -73,7 +75,7 @@ public:
 	void InitalArrow(AActor* AOwner, AController* AController);
 
 	UFUNCTION()
-	void Fire(float Amount);
+	void Fire(float Amount,int Cnt);
 
 	UFUNCTION()
 	void OnStateBegin();

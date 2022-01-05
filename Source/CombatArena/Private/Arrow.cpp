@@ -78,10 +78,11 @@ void AArrow::SetArrowStatus(EArrowStatus Status) {
 	ArrowStatus = Status;
 }
 
-void AArrow::Fire(float Amount) {
+void AArrow::Fire(float Amount,int Cnt) {
 	DetachFromActor(FDetachmentTransformRules::KeepWorldTransform);
 	SetArrowStatus(EArrowStatus::EAS_InArrow);
 	FirePower = Amount;
+	this->AttackCnt = Cnt;
 
 	GetWorldTimerManager().SetTimer(DestroyHandle, this, &AArrow::DestroyArrow, DestroyTime, false);
 }
@@ -94,6 +95,7 @@ void AArrow::OnOverlapBegin(UPrimitiveComponent* OverlappedComponent, AActor* Ot
 
 		AEnemy* Enemy = Cast<AEnemy>(OtherActor);
 		if (Enemy) {
+			Enemy->SetCurrentAttack(GetName() + Enemy->GetName() + FString::FromInt(AttackCnt));
 			UGameplayStatics::ApplyDamage(Enemy, 10.f, ArrowController, ArrowOwner, DamageType);
 			ArrowCollision->SetSimulatePhysics(false);
 			SetActorLocation(GetActorLocation());
