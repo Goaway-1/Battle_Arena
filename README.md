@@ -10263,4 +10263,16 @@
 
 **<h3>Realization</h3>**
   - 맵, 기본 공격 몬스터, 적의 Balance 수정, Asset Cleaner
-  - https://www.youtube.com/watch?v=hHZwvYIkuwg
+
+  
+## **01.07**
+> **<h3>Today Dev Story</h3>**
+- ## <span style = "color:yellow;">맵 제작 중</span>
+  - <img src="Image/MainMap.png" height="300" title="MainMap"> 
+
+- ## <span style = "color:yellow;">Trail System</span>
+  - 발자국이 남는 시스템으로 스토어에서 구매한 것을 사용
+  - MainPlayer에 Construction Script의 Visualize Trail Components 추가
+    - 또한 왼쪽발과 오른쪽발을 추가하고 맵의 Actor/Tag에 TrailReceive을 추가하여 경로를 기록
+    
+**<h3>Realization</h3>**
