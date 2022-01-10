@@ -23,10 +23,10 @@ EBTNodeResult::Type UBTTask_FindPatrolPos::ExecuteTask(UBehaviorTreeComponent& O
     FVector Origin = OwnerComp.GetBlackboardComponent()->GetValueAsVector(AEnemyController::HomePosKey);
  
     FNavLocation NextPatrol;
-
     //200 범위 내에서 갈 수 있는 곳의 좌표를 NetPatrol에 저장하고 SetValueAsVector로 키값에 데이터를 저장한다.
-    if (NavSystem->GetRandomPointInNavigableRadius(FVector::ZeroVector, 200.f, NextPatrol)){
+    if (NavSystem->GetRandomPointInNavigableRadius(FVector::ZeroVector, 500.f, NextPatrol)){
         OwnerComp.GetBlackboardComponent()->SetValueAsVector(AEnemyController::PatrolPosKey, NextPatrol.Location);
+        UE_LOG(LogTemp, Warning, TEXT("Not Do!"));
         return EBTNodeResult::Succeeded;
     }
     return EBTNodeResult::Failed;

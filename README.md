@@ -10264,7 +10264,6 @@
 **<h3>Realization</h3>**
   - 맵, 기본 공격 몬스터, 적의 Balance 수정, Asset Cleaner
 
-  
 ## **01.07**
 > **<h3>Today Dev Story</h3>**
 - ## <span style = "color:yellow;">맵 제작 중</span>
@@ -10276,3 +10275,9 @@
     - 또한 왼쪽발과 오른쪽발을 추가하고 맵의 Actor/Tag에 TrailReceive을 추가하여 경로를 기록
     
 **<h3>Realization</h3>**
+
+## **01.010**
+> **<h3>Today Dev Story</h3>**
+- ## <span style = "color:yellow;">맵 교체 & 에러</span>
+  - LogLevel: Warning: EnableInput on a LevelScript actor can not be specified for only one PlayerController.  Enabling for all PlayerControllers.
+  - 위와 같은 오류 문구 발생, 특정 키만 적용되지 않는 문제 아마 맵의 수정으로 발생되는 현상

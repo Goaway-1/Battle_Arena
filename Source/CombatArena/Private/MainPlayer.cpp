@@ -812,6 +812,9 @@ void AMainPlayer::EndThrow() {
 
 #pragma region ACTIVE
 void AMainPlayer::ActiveInteraction() {
+	UE_LOG(LogTemp, Warning, TEXT("Equip"));
+
+	if (ActiveOverlappingItem != nullptr) ItemEquip();
 	/** Active SpecialAttack */
 	float Inner = this->GetDotProductTo(BalanceTarget);
 	if (Inner > 0.3f && bCanSpecialAttack && !bAttacking) ActiveSpecialAttack();
@@ -821,6 +824,7 @@ void AMainPlayer::ActiveInteraction() {
 }
 void AMainPlayer::DeactiveInteraction() {
 
+	UE_LOG(LogTemp, Warning, TEXT("DeEquip"));
 	/** Weapon */
 	if (GetWeaponStatus() != EWeaponStatus::EWS_Normal) ItemDrop();
 }
