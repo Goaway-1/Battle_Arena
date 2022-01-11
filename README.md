@@ -10274,10 +10274,40 @@
   - MainPlayer에 Construction Script의 Visualize Trail Components 추가
     - 또한 왼쪽발과 오른쪽발을 추가하고 맵의 Actor/Tag에 TrailReceive을 추가하여 경로를 기록
     
+   
 **<h3>Realization</h3>**
-
-## **01.010**
+  - null
+## **01.10**
 > **<h3>Today Dev Story</h3>**
 - ## <span style = "color:yellow;">맵 교체 & 에러</span>
   - LogLevel: Warning: EnableInput on a LevelScript actor can not be specified for only one PlayerController.  Enabling for all PlayerControllers.
   - 위와 같은 오류 문구 발생, 특정 키만 적용되지 않는 문제 아마 맵의 수정으로 발생되는 현상
+
+**<h3>Realization</h3>**
+  - null
+
+## **01.11**
+> **<h3>Today Dev Story</h3>**
+- ## <span style = "color:yellow;">맵 교체 & 에러</span>
+  - <img src="Image/MapKeyError.png" height="300" title="MapKeyError"> 
+  - 레벨 블루프린트에서의 문제로 발생했던 문제로 블루프린트에서의 키와 플레이어의 키가 중첩되어서 발생했던 문제
+    - 레벨 블루프린트 키값을 E,Q,R을 7,9,8로 수정하여 중복에서 벗어남
+  - 위 그림과 같이 수정
+
+    |기존 키|수정 키|설명|
+    |:--:|:--:|:--:|
+    |Y|Num 8|1개의 해를 스위치|
+    |Q,E|Num 7,9|해의 위치를 좌우로 이동|
+
+- ## <span style = "color:yellow;">잡다한 것</span>
+  1. 플레이어의 스테미나 감소 속도 조정
+
+    ```c++
+    //MainPlayer.cpp
+    CoolDownStamina = 10.f;
+    CoolUpStamina = 5.f;
+    ```
+
+
+**<h3>Realization</h3>**
+  - null

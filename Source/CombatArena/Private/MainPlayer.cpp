@@ -119,8 +119,8 @@ AMainPlayer::AMainPlayer()
 	//Stamina
 	MaxStamina = 100.f;
 	CurrentStamina = MaxStamina;
-	CoolDownStamina = 30.f;
-	CoolUpStamina = 10.f;
+	CoolDownStamina = 10.f;
+	CoolUpStamina = 5.f;
 #pragma endregion
 #pragma region ACTIVE
 	GetCapsuleComponent()->SetCollisionProfileName(TEXT("Player"));	//콜리전 설정
@@ -812,8 +812,6 @@ void AMainPlayer::EndThrow() {
 
 #pragma region ACTIVE
 void AMainPlayer::ActiveInteraction() {
-	UE_LOG(LogTemp, Warning, TEXT("Equip"));
-
 	if (ActiveOverlappingItem != nullptr) ItemEquip();
 	/** Active SpecialAttack */
 	float Inner = this->GetDotProductTo(BalanceTarget);
@@ -823,8 +821,6 @@ void AMainPlayer::ActiveInteraction() {
 	else if (ActiveOverlappingItem != nullptr) ItemEquip();
 }
 void AMainPlayer::DeactiveInteraction() {
-
-	UE_LOG(LogTemp, Warning, TEXT("DeEquip"));
 	/** Weapon */
 	if (GetWeaponStatus() != EWeaponStatus::EWS_Normal) ItemDrop();
 }
