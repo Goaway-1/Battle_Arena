@@ -20,11 +20,16 @@ void AEnemyController::BeginPlay() {
     //기존 존재하는 OnTargetPerceptionUpdated 델리게이트를 Controller가 아닌 C++에서 구현
     AIPerception->OnTargetPerceptionUpdated.AddDynamic(this, &AEnemyController::Sense);
 
-    if (UseBlackboard(BData, Blackboard))
-    {
+    if (UseBlackboard(BData, Blackboard)){
+        if (!RunBehaviorTree(BTree)) return;
         Blackboard->SetValueAsVector(HomePosKey, GetPawn()->GetActorLocation());	//Location을 HomePosKey에..
-        if (!RunBehaviorTree(BTree)) return;    
     }
+}
+
+void AEnemyController::Tick(float DeltaTime){
+    Super::Tick(DeltaTime);
+    if (!RunBehaviorTree(BTree)) return;
+    Blackboard->SetValueAsVector(HomePosKey, GetPawn()->GetActorLocation());	
 }
 
 void AEnemyController::Sense(AActor* Actor, FAIStimulus Stimulus) {

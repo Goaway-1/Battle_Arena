@@ -15,6 +15,8 @@ public:
 
 	virtual void BeginPlay() override;
 
+	virtual void Tick(float DeltaTime) override;
+
 	//키값들 -> 다른 코드에서 참조하기 편리하다.
 	static const FName HomePosKey;
 	static const FName PatrolPosKey;	

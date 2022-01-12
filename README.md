@@ -10308,6 +10308,46 @@
     CoolUpStamina = 5.f;
     ```
 
-
 **<h3>Realization</h3>**
   - null
+
+
+## **01.12**
+> **<h3>Today Dev Story</h3>**
+- ## <span style = "color:yellow;">Enemy 이동 오류 수정</span>
+  - <img src="Image/Enemy_FindPatrolPos_Error.gif" height="300" title="Enemy_FindPatrolPos_Error"> 
+  - 기존 적의 이동이 항상 맵의 원점을 기준으로 움직였기에 다른 위치에서는 움직임을 감지 못함
+    - BTTask_FindPatrolPos클래스의 ExecuteTask()메서드 내의 GetRandomPointNavigableRadius()의 매개변수가 FVector::Zero로 되어 있기때문
+    - 이를 HomePosKey로 대입하여 적용. (이는 현재 위치를 뜻함)
+      - 현재 위치를 뜻하기 위해서 EnemyController클래스의 Tick에서 매 초마다 갱신
+
+    <details><summary>cpp 코드</summary> 
+    
+    ```c++
+    //EnemyController.cpp
+    void AEnemyController::Tick(float DeltaTime){
+      Super::Tick(DeltaTime);
+      if (!RunBehaviorTree(BTree)) return;
+      Blackboard->SetValueAsVector(HomePosKey, GetPawn()->GetActorLocation());	
+    }
+    ```
+    ```c++
+    //BTTask_FindPatrolPos.cpp
+    EBTNodeResult::Type UBTTask_FindPatrolPos::ExecuteTask(UBehaviorTreeComponent& OwnerComp, uint8* NodeMemory)
+    {
+      ...
+      //EnemyController의 BeginPlay에서 저장한 HomePosKey의 값을 가져와 추후 계산식에서 사용
+      FVector Origin = OwnerComp.GetBlackboardComponent()->GetValueAsVector(AEnemyController::HomePosKey);
+  
+      FNavLocation NextPatrol;
+      //범위 내에서 갈 수 있는 곳의 좌표를 NetPatrol에 저장하고 SetValueAsVector로 키값에 데이터를 저장한다.
+      if (NavSystem->GetRandomPointInNavigableRadius(Origin, 700.f, NextPatrol)){
+        OwnerComp.GetBlackboardComponent()->SetValueAsVector(AEnemyController::PatrolPosKey, NextPatrol.Location);
+        return EBTNodeResult::Succeeded;
+      }
+    }
+    ```
+    </details>
+  
+- ## <span style = "color:yellow;">Enemy 구분</span>
+  - <img src="Image/" height="300" title=""> 
