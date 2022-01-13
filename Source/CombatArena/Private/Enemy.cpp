@@ -24,17 +24,12 @@ AEnemy::AEnemy()
 #pragma region INIT
 	PrimaryActorTick.bCanEverTick = true;
 
-	GetCharacterMovement()->MaxWalkSpeed = 300.f;
 	GetCharacterMovement()->bOrientRotationToMovement = true;
 	GetCharacterMovement()->RotationRate = FRotator(0.f, 480.f, 0.f);
-
 	GetCapsuleComponent()->SetCollisionProfileName(TEXT("Enemy"));	
+	GetMesh()->SetCollisionProfileName(TEXT("NoCollision"));
 #pragma endregion
 #pragma region HUD
-	//Health
-	MaxHealth = 100.f;
-	CurrentHealth = MaxHealth;
-
 	//HUD
 	HealthWidget = CreateDefaultSubobject<UWidgetComponent>(TEXT("HealthWidget"));
 	HealthWidget->AttachToComponent(GetMesh(), FAttachmentTransformRules::KeepRelativeTransform);	//위치 고정
@@ -59,14 +54,11 @@ AEnemy::AEnemy()
 	RightWeapon->SetupAttachment(GetMesh(), FName("weapon_r"));
 	RightWeapon->SetCollisionProfileName(FName("EnemyWeapon"));
 
-	AttackDamage = 10.f;
 	IsAttacking = false;
-	AttackRange = 430.f;	//변동
-	KnockBackPower = 800.f;
 	bIsback = false;
-#pragma endregion
-#pragma region SKILL
-	ESkillFunction = CreateDefaultSubobject<UEnemySkillFunction>("ESkillFunction");
+	AttackDamage = 10.f;
+	AttackRange = 430.f;	
+	KnockBackPower = 800.f;
 #pragma endregion
 #pragma region BALANCE
 	Balance = CreateDefaultSubobject<UBalance>("Balance");
@@ -80,14 +72,12 @@ void AEnemy::PossessedBy(AController* NewController) {
 
 	EnemyController = Cast<AEnemyController>(NewController);
 	AttackFunction->SetOwner(GetMesh(),EnemyController);
-	ESkillFunction->SetInitial(GetController()->GetPawn(), GetMesh(), GetController(), this);
 
 	RightWeapon->OnComponentBeginOverlap.AddDynamic(this, &AEnemy::OnWeaponOverlap);
 	LeftWeapon->OnComponentBeginOverlap.AddDynamic(this, &AEnemy::OnWeaponOverlap);
 	AttackEnd_Collision();
 }
-void AEnemy::BeginPlay()
-{
+void AEnemy::BeginPlay(){
 	Super::BeginPlay();
 
 	GetMesh()->SetCollisionResponseToChannel(ECollisionChannel::ECC_Camera, ECollisionResponse::ECR_Ignore);
@@ -118,12 +108,11 @@ void AEnemy::PostInitializeComponents()
 	if(!Anim) Anim = Cast<UEnemyAnim>(GetMesh()->GetAnimInstance());
 
 	//행동이 끝나면 다른 함수에게 알려준다. ->OnMontageEnded는 델리게이트 
-	Anim->OnMontageEnded.AddDynamic(this, &AEnemy::OnAttackMontageEnded);
+	//Anim->OnMontageEnded.AddDynamic(this, &AEnemy::OnAttackMontageEnded);
 }
 void AEnemy::SetupPlayerInputComponent(UInputComponent* PlayerInputComponent)
 {
 	Super::SetupPlayerInputComponent(PlayerInputComponent);
-
 }
 
 #pragma region MOVEMENT
@@ -145,60 +134,18 @@ void AEnemy::StartLookAround(bool isLeft) {
 #pragma region ATTACK
 void AEnemy::Attack(FString type) {
 	if(!Anim) Anim = Cast<UEnemyAnim>(GetMesh()->GetAnimInstance());
-
-	Anim->StopAllMontages(0.f);
-	if (AttackMontage && Anim) {
-		IsAttacking = true;
-		if (type == "Melee") {
-			Anim->Montage_Play(AttackMontage);
-			Anim->Montage_JumpToSection(GetAttackMontageSection("Attack"), AttackMontage);
-		}
-		else if(type == "Skill" && !bisSkill) {
-			Anim->Montage_Play(SkillAttackMontage);
-			Anim->Montage_JumpToSection(GetAttackMontageSection("Skill"), SkillAttackMontage);
-		}
-	}
+    Anim->StopAllMontages(0.f);
+	
+	if (!AttackMontage && !Anim) return;
+	
+	IsAttacking = true;
 }
 void AEnemy::AttackReady() {
 	LaunchCharacter(GetActorForwardVector() * 700.f, true, true);
 }
-void AEnemy::SkillAttack() {
-	//Skill 불러오기
-	if(bisSkill) return;
-	bisSkill = true;
-
-	/** Random */
-	if(SkillType == "Meteor") ESkillFunction->GroundAttack();
-	else if(SkillType == "Lazer") ESkillFunction->LazerAttack();
-	else if (SkillType == "Rush") {
-		float dis = GetDistanceTo(EnemyController->GetCurrentTarget()) / 1500.f;
-		GetWorldTimerManager().SetTimer(SKillCoolTimer, this, &AEnemy::DashSkill, dis, false);
-		return;
-	}
-	else if(SkillType == "Magic") ESkillFunction->MagicAttack();
-
-	GetWorldTimerManager().SetTimer(SKillCoolTimer, this, &AEnemy::SkillAttackEnd, 1.0f, false);
-}
-void AEnemy::DashSkill() {
-	Anim->Montage_JumpToSection("Attack5", SkillAttackMontage);
-	GetWorldTimerManager().SetTimer(SKillCoolTimer, this, &AEnemy::SkillAttackEnd, 0.79f, false);
-}
-void AEnemy::SkillAttackEnd() {
-	bisSkill = false; 
-
-	Anim->StopAllMontages(0.f);
-	if (SkillType == "Meteor") ESkillFunction->GroundAttack();
-	else if (SkillType == "Lazer") ESkillFunction->LazerEnd();
-	else if (SkillType == "Magic") ESkillFunction->MagicEnd();
-}
 void AEnemy::AttackStart_Internal() {
 	FString Type = "Enemy";
 	AttackFunction->SkillAttackStart(GetActorLocation(),GetActorForwardVector(),InternalDamageType, Type, GetHitParticle(),GetAttackRange(), AttackDamage,1);
-}
-void AEnemy::OnAttackMontageEnded(UAnimMontage* Montage, bool bInterrupted){
-	if (!IsAttacking) return;
-	IsAttacking = false;
-	OnAttackEnd.Broadcast();
 }
 void AEnemy::AttackStart_Collision(bool value) {
 	if (value) RightWeapon->SetCollisionEnabled(ECollisionEnabled::QueryOnly);

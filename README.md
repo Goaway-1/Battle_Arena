@@ -9522,7 +9522,7 @@
   - SkillFunction클래스를 상속받아 구현한 EnemySkillFunction, PlayerSkillFunction클래스에서 오류발생
     - EnemySkillFunction와 PlayerSkillFunction은 각각 Enemy와 Player에서 인스턴스화하여 생성했는데 여기서 같은 이름인 SkillFunction을 사용
     - 다른 클래스에 생성되었고 다른 클래스를 상속받았는데 이름이 같다고 오류 발생... 또한 SkillFunction 클래스에서 생성한 Decal에서도 오류
-  - 해결방안 : 각 클래스에서는 ESkillFunctino, PSkillFunction으로 인스턴스화하고 Decal 또한 각각의 클래스(EnemySkillFunction, PlayerSkillFunction)에서 생성  
+  - 해결방안 : 각 클래스에서는 ESkillFunction, PSkillFunction으로 인스턴스화하고 Decal 또한 각각의 클래스(EnemySkillFunction, PlayerSkillFunction)에서 생성  
     
     <details><summary>cpp 코드</summary> 
 
@@ -10311,7 +10311,6 @@
 **<h3>Realization</h3>**
   - null
 
-
 ## **01.12**
 > **<h3>Today Dev Story</h3>**
 - ## <span style = "color:yellow;">Enemy 이동 오류 수정</span>
@@ -10348,6 +10347,227 @@
     }
     ```
     </details>
-  
+
+**<h3>Realization</h3>**
+  - null
+
+## **01.13**
+> **<h3>Today Dev Story</h3>**
 - ## <span style = "color:yellow;">Enemy 구분</span>
-  - <img src="Image/" height="300" title=""> 
+  - Enemy클래스를 상속받는 Boss_Enemy, Normal_Enemy클래스를 생성하고 둘의 차이는 단순 SkillFunction의 존재여부
+    - 기존 Enemy클래스에서는 Skill관련 변수, 메서드들이 Boss_Enemy로만 이전했다고 생각하면 됌
+  - 델리게이트는 상속이 동시에 되지 않는지 오류를 뿜어냄
+
+    <details><summary>cpp 코드</summary> 
+    
+    ```c++
+    //Boss_Enemy.cpp
+    #include "Boss_Enemy.h"
+    #include "EnemySkillFunction.h"
+    #include "EnemyAnim.h"
+    #include "EnemyController.h"
+
+    ABoss_Enemy::ABoss_Enemy() {
+      GetCharacterMovement()->MaxWalkSpeed = 200.f;
+
+      //health
+      MaxHealth = 30.f;
+      CurrentHealth = MaxHealth;
+
+      //attack
+      AttackDamage = 10.f;
+      AttackRange = 430.f;
+      KnockBackPower = 800.f;
+
+      ESkillFunction = CreateDefaultSubobject<UEnemySkillFunction>("ESkillFunction");	//단독
+    }
+
+    void ABoss_Enemy::PossessedBy(AController* NewController) {
+      Super::PossessedBy(NewController);
+
+      ESkillFunction->SetInitial(GetController()->GetPawn(), GetMesh(), GetController(), this);
+    }
+    void ABoss_Enemy::BeginPlay() {
+      Super::BeginPlay();
+
+    }
+    void ABoss_Enemy::Tick(float DeltaTime) {
+      Super::Tick(DeltaTime);
+    }
+    void ABoss_Enemy::PostInitializeComponents() {
+      Super::PostInitializeComponents();
+
+      Anim->OnMontageEnded.AddDynamic(this, &ABoss_Enemy::OnAttackMontageEnded);
+    }
+    void ABoss_Enemy::SetupPlayerInputComponent(UInputComponent* PlayerInputComponent)
+    {
+      Super::SetupPlayerInputComponent(PlayerInputComponent);
+    }
+
+    void ABoss_Enemy::Attack(FString type) {
+      Super::Attack(type);
+
+      if (type == "Melee") {
+        Anim->Montage_Play(AttackMontage);
+        Anim->Montage_JumpToSection(GetAttackMontageSection("Attack"), AttackMontage);
+      }
+      else if (type == "Skill" && !bisSkill) {
+        Anim->Montage_Play(SkillAttackMontage);
+        Anim->Montage_JumpToSection(GetAttackMontageSection("Skill"), SkillAttackMontage);
+      }
+    }
+    void ABoss_Enemy::SkillAttack() {
+      //Skill 불러오기
+      if (bisSkill) return;
+      bisSkill = true;
+
+      /** Random */
+      if (SkillType == "Meteor") ESkillFunction->GroundAttack();
+      else if (SkillType == "Lazer") ESkillFunction->LazerAttack();
+      else if (SkillType == "Rush") {
+        float dis = GetDistanceTo(EnemyController->GetCurrentTarget()) / 1500.f;
+        GetWorldTimerManager().SetTimer(SKillCoolTimer, this, &ABoss_Enemy::DashSkill, dis, false);
+        return;
+      }
+      else if (SkillType == "Magic") ESkillFunction->MagicAttack();
+
+      GetWorldTimerManager().SetTimer(SKillCoolTimer, this, &ABoss_Enemy::SkillAttackEnd, 1.0f, false);
+    }
+    void ABoss_Enemy::DashSkill() {
+      Anim->Montage_JumpToSection("Attack5", SkillAttackMontage);
+      GetWorldTimerManager().SetTimer(SKillCoolTimer, this, &ABoss_Enemy::SkillAttackEnd, 0.79f, false);
+    }
+    void ABoss_Enemy::SkillAttackEnd() {
+      bisSkill = false;
+
+      Anim->StopAllMontages(0.f);
+      if (SkillType == "Meteor") ESkillFunction->GroundAttack();
+      else if (SkillType == "Lazer") ESkillFunction->LazerEnd();
+      else if (SkillType == "Magic") ESkillFunction->MagicEnd();
+    }
+
+    void ABoss_Enemy::OnAttackMontageEnded(UAnimMontage* Montage, bool bInterrupted) {
+      if (!IsAttacking) return;
+      IsAttacking = false;
+      OnAttackEnd.Broadcast();
+    }
+    ```
+    ```c++
+    //Normal_Enemy.cpp
+    #include "Normal_Enemy.h"
+    #include "EnemyAnim.h"
+
+    ANormal_Enemy::ANormal_Enemy() {
+      //movement
+      GetCharacterMovement()->MaxWalkSpeed = 200.f;
+
+      //health
+      MaxHealth = 30.f;
+      CurrentHealth = MaxHealth;
+
+      //attack
+      AttackDamage = 10.f;
+      AttackRange = 430.f;
+      KnockBackPower = 800.f;
+    }
+
+    void ANormal_Enemy::PossessedBy(AController* NewController) {
+      Super::PossessedBy(NewController);
+    }
+    void ANormal_Enemy::BeginPlay() {
+      Super::BeginPlay();
+
+    }
+    void ANormal_Enemy::Tick(float DeltaTime){
+      Super::Tick(DeltaTime);
+    }
+
+    void ANormal_Enemy::PostInitializeComponents(){
+      Super::PostInitializeComponents();
+      
+      //Anim->OnMontageEnded.AddDynamic(this, &ANormal_Enemy::OnAttackMontageEnded);
+    }
+    void ANormal_Enemy::SetupPlayerInputComponent(UInputComponent* PlayerInputComponent)
+    {
+      Super::SetupPlayerInputComponent(PlayerInputComponent);
+    }
+
+    void ANormal_Enemy::Attack(FString type) {
+      Super::Attack(type);
+
+      if (type == "Melee") {
+        Anim->Montage_Play(AttackMontage);
+        Anim->Montage_JumpToSection(GetAttackMontageSection("Attack"), AttackMontage);
+      }
+    }
+
+    void ANormal_Enemy::OnAttackMontageEnded(UAnimMontage* Montage, bool bInterrupted) {
+      if (!IsAttacking) return;
+      IsAttacking = false;
+      OnAttackEnd.Broadcast();
+    }
+    ```
+    </details>
+
+    <details><summary>h 코드</summary> 
+
+    ```c++
+    //Boss_Enemy.h
+    private:
+      ABoss_Enemy();
+    protected:
+      virtual void BeginPlay() override;
+    public:
+      virtual void Tick(float DeltaTime) override;
+
+      virtual void PossessedBy(AController* NewController) override;
+
+      virtual void PostInitializeComponents() override;
+
+      virtual void SetupPlayerInputComponent(class UInputComponent* PlayerInputComponent) override;
+      
+      virtual void Attack(FString type) override;
+
+      UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Skill")
+      class UEnemySkillFunction* ESkillFunction;
+
+      bool bisSkill = false;
+
+      UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Skill")
+      FTimerHandle SKillCoolTimer;
+
+      UFUNCTION(BlueprintCallable)
+      void SkillAttack();
+
+      UFUNCTION(BlueprintCallable)
+      void SkillAttackEnd();
+
+      UFUNCTION()
+      void DashSkill();
+      
+      UFUNCTION()
+      void OnAttackMontageEnded(UAnimMontage* Montage, bool bInterrupted);  
+    ```
+    ```c++
+    //Normal_Enemy.h
+    public:
+      ANormal_Enemy(); 
+    protected:
+      virtual void BeginPlay() override;
+    public:
+      virtual void Tick(float DeltaTime) override;
+
+      virtual void PossessedBy(AController* NewController) override;
+
+      virtual void PostInitializeComponents() override;
+
+      virtual void SetupPlayerInputComponent(class UInputComponent* PlayerInputComponent) override;
+
+      virtual void Attack(FString type) override;
+
+      UFUNCTION()
+      void OnAttackMontageEnded(UAnimMontage* Montage, bool bInterrupted);
+    ```
+    </details>
+**<h3>Realization</h3>**
+  - null

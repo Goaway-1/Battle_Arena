@@ -71,17 +71,14 @@ public:
 	class UAnimMontage* SkillAttackMontage;
 
 	UFUNCTION()
-	void OnAttackMontageEnded(UAnimMontage* Montage, bool bInterrupted);
-
-	UFUNCTION()
-	void Attack(FString type);
+	virtual void Attack(FString type);
 
 	/** If Attack Ready and go forward a little bit */
 	UFUNCTION(BlueprintCallable)
 	void AttackReady();
 
 	UFUNCTION()
-	FName GetAttackMontageSection(FString Type);
+	virtual FName GetAttackMontageSection(FString Type);
 
 	/** Sweap 실행 */
 	UFUNCTION(BlueprintCallable)	
@@ -175,24 +172,7 @@ public:
 	FORCEINLINE void SetCurrentAttack(FString Value) { CurrentAttack = Value; }
 #pragma endregion
 #pragma region SKILL
-	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Skill")
-	class UEnemySkillFunction* ESkillFunction;
-
-	bool bisSkill = false;
-
 	FString SkillType;
-
-	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Skill")
-	FTimerHandle SKillCoolTimer;
-
-	UFUNCTION(BlueprintCallable)
-	void SkillAttack();
-
-	UFUNCTION(BlueprintCallable)
-	void SkillAttackEnd();
-
-	UFUNCTION()
-	void DashSkill();
 #pragma endregion
 #pragma region HEALTH
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Particle")	//피격 효과
