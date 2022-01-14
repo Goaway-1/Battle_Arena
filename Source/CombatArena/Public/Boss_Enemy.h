@@ -42,7 +42,7 @@ public:
 
 	UFUNCTION()
 	void DashSkill();
-	
+	/*
 	UFUNCTION()
-	void OnAttackMontageEnded(UAnimMontage* Montage, bool bInterrupted);
+	void OnAttackMontageEnded(UAnimMontage* Montage, bool bInterrupted);*/
 };

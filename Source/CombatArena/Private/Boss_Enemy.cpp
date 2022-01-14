@@ -33,8 +33,9 @@ void ABoss_Enemy::Tick(float DeltaTime) {
 }
 void ABoss_Enemy::PostInitializeComponents() {
 	Super::PostInitializeComponents();
+	//if (!Anim) Anim = Cast<UEnemyAnim>(GetMesh()->GetAnimInstance());
 
-	Anim->OnMontageEnded.AddDynamic(this, &ABoss_Enemy::OnAttackMontageEnded);
+	//Anim->OnMontageEnded.AddDynamic(this, &ABoss_Enemy::OnAttackMontageEnded);
 }
 void ABoss_Enemy::SetupPlayerInputComponent(UInputComponent* PlayerInputComponent)
 {
@@ -83,8 +84,8 @@ void ABoss_Enemy::SkillAttackEnd() {
 	else if (SkillType == "Magic") ESkillFunction->MagicEnd();
 }
 
-void ABoss_Enemy::OnAttackMontageEnded(UAnimMontage* Montage, bool bInterrupted) {
-	if (!IsAttacking) return;
-	IsAttacking = false;
-	OnAttackEnd.Broadcast();
-}
+//void ABoss_Enemy::OnAttackMontageEnded(UAnimMontage* Montage, bool bInterrupted) {
+//	if (!IsAttacking) return;
+//	IsAttacking = false;
+//	OnAttackEnd.Broadcast();
+//}

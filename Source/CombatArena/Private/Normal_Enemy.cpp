@@ -29,7 +29,7 @@ void ANormal_Enemy::Tick(float DeltaTime){
 
 void ANormal_Enemy::PostInitializeComponents(){
 	Super::PostInitializeComponents();
-	
+	if (!Anim) Anim = Cast<UEnemyAnim>(GetMesh()->GetAnimInstance());
 	//Anim->OnMontageEnded.AddDynamic(this, &ANormal_Enemy::OnAttackMontageEnded);
 }
 void ANormal_Enemy::SetupPlayerInputComponent(UInputComponent* PlayerInputComponent)
@@ -46,8 +46,8 @@ void ANormal_Enemy::Attack(FString type) {
 	}
 }
 
-void ANormal_Enemy::OnAttackMontageEnded(UAnimMontage* Montage, bool bInterrupted) {
-	if (!IsAttacking) return;
-	IsAttacking = false;
-	OnAttackEnd.Broadcast();
-}
+//void ANormal_Enemy::OnAttackMontageEnded(UAnimMontage* Montage, bool bInterrupted) {
+//	if (!IsAttacking) return;
+//	IsAttacking = false;
+//	OnAttackEnd.Broadcast();
+//}

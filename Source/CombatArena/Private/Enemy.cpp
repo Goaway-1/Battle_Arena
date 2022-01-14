@@ -108,7 +108,7 @@ void AEnemy::PostInitializeComponents()
 	if(!Anim) Anim = Cast<UEnemyAnim>(GetMesh()->GetAnimInstance());
 
 	//행동이 끝나면 다른 함수에게 알려준다. ->OnMontageEnded는 델리게이트 
-	//Anim->OnMontageEnded.AddDynamic(this, &AEnemy::OnAttackMontageEnded);
+	Anim->OnMontageEnded.AddDynamic(this, &AEnemy::OnAttackMontageEnded);
 }
 void AEnemy::SetupPlayerInputComponent(UInputComponent* PlayerInputComponent)
 {
@@ -272,6 +272,11 @@ void AEnemy::OnWeaponOverlap(UPrimitiveComponent* OverlappedComponent, AActor* O
 	}
 }
 #pragma endregion
+void AEnemy::OnAttackMontageEnded(UAnimMontage* Montage, bool bInterrupted) {
+	if (!IsAttacking) return;
+	IsAttacking = false;
+	OnAttackEnd.Broadcast();
+}
 #pragma region HUD
 void AEnemy::ShowEnemyTarget() {
 	if (!TargetingDecal) return;

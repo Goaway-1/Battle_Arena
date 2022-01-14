@@ -44,7 +44,9 @@ public:
 	UFUNCTION()
 	void StartLookAround(bool isLeft);
 #pragma endregion
-
+public:
+	UFUNCTION()
+	void OnAttackMontageEnded(UAnimMontage* Montage, bool bInterrupted);
 #pragma region ATTACK
 	UPROPERTY()
 	class UEnemyAttackFunction* AttackFunction;

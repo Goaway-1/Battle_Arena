@@ -26,6 +26,6 @@ public:
 
 	virtual void Attack(FString type) override;
 
-	UFUNCTION()
-	void OnAttackMontageEnded(UAnimMontage* Montage, bool bInterrupted);
+	//UFUNCTION()
+	//void OnAttackMontageEnded(UAnimMontage* Montage, bool bInterrupted);
 };

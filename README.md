@@ -10569,5 +10569,17 @@
       void OnAttackMontageEnded(UAnimMontage* Montage, bool bInterrupted);
     ```
     </details>
+
 **<h3>Realization</h3>**
   - null
+
+## **01.14**
+> **<h3>Today Dev Story</h3>**
+- ## <span style = "color:yellow;">Enemy 구분_2</span>
+  - 이전 날의 델리게이트 문제를 해결하기 위한 방안 생각
+    - 만들고 montage 설정을 하면 이상 없이 돌아가나 설정하고 만들면 이상현상 발생....
+    - Blueprint로 만들면 오류가 발생하는 것으로 확인
+**<h3>Realization</h3>**
+  - 다이나믹 델리게이트
+    - 함수포인터가 아닌 함수의 이름을 기반으로 등록해 호출하는 방식
+    - C++ 함수 뿐만 아니라 블루프린트 함수도 연결할 수 있게 설정
