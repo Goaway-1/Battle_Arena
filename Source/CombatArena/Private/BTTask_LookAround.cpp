@@ -1,5 +1,5 @@
 #include "BTTask_LookAround.h"
-#include "Enemy.h"
+#include "Boss_Enemy.h"
 #include "Kismet/KismetMathLibrary.h"
 
 UBTTask_LookAround::UBTTask_LookAround() {
@@ -14,7 +14,7 @@ EBTNodeResult::Type UBTTask_LookAround::ExecuteTask(UBehaviorTreeComponent& Owne
 	bool bResult = (rand == 0) ? true : false;
 	if(!bResult) return EBTNodeResult::Failed; 
 
-	AEnemy* Enemy = Cast<AEnemy>(OwnerComp.GetAIOwner()->GetPawn());
+	ABoss_Enemy* Enemy = Cast<ABoss_Enemy>(OwnerComp.GetAIOwner()->GetPawn());
 	if (!Enemy) return EBTNodeResult::Failed;
 
 	/** 주변을 돌아다님 (간보기) */ 

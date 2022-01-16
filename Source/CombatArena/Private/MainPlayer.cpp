@@ -2,6 +2,7 @@
 #include "AttackWeapon.h"
 #include "ShieldWeapon.h"
 #include "Enemy.h"
+#include "Boss_Enemy.h"
 #include "MainController.h"
 #include "HealthWidget.h"
 #include "PlayerAttackFunction.h"
@@ -732,7 +733,7 @@ void AMainPlayer::RecoverBalance() {
 }
 void AMainPlayer::OnEnemyBalance_OverlapBegin(UPrimitiveComponent* OverlappedComponent, AActor* OtherActor, UPrimitiveComponent* OtherComp, int32 OtherBodyIndex, bool bFromSweep, const FHitResult& SweepResult) {
 	if (OtherActor) {
-		BalanceTarget = Cast<AEnemy>(OtherActor);
+		BalanceTarget = Cast<ABoss_Enemy>(OtherActor);
 	}
 }
 void AMainPlayer::OnEnemyBalance_OverlapEnd(UPrimitiveComponent* OverlappedComponent, AActor* OtherActor, UPrimitiveComponent* OtherComp, int32 OtherBodyIndex) {

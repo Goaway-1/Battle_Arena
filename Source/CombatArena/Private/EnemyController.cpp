@@ -33,7 +33,11 @@ void AEnemyController::Tick(float DeltaTime){
 }
 
 void AEnemyController::Sense(AActor* Actor, FAIStimulus Stimulus) {
-    if (Stimulus.WasSuccessfullySensed()) Blackboard->SetValueAsObject(TargetActor, Actor);
+    if (Stimulus.WasSuccessfullySensed()) {
+        AMainPlayer* Player = Cast<AMainPlayer>(Actor);
+        if(Player == nullptr) return;
+        Blackboard->SetValueAsObject(TargetActor, Actor);
+    }
 	else Blackboard->ClearValue(TargetActor);
 }
 

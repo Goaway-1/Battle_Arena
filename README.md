@@ -10576,10 +10576,61 @@
 ## **01.14**
 > **<h3>Today Dev Story</h3>**
 - ## <span style = "color:yellow;">Enemy 구분_2</span>
-  - 이전 날의 델리게이트 문제를 해결하기 위한 방안 생각
+  - 전날의 델리게이트 문제를 해결하기 위한 방안 생각
     - 만들고 montage 설정을 하면 이상 없이 돌아가나 설정하고 만들면 이상현상 발생....
     - Blueprint로 만들면 오류가 발생하는 것으로 확인
+
 **<h3>Realization</h3>**
   - 다이나믹 델리게이트
     - 함수포인터가 아닌 함수의 이름을 기반으로 등록해 호출하는 방식
-    - C++ 함수 뿐만 아니라 블루프린트 함수도 연결할 수 있게 설정
+    - C++ 함수 뿐만 아니라 블루프린트 함수도 연결할 수 있게 설정해야만 함 (위의 오류가 그러함)
+
+## **01.16**
+> **<h3>Today Dev Story</h3>**
+- ## <span style = "color:yellow;">Enemy 구분_3</span>
+  - 전날의 델리게이트 문제를 해결하기 위한 방안 해결  (임시방편)
+  - __원인은 C++클래스를 블루프린트객체로 만들때 불안정한 이유로 오류 발생__
+    - 델리게이트를 주석처리하고 블루프린트객체 생성 후 모든 설정을 완료하고 주석제거 후 다시 컴파일하면 정상 작동
+
+- ## <span style = "color:yellow;">Enemy Sense</span>
+  - <img src="Image/Enemy_Both_Sense.gif" height="300" title="Enemy_Both_Sense">  
+  - Enemy의 Sense가 중첩되면 목표를 잃어버리는 문제 발생 && Enemy끼리 서로를 적으로 판단하는 문제 발생
+  - EnemyController클래스의 Sense()메서드에서 Actor를 MainPlayer클래스를 Cast하고 가능하다면 변환
+    - Player 중첩시 TargetActor에 넣고 그렇지 않다면 삭제 && Enemy가 중첩된다면 무시
+
+    <details><summary>cpp 코드</summary> 
+
+    ```c++
+    //EnemyController.cpp
+    void AEnemyController::Sense(AActor* Actor, FAIStimulus Stimulus) {
+      if (Stimulus.WasSuccessfullySensed()) {
+        AMainPlayer* Player = Cast<AMainPlayer>(Actor);
+        if(Player == nullptr) return;
+        Blackboard->SetValueAsObject(TargetActor, Actor);
+      }
+      else Blackboard->ClearValue(TargetActor);
+    }
+    ```
+    </details>
+
+- ## <span style = "color:yellow;">Kraken Enemy</span>
+  - <img src="Image/Kraken_Enemy.gif" height="300" title="Kraken_Enemy">  
+  - 새로운 몬스터 Kraken으로 기본 근접 공격만이 가능하며 Normal_Enemy로 제작
+
+- ## <span style = "color:yellow;">잡다한 것</span>
+  1. Enemy클래스에 있던 SkillAttack/Faint/LookAroundMontage를 Boss_Enemy로 이전
+    - 즉 스킬, 기절, 방황은 오직 Boss의 패턴에서만 확인이 가능
+    - 아래 외에도 많은 내용 수정...
+
+    ```c++
+    //Boss_Enemy.cpp
+    private:
+      UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "Montage")
+      class UAnimMontage* SkillAttackMontage;
+    ```
+  
+  2. 코드 정리
+    - Enemy와 관련된 클래스를 모두 깔끔하게 정리
+ 
+**<h3>Realization</h3>**
+  - null

@@ -413,7 +413,7 @@ private:
 	class UBalance* Balance;
 
 	UPROPERTY(VisibleAnywhere, Category = "Balance")
-	class AEnemy* BalanceTarget;
+	class ABoss_Enemy* BalanceTarget;
 
 	UPROPERTY(EditAnywhere, Category = "Balance")
 	USphereComponent* EnemyBalanceOverlap;

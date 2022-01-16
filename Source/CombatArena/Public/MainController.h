@@ -91,14 +91,14 @@ protected:
 	class UBalanceWidget* EnemyBalanceBarOutLine;
 
 	UPROPERTY(VisibleAnywhere, Category = "Widget | Balance")
-	class AEnemy* BalanceTargetEnemy;
+	class ABoss_Enemy* BalanceTargetEnemy;
 
 public:
 	UFUNCTION()
 	void SetPlayerBalance();
 
 	UFUNCTION()
-	void SetBalanceTarget(AEnemy* value);
+	void SetBalanceTarget(ABoss_Enemy* value);
 
 	UFUNCTION()
 	void SetEnemyBalance();

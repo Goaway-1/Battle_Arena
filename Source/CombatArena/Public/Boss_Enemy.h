@@ -11,6 +11,8 @@ UCLASS()
 class COMBATARENA_API ABoss_Enemy : public AEnemy
 {
 	GENERATED_BODY()
+
+#pragma region INIT
 private:
 	ABoss_Enemy();
 protected:
@@ -26,23 +28,56 @@ public:
 	
 	virtual void Attack(FString type) override;
 
-	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Skill")
+	virtual float TakeDamage(float DamageAmount, struct FDamageEvent const& DamageEvent, class AController* EventInstigator, AActor* DamageCauser) override;
+#pragma endregion
+#pragma region MONATGE
+private:
+	UPROPERTY(EditDefaultsOnly, Category = "Montage", Meta = (AllowPrivateAccess = true))
+	class UAnimMontage* SkillAttackMontage;
+
+	UPROPERTY(EditDefaultsOnly, Category = "Montage", Meta = (AllowPrivateAccess = true))
+	class UAnimMontage* FaintMontage;
+
+	UPROPERTY(EditDefaultsOnly, Category = "Montage", Meta = (AllowPrivateAccess = true))
+	class UAnimMontage* LookAroundMontage;
+#pragma endregion
+#pragma region SKILL
+private:
+	UPROPERTY(VisibleAnywhere, Category = "Skill", Meta = (AllowPrivateAccess = true))
 	class UEnemySkillFunction* ESkillFunction;
-
+	
 	bool bisSkill = false;
-
-	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Skill")
 	FTimerHandle SKillCoolTimer;
-
+public:
 	UFUNCTION(BlueprintCallable)
 	void SkillAttack();
 
 	UFUNCTION(BlueprintCallable)
 	void SkillAttackEnd();
-
-	UFUNCTION()
+	
 	void DashSkill();
-	/*
+	
 	UFUNCTION()
-	void OnAttackMontageEnded(UAnimMontage* Montage, bool bInterrupted);*/
+	void StartLookAround(bool isLeft);
+#pragma endregion
+#pragma region BALANCE
+private:
+	class UBalance* Balance;
+	FTimerHandle BalanceHandle;
+	float DecreaseBalanceTime;
+	
+	UPROPERTY(VisibleAnywhere, Category = "Balance")
+	bool bIsFainted = false;
+public:
+	void BrokenBalance();
+	void ActiveFaint();
+	
+	UFUNCTION(BlueprintCallable)
+	void DeactiveFaint();
+	
+	void SpecialHitMontage();
+
+	FORCEINLINE UBalance* GetBalance() { return Balance; }
+	FORCEINLINE bool GetIsFainted() { return bIsFainted; }
+#pragma endregion
 };

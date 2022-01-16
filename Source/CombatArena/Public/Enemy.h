@@ -2,6 +2,11 @@
 
 #include "EngineMinimal.h"
 #include "MainController.h"
+#include "EnemySkillFunction.h"
+#include "EnemyAnim.h"
+#include "EnemyController.h"
+#include "BrainComponent.h"
+#include "BehaviorTree/BlackboardComponent.h"
 #include "GameFramework/Character.h"
 #include "Enemy.generated.h"
 
@@ -14,6 +19,7 @@ class COMBATARENA_API AEnemy : public ACharacter
 {
 	GENERATED_BODY()
 
+#pragma region INIT
 public:
 	AEnemy();
 
@@ -28,50 +34,96 @@ public:
 	virtual void PostInitializeComponents() override;
 
 	virtual void SetupPlayerInputComponent(class UInputComponent* PlayerInputComponent) override;
-
-	UPROPERTY()
+#pragma endregion
+#pragma region MOVEMENT
+protected:
+	UPROPERTY(EditDefaultsOnly, Category = "Movement")
 	class UEnemyAnim* Anim;
 
-	UPROPERTY()
+	UPROPERTY(EditDefaultsOnly, Category = "Movement")
 	class AEnemyController* EnemyController;
-
-#pragma region MOVEMENT
-private:
-	UPROPERTY(EditDefaultsOnly, Category = "Montage", Meta = (AllowPrivateAccess = true))
-	class UAnimMontage* LookAroundMontage;
-
-public:
-	UFUNCTION()
-	void StartLookAround(bool isLeft);
 #pragma endregion
+#pragma region MONTAGE
+protected:
+	UPROPERTY(EditDefaultsOnly, Category = "Montage", Meta = (AllowPrivateAccess = true))
+	class UAnimMontage* AttackMontage;
+
+	UPROPERTY(EditDefaultsOnly, Category = "Montage", Meta = (AllowPrivateAccess = true))
+	class UAnimMontage* DeathMontage;
+
+	UPROPERTY(EditDefaultsOnly, Category = "Montage", Meta = (AllowPrivateAccess = true))
+	UAnimMontage* HitedMontage;
+
+	UPROPERTY(EditDefaultsOnly, Category = "Montage", Meta = (AllowPrivateAccess = true))
+	class UAnimMontage* IsInFogMontage;
+	
 public:
 	UFUNCTION()
 	void OnAttackMontageEnded(UAnimMontage* Montage, bool bInterrupted);
+	
+	UFUNCTION()
+	virtual FName GetAttackMontageSection(FString Type);
+#pragma endregion
 #pragma region ATTACK
-	UPROPERTY()
+private:
 	class UEnemyAttackFunction* AttackFunction;
+	bool IsAttacking = false;
+
+	/** DamageType */
+	UPROPERTY(EditAnywhere,Category = "Attack", Meta = (AllowPrivateAccess = true))
+	TSubclassOf<UDamageType> CollisionDamageType;
+
+	UPROPERTY(EditAnywhere, Category = "Attack", Meta = (AllowPrivateAccess = true))
+	TSubclassOf<UDamageType> InternalDamageType;
+
+	/** Handle */
+	bool bIsback;
+	FVector BackVector;
+	FTimerHandle backHandle;
+	FTimerHandle FogHandle;
+	float SmokeTime;
+
+	/** Weapon */
+	UPROPERTY(EditAnywhere, Category = "Attack | Collision", Meta = (AllowPrivateAccess = true))
+	UCapsuleComponent* LeftWeapon;
+
+	UPROPERTY(EditAnywhere, Category = "Attack | Collision", Meta = (AllowPrivateAccess = true))
+	UCapsuleComponent* RightWeapon;
+
+	UPROPERTY(VisibleAnywhere, Category = "Attack", Meta = (AllowPrivateAccess = true))
+	int AttackCnt;
+	
+	//일반 공격의 종류
+	UPROPERTY(VisibleAnywhere, Category = "Attack", Meta = (AllowPrivateAccess = true))
+	int AttackTypeCnt = 2;
+
+	UPROPERTY(VisibleAnywhere, Category = "Attack", Meta = (AllowPrivateAccess = true))
+	FString LastAttack = "";
+
+	UPROPERTY(VisibleAnywhere, Category = "Attack", Meta = (AllowPrivateAccess = true))
+	FString CurrentAttack = "";
+
+protected:
+	UPROPERTY(EditAnywhere, Category = "Attack", Meta = (AllowPrivateAccess = true))
+	float AttackDamage;
+
+	UPROPERTY(EditDefaultsOnly, Category = "Attack", Meta = (AllowPrivateAccess = true))
+	float AttackRange;
+
+	UPROPERTY()
+	float KnockBackPower;
+
+	FString SkillType;
+public:
+	FOnAttackEndDelegate OnAttackEnd;
 
 	UFUNCTION(BlueprintCallable)
 	FORCEINLINE UEnemyAttackFunction* GetAttackFuntion() { return AttackFunction; }
 
-	bool IsAttacking = false;
-
-	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Attack")
-	float AttackRange;
-
 	FORCEINLINE float GetAttackRange() { return AttackRange; }
 
-	FOnAttackEndDelegate OnAttackEnd;
-
-	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "Montage")
-	class UAnimMontage* AttackMontage;
-
-	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "Montage")
-	class UAnimMontage* DeathMontage;
-
-	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "Montage")
-	class UAnimMontage* SkillAttackMontage;
-
+	FORCEINLINE int GetAttackTypeCnt() { return AttackTypeCnt; }
+	
 	UFUNCTION()
 	virtual void Attack(FString type);
 
@@ -79,81 +131,20 @@ public:
 	UFUNCTION(BlueprintCallable)
 	void AttackReady();
 
-	UFUNCTION()
-	virtual FName GetAttackMontageSection(FString Type);
-
 	/** Sweap 실행 */
 	UFUNCTION(BlueprintCallable)	
 	void AttackStart_Internal();
 
-	//Component
-	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Attack")
-	TSubclassOf<UDamageType> CollisionDamageType;
-
-	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Attack")
-	TSubclassOf<UDamageType> InternalDamageType;
-
-	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Attack")
-	float AttackDamage;
-
-	/** knockback */
-	UPROPERTY()
-	float KnockBackPower;
-
-	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "KnockBack")
-	bool bIsback;
-
-	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "KnockBack")
-	FVector BackVector;
-
-	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "KnockBack")
-	FTimerHandle backHandle;
-
-	UFUNCTION()
 	void KnockBack(FVector Backward);
-
-	UFUNCTION()
 	void knockBackEnd();
-
-	UFUNCTION()
 	void IsKnockBack();
 
-	/** Up The Sky */
-	UFUNCTION()
+	/** Skill */
 	void LaunchSky(FVector Pos);
-
-	/** Hited AnimMontage */
-	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Montage")
-	UAnimMontage* HitedMontage;
-
-	/** Is in fog */
-	UFUNCTION()
 	void SetVisibleInFog(bool bisin, int time = 0);
-
-	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Movement | Grenade")
-	FTimerHandle FogHandle;
-
-	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "Grenade")
-	class UAnimMontage* IsInFogMontage;
-
-	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Grenade")
-	float SmokeTime;
-
-	UFUNCTION()
 	void ActiveFogEvent();
-
-	UFUNCTION()
 	void DeactiveFogEvent();
-
-public:
-	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Attack | Collision")
-	UCapsuleComponent* LeftWeapon;
-
-	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Attack | Collision")
-	UCapsuleComponent* RightWeapon;
-
-	UPROPERTY(VisibleAnywhere, BlueprintReadWrite, Category = "Attack")	//test
-	int AttackCnt;
+	void OnWeaponOverlap(UPrimitiveComponent* OverlappedComponent, AActor* OtherActor, UPrimitiveComponent* OtherComp, int32 OtherBodyIndex, bool bFromSweep, const FHitResult& SweepResult);
 
 	UFUNCTION(BlueprintCallable)
 	void AttackStart_Collision(bool value);		/** if true then rightweapon On*/
@@ -161,32 +152,21 @@ public:
 	UFUNCTION(BlueprintCallable)
 	void AttackEnd_Collision();
 
-	UFUNCTION()
-	void OnWeaponOverlap(UPrimitiveComponent* OverlappedComponent, AActor* OtherActor, UPrimitiveComponent* OtherComp, int32 OtherBodyIndex, bool bFromSweep, const FHitResult& SweepResult);
-
-public:
-	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Attack")
-	FString LastAttack = "";
-
-	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Attack")
-	FString CurrentAttack = "";
-
 	FORCEINLINE void SetCurrentAttack(FString Value) { CurrentAttack = Value; }
 #pragma endregion
-#pragma region SKILL
-	FString SkillType;
-#pragma endregion
 #pragma region HEALTH
-	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Particle")	//피격 효과
+protected:
+	UPROPERTY(EditAnywhere, Category = "Particle", Meta = (AllowPrivateAccess = true))	//피격 효과
 	class UParticleSystem* HitParticle;
 
-	FORCEINLINE UParticleSystem* GetHitParticle() { return HitParticle; }
-
-	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Health")
+	UPROPERTY(VisibleAnywhere, Category = "Health", Meta = (AllowPrivateAccess = true))
 	float MaxHealth;
 
-	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Health")
+	UPROPERTY(VisibleAnywhere, Category = "Health", Meta = (AllowPrivateAccess = true))
 	float CurrentHealth;
+
+public:
+	FORCEINLINE UParticleSystem* GetHitParticle() { return HitParticle; }
 
 	virtual float TakeDamage(float DamageAmount,struct FDamageEvent const& DamageEvent,class AController* EventInstigator,AActor* DamageCauser) override;
 
@@ -197,11 +177,25 @@ public:
 	void DestroyEnemy();
 #pragma endregion
 #pragma region HUD
-	UPROPERTY(VisibleAnywhere, Category = "Widget | EnemyWidget")
+private:
+	UPROPERTY(VisibleAnywhere, Category = "Widget | EnemyWidget", Meta = (AllowPrivateAccess = true))
 	class UWidgetComponent* HealthWidget;
 
-	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Widget | EnemyWidget")
+	UPROPERTY(EditAnywhere, Category = "Widget | EnemyWidget", Meta = (AllowPrivateAccess = true))
 	TSubclassOf<class UUserWidget> WEnemyHealth;
+
+	UPROPERTY()
+	class UHealthWidget* HealthBar;
+
+	UPROPERTY()
+	float HealthRatio = 0.f;
+	
+	UPROPERTY(EditAnywhere,Category = "Widget | TargetWidget", Meta = (AllowPrivateAccess = true))
+	class UDecalComponent* TargetingDecal;
+public:
+	/** DamageText */
+	UPROPERTY(EditAnywhere, Category = "HUD")
+	TSubclassOf<class UDamageTextWidget> DamageTextWidget;
 
 	//Call at MainPlayer
 	UFUNCTION()
@@ -217,60 +211,11 @@ public:
 	void HideEnemyHUD();
 
 	//HealthBar
-	UPROPERTY()
-	class UHealthWidget* HealthBar;
-
-	UPROPERTY()
-	float HealthRatio = 0.f;
-
 	UFUNCTION(BlueprintCallable)
 	void SetHealthRatio();
 
 	UFUNCTION(BlueprintCallable)
 	FORCEINLINE float GetHealthRatio() { return HealthRatio; }
 
-	//Targeting
-	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Widget | TargetWidget")
-	class UDecalComponent* TargetingDecal;
-
-	/** DamageText */
-	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "HUD")
-	TSubclassOf<class UDamageTextWidget> DamageTextWidget;
 #pragma endregion
-#pragma region BALANCE
-private:
-	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "Balance", Meta = (AllowPrivateAccess = true))
-	class UAnimMontage* FaintMontage;
-	
-	UPROPERTY(VisibleAnywhere, Category = "Balance")
-	class UBalance* Balance;
-
-	UPROPERTY(VisibleAnywhere, Category = "Balance")
-	FTimerHandle BalanceHandle;
-
-	UPROPERTY(VisibleAnywhere, Category = "Balance")
-	float DecreaseBalanceTime;
-
-	UPROPERTY(VisibleAnywhere, Category = "Balance")
-	bool bIsFainted = false;
-
-public:
-	UFUNCTION()
-	void BrokenBalance();
-
-	UFUNCTION()
-	void ActiveFaint();
-
-	UFUNCTION(BlueprintCallable)
-	void DeactiveFaint();
-
-	FORCEINLINE UBalance* GetBalance() { return Balance; }
-
-	UFUNCTION()
-	FORCEINLINE bool GetIsFainted() { return bIsFainted; }
-
-	UFUNCTION()
-	void SpecialHitMontage();
-#pragma endregion
-
 };

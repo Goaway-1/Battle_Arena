@@ -1,24 +1,26 @@
 #include "Boss_Enemy.h"
-#include "EnemySkillFunction.h"
-#include "EnemyAnim.h"
-#include "EnemyController.h"
+#include "EnemyAttackFunction.h"
 
 
 ABoss_Enemy::ABoss_Enemy() {
+	/** INIT*/
 	GetCharacterMovement()->MaxWalkSpeed = 200.f;
-
-	//health
 	MaxHealth = 30.f;
 	CurrentHealth = MaxHealth;
 
-	//attack
+	/** Attacl & Skill */
 	AttackDamage = 10.f;
-	AttackRange = 430.f;
+	AttackRange = 280.f;
 	KnockBackPower = 800.f;
 
 	ESkillFunction = CreateDefaultSubobject<UEnemySkillFunction>("ESkillFunction");	//단독
-}
 
+	/** Balance */
+	Balance = CreateDefaultSubobject<UBalance>("Balance");
+	DecreaseBalanceTime = 1.0f;
+	bIsFainted = false;
+}
+#pragma region INIT
 void ABoss_Enemy::PossessedBy(AController* NewController) {
 	Super::PossessedBy(NewController);
 
@@ -26,22 +28,17 @@ void ABoss_Enemy::PossessedBy(AController* NewController) {
 }
 void ABoss_Enemy::BeginPlay() {
 	Super::BeginPlay();
-
 }
 void ABoss_Enemy::Tick(float DeltaTime) {
 	Super::Tick(DeltaTime);
 }
 void ABoss_Enemy::PostInitializeComponents() {
 	Super::PostInitializeComponents();
-	//if (!Anim) Anim = Cast<UEnemyAnim>(GetMesh()->GetAnimInstance());
-
-	//Anim->OnMontageEnded.AddDynamic(this, &ABoss_Enemy::OnAttackMontageEnded);
 }
-void ABoss_Enemy::SetupPlayerInputComponent(UInputComponent* PlayerInputComponent)
-{
+void ABoss_Enemy::SetupPlayerInputComponent(UInputComponent* PlayerInputComponent){
 	Super::SetupPlayerInputComponent(PlayerInputComponent);
 }
-
+#pragma endregion
 void ABoss_Enemy::Attack(FString type) {
 	Super::Attack(type);
 
@@ -53,6 +50,20 @@ void ABoss_Enemy::Attack(FString type) {
 		Anim->Montage_Play(SkillAttackMontage);
 		Anim->Montage_JumpToSection(GetAttackMontageSection("Skill"), SkillAttackMontage);
 	}
+}
+float ABoss_Enemy::TakeDamage(float DamageAmount, struct FDamageEvent const& DamageEvent, class AController* EventInstigator, AActor* DamageCauser) {
+	Super::TakeDamage(DamageAmount, DamageEvent, EventInstigator, DamageCauser);
+
+	/** Balance Test */
+	Balance->SetCurrentBalance(20.f);
+	Balance->SetDecreaseBalance(false);
+	if (Balance->GetCurrentBalance() >= 100.f) BrokenBalance();
+	else GetWorldTimerManager().SetTimer(BalanceHandle, FTimerDelegate::CreateLambda([&] { Balance->SetDecreaseBalance(true); }), DecreaseBalanceTime, false);
+
+	/** ShowDamageText */
+	GetAttackFuntion()->SpawnDamageText(GetActorLocation(), DamageAmount, DamageTextWidget, EventInstigator);
+
+	return DamageAmount;
 }
 void ABoss_Enemy::SkillAttack() {
 	//Skill 불러오기
@@ -71,10 +82,6 @@ void ABoss_Enemy::SkillAttack() {
 
 	GetWorldTimerManager().SetTimer(SKillCoolTimer, this, &ABoss_Enemy::SkillAttackEnd, 1.0f, false);
 }
-void ABoss_Enemy::DashSkill() {
-	Anim->Montage_JumpToSection("Attack5", SkillAttackMontage);
-	GetWorldTimerManager().SetTimer(SKillCoolTimer, this, &ABoss_Enemy::SkillAttackEnd, 0.79f, false);
-}
 void ABoss_Enemy::SkillAttackEnd() {
 	bisSkill = false;
 
@@ -83,9 +90,43 @@ void ABoss_Enemy::SkillAttackEnd() {
 	else if (SkillType == "Lazer") ESkillFunction->LazerEnd();
 	else if (SkillType == "Magic") ESkillFunction->MagicEnd();
 }
+void ABoss_Enemy::DashSkill() {
+	Anim->Montage_JumpToSection("Attack5", SkillAttackMontage);
+	GetWorldTimerManager().SetTimer(SKillCoolTimer, this, &ABoss_Enemy::SkillAttackEnd, 0.79f, false);
+}
+void ABoss_Enemy::StartLookAround(bool isLeft) {
+	/** Look At the Target */
+	AMainPlayer* Target = Cast<AMainPlayer>(EnemyController->GetBrainComponent()->GetBlackboardComponent()->GetValueAsObject(AEnemyController::TargetActor));
+	if (Target == nullptr) return;
+	FVector LookVec = Target->GetActorLocation() - GetActorLocation();
+	LookVec.Z = 0;
+	FRotator LookRot = FRotationMatrix::MakeFromX(LookVec).Rotator();
+	SetActorRotation(LookRot);
 
-//void ABoss_Enemy::OnAttackMontageEnded(UAnimMontage* Montage, bool bInterrupted) {
-//	if (!IsAttacking) return;
-//	IsAttacking = false;
-//	OnAttackEnd.Broadcast();
-//}
+	/** Animation */
+	Anim->Montage_Play(LookAroundMontage);
+	if (isLeft) Anim->Montage_JumpToSection("Left", LookAroundMontage);
+	else  Anim->Montage_JumpToSection("Right", LookAroundMontage);
+}
+void ABoss_Enemy::BrokenBalance() {
+	Balance->SetCurrentBalance(-100.f);
+	bIsFainted = true;
+	EnemyController->SetIsFaint(true);
+}
+void ABoss_Enemy::ActiveFaint() {
+	if (!FaintMontage) return;
+	Anim->Montage_Stop(0.f);
+	Anim->Montage_Play(FaintMontage);
+	Anim->Montage_JumpToSection("Faint", FaintMontage);
+}
+void ABoss_Enemy::DeactiveFaint() {		
+	bIsFainted = false;
+	EnemyController->SetIsFaint(false);
+}
+void ABoss_Enemy::SpecialHitMontage() {
+	if (!FaintMontage) return;
+	bIsFainted = false;
+	Anim->Montage_Stop(0.f);
+	Anim->Montage_Play(FaintMontage);
+	Anim->Montage_JumpToSection("SpecialHited", FaintMontage);
+}

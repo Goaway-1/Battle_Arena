@@ -1,6 +1,4 @@
 #include "Enemy.h"
-#include "EnemyController.h"
-#include "EnemyAnim.h"
 #include "MainPlayer.h"
 #include "Components/WidgetComponent.h"
 #include "Blueprint/UserWidget.h"
@@ -12,10 +10,6 @@
 #include "Components/DecalComponent.h"
 #include "DamageTextWidget.h"	
 #include "Components/PrimitiveComponent.h"
-#include "EnemySkillFunction.h"
-#include "Engine/World.h"
-#include "Balance.h"
-#include "BehaviorTree/BlackboardComponent.h"
 #include "BehaviorTree/BehaviorTreeComponent.h"
 #include "Perception/AIPerceptionComponent.h"
 
@@ -59,11 +53,6 @@ AEnemy::AEnemy()
 	AttackDamage = 10.f;
 	AttackRange = 430.f;	
 	KnockBackPower = 800.f;
-#pragma endregion
-#pragma region BALANCE
-	Balance = CreateDefaultSubobject<UBalance>("Balance");
-	DecreaseBalanceTime = 1.0f;
-	bIsFainted = false;
 #pragma endregion
 }
 
@@ -115,22 +104,6 @@ void AEnemy::SetupPlayerInputComponent(UInputComponent* PlayerInputComponent)
 	Super::SetupPlayerInputComponent(PlayerInputComponent);
 }
 
-#pragma region MOVEMENT
-void AEnemy::StartLookAround(bool isLeft) {
-	/** Look At the Target */
-	AMainPlayer* Target = Cast<AMainPlayer>(EnemyController->GetBrainComponent()->GetBlackboardComponent()->GetValueAsObject(AEnemyController::TargetActor));
-	if(Target == nullptr) return;
-	FVector LookVec = Target->GetActorLocation() - GetActorLocation();
-	LookVec.Z = 0;
-	FRotator LookRot = FRotationMatrix::MakeFromX(LookVec).Rotator();
-	SetActorRotation(LookRot);
-
-	/** Animation */
-	Anim->Montage_Play(LookAroundMontage);
-	if (isLeft) Anim->Montage_JumpToSection("Left", LookAroundMontage);
-	else  Anim->Montage_JumpToSection("Right", LookAroundMontage);
-}
-#pragma endregion
 #pragma region ATTACK
 void AEnemy::Attack(FString type) {
 	if(!Anim) Anim = Cast<UEnemyAnim>(GetMesh()->GetAnimInstance());
@@ -145,7 +118,10 @@ void AEnemy::AttackReady() {
 }
 void AEnemy::AttackStart_Internal() {
 	FString Type = "Enemy";
-	AttackFunction->SkillAttackStart(GetActorLocation(),GetActorForwardVector(),InternalDamageType, Type, GetHitParticle(),GetAttackRange(), AttackDamage,1);
+	AttackFunction->SkillAttackStart(GetActorLocation(),GetActorForwardVector(),InternalDamageType, Type, GetHitParticle(),GetAttackRange(), AttackDamage, AttackCnt);
+
+	AttackCnt++;
+	if (AttackCnt > 2) AttackCnt = 0;
 }
 void AEnemy::AttackStart_Collision(bool value) {
 	if (value) RightWeapon->SetCollisionEnabled(ECollisionEnabled::QueryOnly);
@@ -172,15 +148,6 @@ float AEnemy::TakeDamage(float DamageAmount, struct FDamageEvent const& DamageEv
 		DeathEnd();
 	}
 	HealthBar->SetOwnerHealth(GetHealthRatio(),MaxHealth, CurrentHealth);
-
-	/** Balance Test */
-	Balance->SetCurrentBalance(20.f);
-	Balance->SetDecreaseBalance(false);
-	if (Balance->GetCurrentBalance() >= 100.f) BrokenBalance();
-	else GetWorldTimerManager().SetTimer(BalanceHandle, FTimerDelegate::CreateLambda([&] { Balance->SetDecreaseBalance(true); }), DecreaseBalanceTime, false);
-
-	/** ShowDamageText */
-	AttackFunction->SpawnDamageText(GetActorLocation(), DamageAmount, DamageTextWidget, EventInstigator);
 
 	return DamageAmount;
 }
@@ -220,7 +187,7 @@ void AEnemy::LaunchSky(FVector Pos) {
 }
 FName AEnemy::GetAttackMontageSection(FString Type) {
 	if (Type == "Attack") {
-		int range = FMath::RandRange(1,2);
+		int range = FMath::RandRange(1, GetAttackTypeCnt());
 		AttackDamage = (range == 1) ? 10.f : 20.f;
 		return FName(*FString::Printf(TEXT("Attack%d"), range));
 	}
@@ -271,12 +238,12 @@ void AEnemy::OnWeaponOverlap(UPrimitiveComponent* OverlappedComponent, AActor* O
 		}
 	}
 }
-#pragma endregion
 void AEnemy::OnAttackMontageEnded(UAnimMontage* Montage, bool bInterrupted) {
 	if (!IsAttacking) return;
 	IsAttacking = false;
 	OnAttackEnd.Broadcast();
 }
+#pragma endregion
 #pragma region HUD
 void AEnemy::ShowEnemyTarget() {
 	if (!TargetingDecal) return;
@@ -296,29 +263,5 @@ void AEnemy::HideEnemyHUD() {
 }
 void AEnemy::SetHealthRatio() {
 	HealthRatio = CurrentHealth / MaxHealth;
-}
-#pragma endregion
-#pragma region BALANCE
-void AEnemy::BrokenBalance() {
-	Balance->SetCurrentBalance(-100.f);
-	bIsFainted = true;
-	EnemyController->SetIsFaint(true);
-}
-void AEnemy::ActiveFaint() {	
-	if (!FaintMontage) return;
-	Anim->Montage_Stop(0.f);
-	Anim->Montage_Play(FaintMontage);
-	Anim->Montage_JumpToSection("Faint", FaintMontage);
-}
-void AEnemy::DeactiveFaint() {		//Animation과 연동 -> 상태 도중 맞을때
-	bIsFainted = false;		
-	EnemyController->SetIsFaint(false);
-}
-void AEnemy::SpecialHitMontage() {
-	if (!FaintMontage) return;
-	bIsFainted = false;
-	Anim->Montage_Stop(0.f);
-	Anim->Montage_Play(FaintMontage);
-	Anim->Montage_JumpToSection("SpecialHited", FaintMontage);
 }
 #pragma endregion

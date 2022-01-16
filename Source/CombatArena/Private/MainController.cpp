@@ -65,7 +65,7 @@ void AMainController::SetPlayerBalance() {
 	BalanceBarOutLine->SetOwnerBalance(MainPlayer->GetBalance()->GetBalanceRatio(), MainPlayer->GetBalance()->GetMaxBalance(), MainPlayer->GetBalance()->GetCurrentBalance());
 }
 
-void AMainController::SetBalanceTarget(AEnemy* value) {
+void AMainController::SetBalanceTarget(ABoss_Enemy* value) {
 	BalanceTargetEnemy = value;
 	EnemyBalanceBarOutLine->SetEnemyOwner(value);
 }

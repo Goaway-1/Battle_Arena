@@ -14,7 +14,6 @@ public:
 	virtual void NativeInitializeAnimation() override;
 	virtual void NativeUpdateAnimation(float DeltaSeconds) override;
 
-
 	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Movement")
 	class AEnemy* Enemy;
 
