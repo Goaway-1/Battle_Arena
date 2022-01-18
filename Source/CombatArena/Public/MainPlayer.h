@@ -182,6 +182,11 @@ public:
 	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "Anims")
 	UAnimMontage* DodgeMontage;
 
+
+	//UPROPERTY(EditDefaultsOnly, Category = "Montage", Meta = (AllowPrivateAccess = true))
+	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "Anims")
+	UAnimMontage* PickUpMontage;
+
 	UFUNCTION()
 	void Dodge();
 
@@ -611,5 +616,5 @@ public:
 
 	UFUNCTION(BlueprintCallable)
 	void LoadData();
-#pragma endregion
+#pragma endregion	
 };

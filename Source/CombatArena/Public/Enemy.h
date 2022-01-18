@@ -46,16 +46,16 @@ protected:
 #pragma region MONTAGE
 protected:
 	UPROPERTY(EditDefaultsOnly, Category = "Montage", Meta = (AllowPrivateAccess = true))
-	class UAnimMontage* AttackMontage;
+	UAnimMontage* AttackMontage;
 
 	UPROPERTY(EditDefaultsOnly, Category = "Montage", Meta = (AllowPrivateAccess = true))
-	class UAnimMontage* DeathMontage;
+	UAnimMontage* DeathMontage;
 
 	UPROPERTY(EditDefaultsOnly, Category = "Montage", Meta = (AllowPrivateAccess = true))
 	UAnimMontage* HitedMontage;
 
 	UPROPERTY(EditDefaultsOnly, Category = "Montage", Meta = (AllowPrivateAccess = true))
-	class UAnimMontage* IsInFogMontage;
+	UAnimMontage* IsInFogMontage;
 	
 public:
 	UFUNCTION()

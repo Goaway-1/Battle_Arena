@@ -23,29 +23,36 @@ public:
 public:
 	virtual void Tick(float DeltaTime) override;
 
-	virtual void Equip(class AMainPlayer* Player) override;
-
-	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Attack")
+private:
+	UPROPERTY(EditAnywhere, Category = "Attack", Meta = (AllowPrivateAccess = true))
 	float AttackRange;
 
-	FORCEINLINE float GetAttackRange() { return AttackRange; }
-
 	/** Arrow */
-	UPROPERTY(EditDefaultsOnly, BlueprintReadWrite, Category = "Arrow", meta = (AllowPrivateAccess = "true"))
+	UPROPERTY(EditDefaultsOnly, Category = "Arrow", Meta = (AllowPrivateAccess = true))
 	class AArrow* Arrow;
 
-	UPROPERTY(EditDefaultsOnly, BlueprintReadWrite, Category = "Arrow", meta = (AllowPrivateAccess = "true"))
+	UPROPERTY(EditDefaultsOnly, Category = "Arrow", Meta = (AllowPrivateAccess = true))
 	TSubclassOf<class AArrow> ArrowClass;
 
 	/** Charge & Shoot */
-	UPROPERTY(EditAnyWhere, BlueprintReadWrite, Category = "Arrow")
+	UPROPERTY(EditAnyWhere, Category = "Arrow", Meta = (AllowPrivateAccess = true))
 	float ChargeAmount;
 
-	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Owner")
-	class AActor* BowOwner;
+	AActor* BowOwner;
+	AController* BowController;
 
-	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Owner")
-	class AController* BowController;
+	UPROPERTY(EditDefaultsOnly, Category = "Sound", Meta = (AllowPrivateAccess = true))
+	class USoundWave* DrowSound;
+
+public:
+	virtual void Equip(class AMainPlayer* Player) override;
+
+	FORCEINLINE float GetAttackRange() { return AttackRange; }
+
+	FORCEINLINE float GetChargeAmount() { return ChargeAmount; }
+
+	UFUNCTION(BlueprintCallable)
+	void SetChargeAmount(float value);
 
 	UFUNCTION(BlueprintNativeEvent, BlueprintCallable)
 	void BeginCharge();

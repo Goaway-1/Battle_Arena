@@ -654,13 +654,14 @@ void AMainPlayer::UnBlocking() {
 bool AMainPlayer::IsBlockingSuccess(AActor* DamageCauser) {
 	FRotator BetweenRot = UKismetMathLibrary::FindLookAtRotation(GetActorLocation(), DamageCauser->GetActorLocation());
 	BetweenRot = UKismetMathLibrary::NormalizedDeltaRotator(GetActorRotation(), BetweenRot);
-	bool isShieldRange = UKismetMathLibrary::InRange_FloatFloat(BetweenRot.Yaw, CurrentShieldWeapon->ShiledMinAngle, CurrentShieldWeapon->ShiledMaxAngle);
+	bool isShieldRange = UKismetMathLibrary::InRange_FloatFloat(BetweenRot.Yaw, CurrentShieldWeapon->GetMinAngle(), CurrentShieldWeapon->GetMaxAngle());
 
-	if (isShieldRange && CurrentShieldWeapon->HitedParticle) {
+	if (isShieldRange && CurrentShieldWeapon->GetHitedParticle() && CurrentShieldWeapon->GetHitedSound()) {
 		FVector Loc = GetActorForwardVector();
 		Loc.Z = 0;
 		LaunchCharacter(DamageCauser->GetActorForwardVector() * 500.f, true, true);
-		UGameplayStatics::SpawnEmitterAtLocation(GetWorld(), CurrentShieldWeapon->HitedParticle, GetActorLocation(), FRotator(0.f));
+		UGameplayStatics::SpawnEmitterAtLocation(GetWorld(), CurrentShieldWeapon->GetHitedParticle(), GetActorLocation(), FRotator(0.f));
+		UGameplayStatics::PlaySound2D(this, CurrentShieldWeapon->GetHitedSound());
 		return true;
 	}
 	return false;
@@ -697,7 +698,7 @@ void AMainPlayer::EndCharge() {
 	}
 }
 void AMainPlayer::BowAnimCharge() {
-	if (Bow && bBowCharging) ChargeAmount = Bow->ChargeAmount;
+	if (Bow && bBowCharging) ChargeAmount = Bow->GetChargeAmount();
 }
 #pragma endregion
 
@@ -813,11 +814,9 @@ void AMainPlayer::EndThrow() {
 
 #pragma region ACTIVE
 void AMainPlayer::ActiveInteraction() {
-	if (ActiveOverlappingItem != nullptr) ItemEquip();
 	/** Active SpecialAttack */
 	float Inner = this->GetDotProductTo(BalanceTarget);
 	if (Inner > 0.3f && bCanSpecialAttack && !bAttacking) ActiveSpecialAttack();
-
 	/** Item or Weapon */
 	else if (ActiveOverlappingItem != nullptr) ItemEquip();
 }
@@ -848,6 +847,7 @@ void AMainPlayer::ItemEquip() {
 		CurrentHealth = Potion->UseItem(CurrentHealth);
 		SetHealthRatio();
 	}
+	if (AnimInstance && PickUpMontage) AnimInstance->Montage_Play(PickUpMontage);
 	SetActiveOverlappingItem(nullptr);
 }
 void AMainPlayer::ItemDrop() {

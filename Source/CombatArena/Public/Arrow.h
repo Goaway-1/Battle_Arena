@@ -64,6 +64,9 @@ private:
 
 	UPROPERTY(VisibleAnywhere, Category = "Arrow | Destory")
 	float DestroyTime;
+
+	UPROPERTY(EditDefaultsOnly, Category = "Sound", Meta = (AllowPrivateAccess = true))
+	class USoundWave* ShotSound;
 public:
 	UFUNCTION()
 	void DestroyArrow();

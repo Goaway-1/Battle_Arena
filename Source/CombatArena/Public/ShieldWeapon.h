@@ -1,5 +1,3 @@
-// Fill out your copyright notice in the Description page of Project Settings.
-
 #pragma once
 
 #include "EngineMinimal.h"
@@ -18,18 +16,24 @@ public:
 
 	virtual void BeginPlay() override;
 
-	virtual void Equip(class AMainPlayer* Player) override;
-
-#pragma region SHIELDRANGE
-	UPROPERTY(VisibleAnywhere, BlueprintReadWrite, Category = "Angle")
+private:
+	UPROPERTY(VisibleAnywhere, Category = "Angle")
 	float ShiledMinAngle;
 
-	UPROPERTY(VisibleAnywhere, BlueprintReadWrite, Category = "Angle")
+	UPROPERTY(VisibleAnywhere, Category = "Angle")
 	float ShiledMaxAngle;
 
-	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Paticle")
+	UPROPERTY(EditDefaultsOnly, Category = "Paticle", Meta = (AllowPrivateAccess = true))
 	class UParticleSystem* HitedParticle;
-#pragma endregion
 
+	UPROPERTY(EditDefaultsOnly, Category = "Sound", Meta = (AllowPrivateAccess = true))
+	class USoundWave* HitedSound;
 
+public:
+	virtual void Equip(class AMainPlayer* Player) override;
+
+	FORCEINLINE float& GetMinAngle() { return ShiledMinAngle; }
+	FORCEINLINE float& GetMaxAngle() { return ShiledMaxAngle; }
+	FORCEINLINE USoundWave* GetHitedSound() {return HitedSound; }
+	FORCEINLINE UParticleSystem* GetHitedParticle() { return HitedParticle; }
 };

@@ -40,8 +40,14 @@ void ABowWeapon::Equip(class AMainPlayer* Player) {
 		}
 	}
 }
+
+void ABowWeapon::SetChargeAmount(float value) {
+	ChargeAmount = value;
+}
 void ABowWeapon::BeginCharge_Implementation() {
 	if(!Arrow) return;
+	
+	if(DrowSound != nullptr) UGameplayStatics::PlaySound2D(this, DrowSound);
 }
 void ABowWeapon::EndCharge_Implementation() {
 	if (Arrow) {

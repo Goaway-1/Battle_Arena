@@ -84,6 +84,8 @@ void AArrow::Fire(float Amount,int Cnt) {
 	FirePower = Amount;
 	this->AttackCnt = Cnt;
 
+	if(ShotSound != nullptr) UGameplayStatics::PlaySound2D(this, ShotSound);
+
 	GetWorldTimerManager().SetTimer(DestroyHandle, this, &AArrow::DestroyArrow, DestroyTime, false);
 }
 void AArrow::DestroyArrow() {

@@ -10634,3 +10634,69 @@
  
 **<h3>Realization</h3>**
   - null
+
+## **01.18**
+> **<h3>Today Dev Story</h3>**
+- ## <span style = "color:yellow;">소리 추가</span>  
+  - <img src="Image/Swing_Sound.png" height="300" title="Swing_Sound">  
+  - 위와 같이 사운드큐를 사용하여 구현하고 배경음악 같은 경우 Attenuation을 활용하여 감쇠효과 적용
+    - Shield의 Block, Bow의 Drawing, Arrow의 Shot소리, HealthPotion는 각각의 클래스에서 구현
+    - 숲속, 폭포소리... 등등 구현
+
+      <details><summary>cpp 코드</summary> 
+
+      ```c++
+      //MainPlayer.cpp
+      bool AMainPlayer::IsBlockingSuccess(AActor* DamageCauser) {
+        ...
+        if (isShieldRange && CurrentShieldWeapon->HitedParticle && CurrentShieldWeapon->GetHitedSound()) {
+          ...
+          UGameplayStatics::PlaySound2D(this, CurrentShieldWeapon->GetHitedSound());
+          return true;
+        }
+        return false;
+      }
+      ```
+
+      ```c++
+      //BowWeapon.cpp
+      void ABowWeapon::BeginCharge_Implementation() {
+        if(!Arrow) return;
+        
+        if(DrowSound != nullptr) UGameplayStatics::PlaySound2D(this, DrowSound);
+      }
+      ```
+
+      ```c++
+      //Arrow.cpp
+      void AArrow::Fire(float Amount,int Cnt) {
+        ...
+        if(ShotSound != nullptr) UGameplayStatics::PlaySound2D(this, ShotSound);
+      }
+      ```
+
+      ```c++
+      //Potion.cpp
+      float APotion::UseItem(float Health) {
+        if (UsedSound != nullptr) UGameplayStatics::PlaySound2D(this, UsedSound);
+      }
+      ```
+      </details>
+      
+      <details><summary>h 코드</summary> 
+
+      ```c++
+      //ShieldWeapon.h
+      private:
+        UPROPERTY(EditDefaultsOnly, Category = "Sound", Meta = (AllowPrivateAccess = true))
+        class USoundWave* HitedSound;
+      public:
+        FORCEINLINE float& GetMinAngle() { return ShiledMinAngle; }
+        FORCEINLINE float& GetMaxAngle() { return ShiledMaxAngle; }
+        FORCEINLINE USoundWave* GetHitedSound() {return HitedSound; }
+        FORCEINLINE UParticleSystem* GetHitedParticle() { return HitedParticle; }
+      ```
+      </details>
+
+**<h3>Realization</h3>**
+  - 싸울때의 소리와 적의 스킬 소리만 보충으로 추가
