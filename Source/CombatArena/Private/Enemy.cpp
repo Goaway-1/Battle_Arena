@@ -149,6 +149,8 @@ float AEnemy::TakeDamage(float DamageAmount, struct FDamageEvent const& DamageEv
 	}
 	HealthBar->SetOwnerHealth(GetHealthRatio(),MaxHealth, CurrentHealth);
 
+	GetAttackFuntion()->SpawnDamageText(GetActorLocation(), DamageAmount, DamageTextWidget, EventInstigator);
+
 	return DamageAmount;
 }
 void AEnemy::DeathEnd() {
@@ -265,3 +267,17 @@ void AEnemy::SetHealthRatio() {
 	HealthRatio = CurrentHealth / MaxHealth;
 }
 #pragma endregion
+
+void AEnemy::PlaySwingSound() {
+	if (SwingSound.Num() > 0) {
+		int range = FMath::RandRange(0, SwingSound.Num()-1);
+		UGameplayStatics::PlaySound2D(this, SwingSound[range]);
+	}
+}
+
+void AEnemy::PlayHitedSound() { 
+	if (HitedSound.Num() > 0) {
+		int range = FMath::RandRange(0, HitedSound.Num()-1);
+		UGameplayStatics::PlaySound2D(this, HitedSound[range]);
+	}
+}

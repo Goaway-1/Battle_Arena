@@ -33,6 +33,7 @@ public:
 	UPROPERTY(EditAnyWhere, BlueprintReadWrite, Category= "AI")
 	class UAIPerceptionComponent* AIPerception;
 
+	class AMainGameStateBase* MyGameState;
 public:
 	UFUNCTION()
 	void Sense(AActor* Actor, FAIStimulus Stimulus);

@@ -144,6 +144,8 @@ public:
 	void SetVisibleInFog(bool bisin, int time = 0);
 	void ActiveFogEvent();
 	void DeactiveFogEvent();
+
+	UFUNCTION()
 	void OnWeaponOverlap(UPrimitiveComponent* OverlappedComponent, AActor* OtherActor, UPrimitiveComponent* OtherComp, int32 OtherBodyIndex, bool bFromSweep, const FHitResult& SweepResult);
 
 	UFUNCTION(BlueprintCallable)
@@ -218,4 +220,18 @@ public:
 	FORCEINLINE float GetHealthRatio() { return HealthRatio; }
 
 #pragma endregion
+private:
+	//Hited
+	UPROPERTY(EditDefaultsOnly, Category = "Sound", Meta = (AllowPrivateAccess = true))
+	TArray<class USoundWave*> HitedSound;
+
+	UPROPERTY(EditDefaultsOnly, Category = "Sound", Meta = (AllowPrivateAccess = true))
+	TArray<class USoundWave*> SwingSound;
+
+public:
+	UFUNCTION(BlueprintCallable)
+	void PlaySwingSound();
+
+	UFUNCTION(BlueprintCallable)
+	void PlayHitedSound();
 };

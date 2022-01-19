@@ -10700,3 +10700,123 @@
 
 **<h3>Realization</h3>**
   - 싸울때의 소리와 적의 스킬 소리만 보충으로 추가
+
+## **01.18**
+> **<h3>Today Dev Story</h3>**
+- ## <span style = "color:yellow;">Enemy Battle Sound 추가</span>  
+  - <img src="Image/BattleSound.gif" height="300" title="BattleSound">  
+  - AGameStateBase클래스를 상속받은 AMainGameStateBase클래스를 생성.
+    - 이 클래스는 플레이어가 적과 전투 시 배경음악을 재생시키는 클래스로 몇명의 적이든 하나의 음악만을 재생해야하기 때문에 State로 구현
+    - SoundBase는 TArray로 받아 RandRange()메서드를 활용하여 랜덤 사운드 재생
+  - BattleEnemyCnt는 현재 싸우고 있는 적의 수를 관리하며 Start/EndBattleSound()메서드는 EnemyController클래스의 Secnse에서 호출
+    - 전투 중인 적이 현재 0명이라면 배경음악을 재생하고 만약 1명 있다면 이미 재생 중이므로 재생하지 않는다.
+    - 총 0명이 되었을때 음악은 중지
+
+      <details><summary>cpp 코드</summary> 
+
+      ```c++
+      //AMainGameStateBase.cpp
+      AMainGameStateBase::AMainGameStateBase() {
+        BattleEnemyCnt = 0;
+      }
+
+      void AMainGameStateBase::StartBattleSound() {
+        if(!BattleAudio && BattleSound.Num() > 0) {
+          int range = FMath::RandRange(0, BattleSound.Num()-1);
+          BattleAudio = UGameplayStatics::SpawnSound2D(this, BattleSound[range]);
+        }
+        if(BattleEnemyCnt++ == 0) BattleAudio->SetActive(true,true);
+      }
+      void AMainGameStateBase::EndBattleSound() {
+        if(--BattleEnemyCnt == 0) BattleAudio->ToggleActive();
+      }
+      ```
+      ```c++
+      //EnemyController.cpp
+      void AEnemyController::BeginPlay() {
+        Super::BeginPlay();
+        MyGameState = GetWorld()->GetGameState<AMainGameStateBase>();
+      }
+      void AEnemyController::Sense(AActor* Actor, FAIStimulus Stimulus) {
+        if (Stimulus.WasSuccessfullySensed()) {
+          ...
+          if(MyGameState) MyGameState->StartBattleSound();
+        }
+        else {
+          ...
+          if (MyGameState) MyGameState->EndBattleSound();
+        }
+      }
+      ```
+
+      </details>
+
+      <details><summary>h 코드</summary> 
+
+      ```c++
+      //AMainGameStateBase.h
+      public:
+        AMainGameStateBase();
+
+      private:
+        UPROPERTY(EditDefaultsOnly, Category = "Sound", Meta = (AllowPrivateAccess = true))
+	      TArray<class USoundBase*> BattleSound;
+
+        class UAudioComponent* BattleAudio;
+
+        int BattleEnemyCnt;
+      public:
+        void StartBattleSound();
+        void EndBattleSound();
+      ```
+      ```c++
+      //EnemyController.h
+      private:
+        class AMainGameStateBase* MyGameState;
+      ```
+      </details>
+
+- ## <span style = "color:yellow;">Enemy Battle Sound 추가_2</span>  
+  - PlaySwing/HitedSound() 메서드를 Blueprint에서 노티파이로 호출하여 사용
+
+    <details><summary>cpp 코드</summary> 
+    
+    ```c++
+    //Enemy.cpp
+    void AEnemy::PlaySwingSound() {
+      if (SwingSound.Num() > 0) {
+        int range = FMath::RandRange(0, SwingSound.Num()-1);
+        UGameplayStatics::PlaySound2D(this, SwingSound[range]);
+      }
+    }
+
+    void AEnemy::PlayHitedSound() {
+      if (HitedSound.Num() > 0) {
+        int range = FMath::RandRange(0, HitedSound.Num()-1);
+        UGameplayStatics::PlaySound2D(this, HitedSound[range]);
+      }
+    }
+    ```
+    </details>
+    <details><summary>h 코드</summary> 
+    
+    ```c++
+    //Enemy.h
+    private:
+      UPROPERTY(EditDefaultsOnly, Category = "Sound", Meta = (AllowPrivateAccess = true))
+      TArray<class USoundWave*> HitedSound;
+
+      UPROPERTY(EditDefaultsOnly, Category = "Sound", Meta = (AllowPrivateAccess = true))
+      TArray<class USoundWave*> SwingSound;
+
+    public:
+      UFUNCTION(BlueprintCallable)
+      void PlaySwingSound();
+
+      UFUNCTION(BlueprintCallable)
+      void PlayHitedSound();
+    ```
+    </details>
+
+**<h3>Realization</h3>**
+  - null

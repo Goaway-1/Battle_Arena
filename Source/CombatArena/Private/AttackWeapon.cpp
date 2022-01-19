@@ -1,5 +1,6 @@
 #include "AttackWeapon.h"
 #include "Boss_Enemy.h"
+#include "Enemy.h"
 
 AAttackWeapon::AAttackWeapon() {
 	WeaponPos = EWeaponPos::EWP_Melee;
@@ -26,14 +27,13 @@ void AAttackWeapon::SetAttackCollision(bool value) {
 
 void AAttackWeapon::OnAttackOverlap(UPrimitiveComponent* OverlappedComponent, AActor* OtherActor, UPrimitiveComponent* OtherComp, int32 OtherBodyIndex, bool bFromSweep, const FHitResult& SweepResult) {
 	if (OtherActor) {
-		ABoss_Enemy* Enemy = Cast<ABoss_Enemy>(OtherActor);
+		AEnemy* Enemy = Cast<AEnemy>(OtherActor);
+		AMainPlayer* Player = Cast<AMainPlayer>(AtOwner);
+		ABoss_Enemy* BEnemy = Cast<ABoss_Enemy>(Enemy);
+		if (BEnemy) Player->PlayerController->SetBalanceTarget(BEnemy);
 		if (Enemy) {
-			/** Set Enemy Balance */
-			AMainPlayer* Player = Cast<AMainPlayer>(AtOwner);
-			Player->PlayerController->SetBalanceTarget(Enemy);	
-
 			/** Attack */
-			Enemy->SetCurrentAttack(AtOwner->GetName() + this->GetName() + FString::FromInt(Player->GetAttackCnt()));	
+			Enemy->SetCurrentAttack(AtOwner->GetName() + this->GetName() + FString::FromInt(Player->GetAttackCnt()));
 			UGameplayStatics::ApplyDamage(Enemy, Damage, AtController, AtOwner, AtDamageType);
 		}
 	}

@@ -5,7 +5,7 @@
 ABoss_Enemy::ABoss_Enemy() {
 	/** INIT*/
 	GetCharacterMovement()->MaxWalkSpeed = 200.f;
-	MaxHealth = 30.f;
+	MaxHealth = 100.f;
 	CurrentHealth = MaxHealth;
 
 	/** Attacl & Skill */
@@ -59,9 +59,6 @@ float ABoss_Enemy::TakeDamage(float DamageAmount, struct FDamageEvent const& Dam
 	Balance->SetDecreaseBalance(false);
 	if (Balance->GetCurrentBalance() >= 100.f) BrokenBalance();
 	else GetWorldTimerManager().SetTimer(BalanceHandle, FTimerDelegate::CreateLambda([&] { Balance->SetDecreaseBalance(true); }), DecreaseBalanceTime, false);
-
-	/** ShowDamageText */
-	GetAttackFuntion()->SpawnDamageText(GetActorLocation(), DamageAmount, DamageTextWidget, EventInstigator);
 
 	return DamageAmount;
 }

@@ -3,6 +3,7 @@
 #include "BehaviorTree/BehaviorTreeComponent.h"
 #include "Perception/AIPerceptionComponent.h"
 #include "MainPlayer.h"
+#include "MainGameStateBase.h"
 
 const FName AEnemyController::HomePosKey(TEXT("HomePosKey"));
 const FName AEnemyController::PatrolPosKey(TEXT("PatrolPosKey"));
@@ -24,6 +25,8 @@ void AEnemyController::BeginPlay() {
         if (!RunBehaviorTree(BTree)) return;
         Blackboard->SetValueAsVector(HomePosKey, GetPawn()->GetActorLocation());	//LocationÀ» HomePosKey¿¡..
     }
+
+    MyGameState = GetWorld()->GetGameState<AMainGameStateBase>();
 }
 
 void AEnemyController::Tick(float DeltaTime){
@@ -37,8 +40,12 @@ void AEnemyController::Sense(AActor* Actor, FAIStimulus Stimulus) {
         AMainPlayer* Player = Cast<AMainPlayer>(Actor);
         if(Player == nullptr) return;
         Blackboard->SetValueAsObject(TargetActor, Actor);
+        if(MyGameState) MyGameState->StartBattleSound();
     }
-	else Blackboard->ClearValue(TargetActor);
+	else {
+        Blackboard->ClearValue(TargetActor);
+        if (MyGameState) MyGameState->EndBattleSound();
+    }
 }
 
 void AEnemyController::StopBeTree() {
