@@ -14,3 +14,6 @@ void AMainGameStateBase::StartBattleSound() {
 void AMainGameStateBase::EndBattleSound() {
 	if(--BattleEnemyCnt == 0) BattleAudio->ToggleActive();
 }
+void AMainGameStateBase::ForceEndBattleSound() {
+	BattleAudio->ToggleActive();
+}

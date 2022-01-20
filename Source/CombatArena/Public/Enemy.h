@@ -220,6 +220,7 @@ public:
 	FORCEINLINE float GetHealthRatio() { return HealthRatio; }
 
 #pragma endregion
+#pragma region SOUND
 private:
 	//Hited
 	UPROPERTY(EditDefaultsOnly, Category = "Sound", Meta = (AllowPrivateAccess = true))
@@ -234,4 +235,5 @@ public:
 
 	UFUNCTION(BlueprintCallable)
 	void PlayHitedSound();
+#pragma endregion
 };

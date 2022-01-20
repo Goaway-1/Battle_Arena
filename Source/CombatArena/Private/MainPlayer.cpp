@@ -19,6 +19,7 @@
 #include "BowWeapon.h"
 #include "Grenade.h"
 #include "Balance.h"
+#include "MainGameStateBase.h"
 
 AMainPlayer::AMainPlayer()
 {
@@ -320,6 +321,8 @@ void AMainPlayer::Jump() {
 	Super::Jump();
 }
 void  AMainPlayer::SetMovementStatus(EMovementStatus Status) {
+	if(GetMovementStatus() == EMovementStatus::EMS_Death) return;
+
 	MovementStatus = Status;
 	if (MovementStatus == EMovementStatus::EMS_Sprinting) GetCharacterMovement()->MaxWalkSpeed = SprintingSpeed;
 	else if(MovementStatus == EMovementStatus::EMS_Drawing) GetCharacterMovement()->MaxWalkSpeed = BowSpeed;
@@ -542,7 +545,7 @@ FName AMainPlayer::GetAttackMontageSection(FString Type, int32 Section) {
 }
 float AMainPlayer::TakeDamage(float DamageAmount, struct FDamageEvent const& DamageEvent, class AController* EventInstigator, AActor* DamageCauser) {
 	Super::TakeDamage(DamageAmount, DamageEvent, EventInstigator, DamageCauser);
-	if(GetMovementStatus() == EMovementStatus::EMS_Dodge) return 0;
+	if(GetMovementStatus() == EMovementStatus::EMS_Dodge || GetMovementStatus() == EMovementStatus::EMS_Death) return 0;
 
 	if (LastAttack != CurrentAttack) LastAttack = CurrentAttack;
 	else if (DamageEvent.DamageTypeClass != InternalDamageType) return 0;
@@ -560,11 +563,12 @@ float AMainPlayer::TakeDamage(float DamageAmount, struct FDamageEvent const& Dam
 	/** Health */
 	if (CurrentHealth <= 0) return 0.f;
 	CurrentHealth -= DamageAmount;
+	SetHealthRatio();
 	if (CurrentHealth <= 0) {
 		CurrentHealth = 0;
 		Death();
+		return DamageAmount;
 	}
-	SetHealthRatio();
 
 	/** Balance */
 	Balance->SetCurrentBalance(20.f);
@@ -622,6 +626,12 @@ void AMainPlayer::Death() {
 		AnimInstance->Montage_JumpToSection("Death_1", DeathMontage);
 	}
 
+	/** Sound */
+	GetWorld()->GetGameState<AMainGameStateBase>()->ForceEndBattleSound();
+	if (DeathSound.Num() > 0) {
+		for (int i = 0; i < DeathSound.Num(); i++) UGameplayStatics::PlaySound2D(this, DeathSound[i]);
+	}
+
 	GetCapsuleComponent()->SetCollisionEnabled(ECollisionEnabled::NoCollision);
 }
 void AMainPlayer::DeathEnd() {
@@ -634,6 +644,12 @@ void AMainPlayer::Hited() {
 	SetMovementStatus(EMovementStatus::EMS_Hited);
 	AnimInstance->StopAllMontages(0.f);
 	AnimInstance->Montage_Play(HitedMontage);
+
+	/** Sound */
+	if (HitedSound.Num() > 0) {
+		int range = FMath::RandRange(0, HitedSound.Num() - 1);
+		UGameplayStatics::PlaySound2D(this, HitedSound[range]);
+	}
 }
 void AMainPlayer::HitEnd() {
 	SetMovementStatus(EMovementStatus::EMS_Default);

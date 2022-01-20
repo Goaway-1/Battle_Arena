@@ -617,4 +617,14 @@ public:
 	UFUNCTION(BlueprintCallable)
 	void LoadData();
 #pragma endregion	
+
+#pragma region SOUND
+private:
+	UPROPERTY(EditDefaultsOnly, Category = "Sound", Meta = (AllowPrivateAccess = true))
+	TArray<class USoundWave*> HitedSound;
+
+	UPROPERTY(EditDefaultsOnly, Category = "Sound", Meta = (AllowPrivateAccess = true))
+	TArray<class USoundWave*> DeathSound;
+#pragma endregion
+
 };

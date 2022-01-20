@@ -25,4 +25,5 @@ private:
 public:
 	void StartBattleSound();
 	void EndBattleSound();
+	void ForceEndBattleSound();
 };

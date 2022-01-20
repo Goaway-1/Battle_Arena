@@ -13,7 +13,7 @@ ANormal_Enemy::ANormal_Enemy() {
 	AttackRange = 430.f;
 	KnockBackPower = 800.f;
 }
-
+#pragma region INIT
 void ANormal_Enemy::PossessedBy(AController* NewController) {
 	Super::PossessedBy(NewController);
 }
@@ -31,6 +31,7 @@ void ANormal_Enemy::SetupPlayerInputComponent(UInputComponent* PlayerInputCompon
 {
 	Super::SetupPlayerInputComponent(PlayerInputComponent);
 }
+#pragma endregion
 float ANormal_Enemy::TakeDamage(float DamageAmount, struct FDamageEvent const& DamageEvent, class AController* EventInstigator, AActor* DamageCauser) {
 	Super::TakeDamage(DamageAmount, DamageEvent, EventInstigator, DamageCauser);
 

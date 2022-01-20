@@ -50,7 +50,7 @@ void AEnemyController::Sense(AActor* Actor, FAIStimulus Stimulus) {
 
 void AEnemyController::StopBeTree() {
     UBehaviorTreeComponent* BTComp = Cast<UBehaviorTreeComponent>(BrainComponent);
-    BTComp->StopTree();
+    if(BTComp) BTComp->StopTree();
 }
 
 FVector AEnemyController::GetTargetVec() {

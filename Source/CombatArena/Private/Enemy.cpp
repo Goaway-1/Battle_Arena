@@ -143,25 +143,25 @@ float AEnemy::TakeDamage(float DamageAmount, struct FDamageEvent const& DamageEv
 
 	SetHealthRatio();
 	CurrentHealth -= DamageAmount;
+	HealthBar->SetOwnerHealth(GetHealthRatio(), MaxHealth, CurrentHealth);
 	if(CurrentHealth <= 0) {
 		CurrentHealth = 0;
 		DeathEnd();
+		return DamageAmount;
 	}
-	HealthBar->SetOwnerHealth(GetHealthRatio(),MaxHealth, CurrentHealth);
 
 	GetAttackFuntion()->SpawnDamageText(GetActorLocation(), DamageAmount, DamageTextWidget, EventInstigator);
-
 	return DamageAmount;
 }
 void AEnemy::DeathEnd() {
+	Cast<AEnemyController>(GetController())->StopBeTree();	//비헤이비어 트리 정지 (내가 만듬)
+	GetCapsuleComponent()->SetCollisionEnabled(ECollisionEnabled::NoCollision);
+
 	if (!Anim) Anim = Cast<UEnemyAnim>(GetMesh()->GetAnimInstance());
 	if (DeathMontage && Anim) {
 		Anim->Montage_Play(DeathMontage);
 		Anim->Montage_JumpToSection("Death", DeathMontage);
 	}
-
-	Cast<AEnemyController>(GetController())->StopBeTree();	//비헤이비어 트리 정지 (내가 만듬)
-	GetCapsuleComponent()->SetCollisionEnabled(ECollisionEnabled::NoCollision);
 }
 void AEnemy::DestroyEnemy() {
 	GetMesh()->bPauseAnims = true;
@@ -267,17 +267,17 @@ void AEnemy::SetHealthRatio() {
 	HealthRatio = CurrentHealth / MaxHealth;
 }
 #pragma endregion
-
+#pragma region SOUND
 void AEnemy::PlaySwingSound() {
 	if (SwingSound.Num() > 0) {
 		int range = FMath::RandRange(0, SwingSound.Num()-1);
 		UGameplayStatics::PlaySound2D(this, SwingSound[range]);
 	}
 }
-
 void AEnemy::PlayHitedSound() { 
 	if (HitedSound.Num() > 0) {
 		int range = FMath::RandRange(0, HitedSound.Num()-1);
 		UGameplayStatics::PlaySound2D(this, HitedSound[range]);
 	}
 }
+#pragma endregion
