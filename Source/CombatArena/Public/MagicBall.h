@@ -45,6 +45,9 @@ private:
 
 	UPROPERTY(VisibleAnywhere, Category = "MagicBall | HitInfo", Meta = (AllowPrivateAccess = true))
 	int HitCnt;
+
+	UPROPERTY(EditDefaultsOnly, Category = "Sound", Meta = (AllowPrivateAccess = true))
+	class USoundBase* MagicSound;
 public:
 	virtual void OnConstruction(const FTransform& Transform) override;
 

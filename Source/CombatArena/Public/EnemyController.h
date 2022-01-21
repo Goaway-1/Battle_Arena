@@ -33,6 +33,9 @@ public:
 	UPROPERTY(EditAnyWhere, BlueprintReadWrite, Category= "AI")
 	class UAIPerceptionComponent* AIPerception;
 
+	UPROPERTY(EditAnyWhere, BlueprintReadWrite, Category = "AI")
+	TSubclassOf<UAISense> TSense;
+
 	class AMainGameStateBase* MyGameState;
 public:
 	UFUNCTION()

@@ -47,6 +47,8 @@ void UEnemySkillFunction::LazerAttack() {
 		laz->SetActorHiddenInGame(false);
 		laz->SetActorEnableCollision(true);
 		laz->SetActorTickEnabled(true);
+
+		if (LazerSound) UGameplayStatics::SpawnSoundAtLocation(this, LazerSound, laz->GetActorLocation());
 	}
 	SetHitCnt();
 }
@@ -103,6 +105,7 @@ void UEnemySkillFunction::ConfirmTargetAndContinue() {
 
 	/** Apply Damage for Player */
 	if (TryOverlap) {
+		if (MeteorSound.Num() > 0) UGameplayStatics::SpawnSoundAtLocation(this, MeteorSound[1], Meteor->GetActorLocation());
 		for (auto i : Overlaps) {
 			AMainPlayer* PlayerOverlaped = Cast<AMainPlayer>(i.GetActor());
 			if (PlayerOverlaped && !OverlapedEnemy.Contains(PlayerOverlaped)) OverlapedEnemy.Add(PlayerOverlaped);
@@ -114,6 +117,7 @@ void UEnemySkillFunction::ConfirmTargetAndContinue() {
 			SetHitCnt();
 		}
 	}
+	Meteor->Destroy();
 }
 void UEnemySkillFunction::SpawnMeteor() {
 	FActorSpawnParameters SpawnParams;
@@ -126,6 +130,7 @@ void UEnemySkillFunction::SpawnMeteor() {
 
 	Meteor = GetWorld()->SpawnActor<ASK_Meteor>(MeteorClass, FVector(tmp), FRotator(0.f), SpawnParams);
 	Meteor->SetInitial(this);
+	if (MeteorSound.Num() > 0) UGameplayStatics::SpawnSoundAtLocation(this, MeteorSound[0], Meteor->GetActorLocation());
 }
 void UEnemySkillFunction::MagicAttack() {
 	FActorSpawnParameters SpawnParams;

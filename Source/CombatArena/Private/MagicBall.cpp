@@ -36,6 +36,9 @@ void AMagicBall::OnConstruction(const FTransform& Transform) {
 
 void AMagicBall::OnOverlapBegin(UPrimitiveComponent* OverlappedComponent, AActor* OtherActor, UPrimitiveComponent* OtherComp, int32 OtherBodyIndex, bool bFromSweep, const FHitResult& SweepResult) {
 	UGameplayStatics::SpawnEmitterAtLocation(GetWorld(), Impact_Particle, GetActorLocation() + Location_Offset_Impact_Particle, Rotate_Impact_Particle);
+
+	if (MagicSound) UGameplayStatics::SpawnSoundAtLocation(this, MagicSound, GetActorLocation());
+
 	Flying_Particle->Deactivate();
 	FTimerHandle handle;
 	GetWorld()->GetTimerManager().SetTimer(handle, [this]() {

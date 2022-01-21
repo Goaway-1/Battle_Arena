@@ -10820,3 +10820,164 @@
 
 **<h3>Realization</h3>**
   - null
+
+## **01.20**
+> **<h3>Today Dev Story</h3>**
+- ## <span style = "color:yellow;">Player Sound 추가</span>  
+  - MainPlayer가 피격되거나 사망 시 사운드를 재생하도록 추가
+  - 기존 방식과 동일하게 진행 (배열을 사용...)
+    - 추가로 MainGameStateBase클래스에서 ForceEndBattleSound()메서드를 구현하고 이는 Player가 사망 시 강제로 전투 노래를 종료
+
+    <details><summary>cpp 코드</summary> 
+    
+    ```c++
+    //MainPlayer.cpp
+    void AMainPlayer::Death() {
+      ...
+      /** Sound */
+      GetWorld()->GetGameState<AMainGameStateBase>()->ForceEndBattleSound();
+      if (DeathSound.Num() > 0) {
+        for (int i = 0; i < DeathSound.Num(); i++) UGameplayStatics::PlaySound2D(this, DeathSound[i]);
+      }
+    }
+    ```
+    ```c++
+    //AMainGameStateBase.cpp
+    void AMainGameStateBase::ForceEndBattleSound() {
+      BattleAudio->ToggleActive();
+    }
+    ```
+    </details>
+    <details><summary>h 코드</summary> 
+    
+    ```c++
+    //AMainGameStateBase.h
+    public:
+    	void ForceEndBattleSound();
+    ```
+    </details>
+
+- ## <span style = "color:yellow;">잡다한 것</span>
+  1. MainPlayer의 사망 시 몽타주가 실행되지 않는 오류 수정..
+    - TakeDamage()메서드에서 CurrentHealth가 0이하로 떨어질때 retrun하지 않아 발생
+    - 추가로 SetMovementStatus()메서드를 통해 EMS_Death가 되었을때는 수정이 더 이상 불가능 하도록 수정
+
+      <details><summary>cpp 코드</summary> 
+      
+      ```c++
+      //MainPlayer.cpp
+      void  AMainPlayer::SetMovementStatus(EMovementStatus Status) {
+        if(GetMovementStatus() == EMovementStatus::EMS_Death) return;
+        ...
+      }
+      float AMainPlayer::TakeDamage(float DamageAmount, struct FDamageEvent const& DamageEvent, class AController* EventInstigator, AActor* DamageCauser) {
+        Super::TakeDamage(DamageAmount, DamageEvent, EventInstigator, DamageCauser);
+        ...
+        if (CurrentHealth <= 0) {
+          ...
+          return DamageAmount;
+        }
+      }
+      ```
+      </details>
+
+**<h3>Realization</h3>**
+  - null
+
+## **01.21**
+> **<h3>Today Dev Story</h3>**
+## <span style = "color:yellow;">Skill Sound 추가</span> 
+  - LazerSound, MeteorSound는 EnemySkillFunction클래스에서 각각 활성화와 동시에 출력
+  - MaigcBall은 따로 클래스에서 구현
+    - 모든 사운드는 SoundCue로 생성하고 Attenuation 활성화하여 거리 비례 소리 지정...
+
+    <details><summary>cpp 코드</summary> 
+      
+    ```c++
+    //EnemySkillFunction.cpp
+    void UEnemySkillFunction::LazerAttack() {
+      ...
+      /** Lazer들의 위치 및 활성화 */
+      for (int32 i = 0; i < Lazer.Num(); i++) {
+        ...
+		    if (LazerSound) UGameplayStatics::SpawnSoundAtLocation(this, LazerSound, laz->GetActorLocation());
+      }
+    }
+    void UEnemySkillFunction::SpawnMeteor() {
+      ...
+	    if (MeteorSound.Num() > 0) UGameplayStatics::SpawnSoundAtLocation(this, MeteorSound[0], Meteor->GetActorLocation());
+    }
+    void UEnemySkillFunction::ConfirmTargetAndContinue() {
+      ...
+      /** Apply Damage for Player */
+      if (TryOverlap) {
+		    if (MeteorSound.Num() > 0) UGameplayStatics::SpawnSoundAtLocation(this, MeteorSound[1], Meteor->GetActorLocation());
+      }
+    }
+    ```
+    ```c++
+    //MagicBall.cpp
+    void AMagicBall::OnOverlapBegin(UPrimitiveComponent* OverlappedComponent, AActor* OtherActor, UPrimitiveComponent* OtherComp, int32 OtherBodyIndex, bool bFromSweep, const FHitResult& SweepResult) {
+      ...
+      if (MagicSound) UGameplayStatics::SpawnSoundAtLocation(this, MagicSound, GetActorLocation());
+    }
+    ```
+    </details>
+
+    <details><summary>h 코드</summary> 
+      
+    ```c++
+    //EnemySkillFunction.h
+    private:
+      UPROPERTY(EditDefaultsOnly, Category = "Skill | Sound", Meta = (AllowPrivateAccess = true))
+	    class USoundBase* LazerSound;
+      
+      UPROPERTY(EditDefaultsOnly, Category = "Skill | Sound", Meta = (AllowPrivateAccess = true))
+	    TArray<class USoundBase*> MeteorSound;
+    ```
+    ```c++
+    //MagicBall.h
+    private:
+    	UPROPERTY(EditDefaultsOnly, Category = "Sound", Meta = (AllowPrivateAccess = true))
+	    class USoundBase* MagicSound;
+    ```
+    </details>
+
+
+## <span style = "color:yellow;">Enemy의 사망 시 오류 수정</span> 
+  - Enemy의 사망 시 몽타주가 실행되지 않는 오류 수정
+    - 원인은 BehaviorTree의 작동이 모두 멈추기 않았기 때문으로 추정
+    - StopTree()외에도 StopLogic()을 통해 로직을 종료하고, SetSenseEndabled()을 통해 Persepction을 종료
+    - 또한 Tick을 Flase로 변환 
+
+      <details><summary>cpp 코드</summary> 
+        
+      ```c++
+      //EnemyController.cpp
+      void AEnemyController::StopBeTree() {
+        UBehaviorTreeComponent* BTComp = Cast<UBehaviorTreeComponent>(BrainComponent);
+        if(BTComp) {
+          BTComp->StopTree();
+          BTComp->StopLogic("Death");
+          AIPerception->SetSenseEnabled(TSense,false);
+          SetActorTickEnabled(false);
+        }
+      }
+      ```
+      </details>
+      <details><summary>h 코드</summary> 
+        
+      ```c++
+      //EnemyController.h
+      public:
+        UPROPERTY(EditAnyWhere, BlueprintReadWrite, Category = "AI")
+        TSubclassOf<UAISense> TSense;
+      ```
+      </details>
+
+- ## <span style = "color:yellow;">잡다한 것</span>
+  1. Enemy의 Hited, Death사운드 조절
+    - 이전과 같은 방식으로 C++에서 메서드(Play~Sound()) 정의 후 노티파이를 이용하여 호출.
+    
+**<h3>Realization</h3>**
+  - null

@@ -31,8 +31,7 @@ void AEnemyController::BeginPlay() {
 
 void AEnemyController::Tick(float DeltaTime){
     Super::Tick(DeltaTime);
-    if (!RunBehaviorTree(BTree)) return;
-    Blackboard->SetValueAsVector(HomePosKey, GetPawn()->GetActorLocation());	
+    if (RunBehaviorTree(BTree)) Blackboard->SetValueAsVector(HomePosKey, GetPawn()->GetActorLocation());
 }
 
 void AEnemyController::Sense(AActor* Actor, FAIStimulus Stimulus) {
@@ -50,7 +49,12 @@ void AEnemyController::Sense(AActor* Actor, FAIStimulus Stimulus) {
 
 void AEnemyController::StopBeTree() {
     UBehaviorTreeComponent* BTComp = Cast<UBehaviorTreeComponent>(BrainComponent);
-    if(BTComp) BTComp->StopTree();
+    if(BTComp) {
+        BTComp->StopTree();
+        BTComp->StopLogic("Death");
+        AIPerception->SetSenseEnabled(TSense,false);
+        SetActorTickEnabled(false);
+    }
 }
 
 FVector AEnemyController::GetTargetVec() {

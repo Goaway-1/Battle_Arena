@@ -47,6 +47,5 @@ void ASK_Meteor::IsInGround() {
 	if(TryTrace){
 		bIsEnd = true;
 		SkillFunction->SkillDelegate.ExecuteIfBound();		//EnemySkillFunction의 Delegate -> 공격을 판단.
-		Destroy();
 	}
 }

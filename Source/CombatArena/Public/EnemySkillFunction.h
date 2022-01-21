@@ -50,6 +50,12 @@ private:
 	UPROPERTY(VisibleAnywhere, Category = "Skill | Info", Meta = (AllowPrivateAccess = true))
 	int HitCnt;
 
+	UPROPERTY(EditDefaultsOnly, Category = "Skill | Sound", Meta = (AllowPrivateAccess = true))
+	class USoundBase* LazerSound;
+
+	UPROPERTY(EditDefaultsOnly, Category = "Skill | Sound", Meta = (AllowPrivateAccess = true))
+	TArray<class USoundBase*> MeteorSound;
+
 public:
 	virtual void TickComponent(float DeltaTime, ELevelTick TickType, FActorComponentTickFunction* ThisTickFunction) override;
 

@@ -224,14 +224,20 @@ public:
 private:
 	//Hited
 	UPROPERTY(EditDefaultsOnly, Category = "Sound", Meta = (AllowPrivateAccess = true))
-	TArray<class USoundWave*> HitedSound;
+	class USoundBase* HitedSound;
 
 	UPROPERTY(EditDefaultsOnly, Category = "Sound", Meta = (AllowPrivateAccess = true))
-	TArray<class USoundWave*> SwingSound;
+	class USoundBase* DeathSound;
+
+	UPROPERTY(EditDefaultsOnly, Category = "Sound", Meta = (AllowPrivateAccess = true))
+	class USoundBase* SwingSound;
 
 public:
 	UFUNCTION(BlueprintCallable)
 	void PlaySwingSound();
+
+	UFUNCTION(BlueprintCallable)
+	void PlayDeathSound();
 
 	UFUNCTION(BlueprintCallable)
 	void PlayHitedSound();

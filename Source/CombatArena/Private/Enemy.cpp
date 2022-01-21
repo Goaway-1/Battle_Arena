@@ -139,8 +139,6 @@ float AEnemy::TakeDamage(float DamageAmount, struct FDamageEvent const& DamageEv
 	else if (DamageEvent.DamageTypeClass != InternalDamageType) return 0;
 	else return 0;
 
-	if (CurrentHealth <= 0) return 0.f;
-
 	SetHealthRatio();
 	CurrentHealth -= DamageAmount;
 	HealthBar->SetOwnerHealth(GetHealthRatio(), MaxHealth, CurrentHealth);
@@ -150,6 +148,10 @@ float AEnemy::TakeDamage(float DamageAmount, struct FDamageEvent const& DamageEv
 		return DamageAmount;
 	}
 
+	if (HitedMontage && Anim) {
+		Anim->Montage_Play(HitedMontage);
+		Anim->Montage_JumpToSection("Hited_F", DeathMontage);
+	}
 	GetAttackFuntion()->SpawnDamageText(GetActorLocation(), DamageAmount, DamageTextWidget, EventInstigator);
 	return DamageAmount;
 }
@@ -269,15 +271,12 @@ void AEnemy::SetHealthRatio() {
 #pragma endregion
 #pragma region SOUND
 void AEnemy::PlaySwingSound() {
-	if (SwingSound.Num() > 0) {
-		int range = FMath::RandRange(0, SwingSound.Num()-1);
-		UGameplayStatics::PlaySound2D(this, SwingSound[range]);
-	}
+	if (SwingSound) UGameplayStatics::SpawnSoundAtLocation(this, SwingSound, GetActorLocation());
 }
 void AEnemy::PlayHitedSound() { 
-	if (HitedSound.Num() > 0) {
-		int range = FMath::RandRange(0, HitedSound.Num()-1);
-		UGameplayStatics::PlaySound2D(this, HitedSound[range]);
-	}
+	if (HitedSound) UGameplayStatics::SpawnSoundAtLocation(this, HitedSound, GetActorLocation());
+}
+void AEnemy::PlayDeathSound() {
+	if (DeathSound) UGameplayStatics::SpawnSoundAtLocation(this, DeathSound, GetActorLocation());
 }
 #pragma endregion
