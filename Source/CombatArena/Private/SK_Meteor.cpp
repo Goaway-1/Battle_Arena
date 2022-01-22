@@ -7,9 +7,10 @@ ASK_Meteor::ASK_Meteor()
 {
 	PrimaryActorTick.bCanEverTick = true;
 	CollisionBox = CreateDefaultSubobject<UBoxComponent>(TEXT("CollisionBox"));
-	SkeletalMesh = CreateDefaultSubobject<USkeletalMeshComponent>(TEXT("SkeletalMesh"));
+	Flying_Particle = CreateDefaultSubobject<UParticleSystemComponent>(TEXT("Flying_Particle"));
 	CollisionBox->SetupAttachment(GetRootComponent());
-	SkeletalMesh->SetupAttachment(CollisionBox);
+	Flying_Particle->SetupAttachment(CollisionBox);
+	Flying_Particle->SetRelativeScale3D(FVector(3.0f));
 
 	CollisionBox->SetSimulatePhysics(true);
 	CollisionBox->SetCollisionEnabled(ECollisionEnabled::PhysicsOnly);
@@ -33,6 +34,11 @@ void ASK_Meteor::SetInitial(UEnemySkillFunction* Function) {
 	SkillFunction = Function;
 }
 
+void ASK_Meteor::OnConstruction(const FTransform& Transform) {
+	if (!Moving_Particle) return;
+	Flying_Particle->SetTemplate(Moving_Particle);
+}
+
 void ASK_Meteor::IsInGround() {
 	if(bIsEnd) return;
 
@@ -48,4 +54,12 @@ void ASK_Meteor::IsInGround() {
 		bIsEnd = true;
 		SkillFunction->SkillDelegate.ExecuteIfBound();		//EnemySkillFunction의 Delegate -> 공격을 판단.
 	}
+
+	UGameplayStatics::SpawnEmitterAtLocation(GetWorld(), Impact_Particle, GetActorLocation() + Location_Offset_Impact_Particle, Rotate_Impact_Particle);
+	Flying_Particle->Deactivate();
+	FTimerHandle handle;
+	GetWorld()->GetTimerManager().SetTimer(handle, [this]() {
+		Flying_Particle->DestroyComponent();
+		Destroy();
+		}, 2.0f, 1);
 }

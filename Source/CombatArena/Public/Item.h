@@ -32,10 +32,9 @@ protected:
 
 public:	
 	virtual void Tick(float DeltaTime) override;
-
-protected:
+	
 	AItem();
-
+protected:
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Item", Meta = (AllowPrivateAccess = true))
 	EItemType ItemType;
 
@@ -48,9 +47,6 @@ protected:
 
 	UPROPERTY(VisibleAnywhere, BlueprintReadWrite, Category = "Item | Collision")
 	class USphereComponent* CollisionVolume;
-
-	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Item | Mesh")
-	class UStaticMeshComponent* Mesh;
 
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Item | Particle")
 	class UParticleSystemComponent* IdleParticleComponent;

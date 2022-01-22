@@ -10981,3 +10981,27 @@
     
 **<h3>Realization</h3>**
   - null
+
+## **01.22**
+> **<h3>Today Dev Story</h3>**
+- ## <span style = "color:yellow;">잡다한 것</span>
+  1. Meteor Effect 
+    - <img src="Image/Meteor_Effect_Fix.gif" height="300" title="Meteor_Effect_Fix"> 
+    - 메테오 임펙트를 기본 MagicBall의 방식과 동일하게 수정
+  
+  2. 맵 제작 완료
+    - 간단하고 짧게 구성. 모든 기능을 구현하도록 설정
+        
+  3. Player의 이동 블랜드 스페이스를 수정
+    - Axis Setting의 세로 축인 Speed의 Maximum Axis를 650으로 수정
+
+  4. Arrow클래스 수정
+    - 화살이 발사 후 몇 초동안 존재하던 로직을 제거하고 충돌시 즉시 제거
+
+  5. Potion클래스 수정
+    - Potion클래스의 UseItem이 기존 반환값이 float형식이였는데 반환하지 않고 주소값을 가져와 직접 Health를 수정
+      ```c++
+      void UseItem(float &Health);
+      ```
+**<h3>Realization</h3>**
+  - null

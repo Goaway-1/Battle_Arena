@@ -3,12 +3,12 @@
 #include "Enemy.h"
 
 AAttackWeapon::AAttackWeapon() {
-	WeaponPos = EWeaponPos::EWP_Melee;
+	SetWeaponPosLoc(EWeaponPos::EWP_Melee);
 	Damage = 20.f;
 	AttackRange = 200.f;	
 
 	AttackCollision = CreateDefaultSubobject<UCapsuleComponent>("AttackCollision");
-	AttackCollision->SetupAttachment(SkeletalMesh);
+	AttackCollision->SetupAttachment(GetSkeletalMesh());
 	AttackCollision->SetCollisionProfileName(FName("PlayerWeapon"));
 }
 
@@ -32,7 +32,6 @@ void AAttackWeapon::OnAttackOverlap(UPrimitiveComponent* OverlappedComponent, AA
 		ABoss_Enemy* BEnemy = Cast<ABoss_Enemy>(Enemy);
 		if (BEnemy) Player->PlayerController->SetBalanceTarget(BEnemy);
 		if (Enemy) {
-			/** Attack */
 			Enemy->SetCurrentAttack(AtOwner->GetName() + this->GetName() + FString::FromInt(Player->GetAttackCnt()));
 			UGameplayStatics::ApplyDamage(Enemy, Damage, AtController, AtOwner, AtDamageType);
 		}

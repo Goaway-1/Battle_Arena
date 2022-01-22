@@ -24,31 +24,27 @@ public:
 	virtual void Tick(float DeltaTime) override;
 
 private:
-	UPROPERTY(EditAnywhere, Category = "Attack", Meta = (AllowPrivateAccess = true))
+	UPROPERTY(EditAnywhere, Category = "Weapon | Bow", Meta = (AllowPrivateAccess = true))
 	float AttackRange;
 
-	/** Arrow */
-	UPROPERTY(EditDefaultsOnly, Category = "Arrow", Meta = (AllowPrivateAccess = true))
+	UPROPERTY(EditDefaultsOnly, Category = "Weapon | Bow", Meta = (AllowPrivateAccess = true))
 	class AArrow* Arrow;
 
-	UPROPERTY(EditDefaultsOnly, Category = "Arrow", Meta = (AllowPrivateAccess = true))
+	UPROPERTY(EditDefaultsOnly, Category = "Weapon | Bow", Meta = (AllowPrivateAccess = true))
 	TSubclassOf<class AArrow> ArrowClass;
 
-	/** Charge & Shoot */
-	UPROPERTY(EditAnyWhere, Category = "Arrow", Meta = (AllowPrivateAccess = true))
-	float ChargeAmount;
+	UPROPERTY(EditDefaultsOnly, Category = "Weapon | Bow | Sound", Meta = (AllowPrivateAccess = true))
+	class USoundWave* DrowSound;
 
 	AActor* BowOwner;
 	AController* BowController;
-
-	UPROPERTY(EditDefaultsOnly, Category = "Sound", Meta = (AllowPrivateAccess = true))
-	class USoundWave* DrowSound;
-
 public:
+	UPROPERTY(EditAnyWhere, BlueprintReadWrite, Category = "Arrow")
+	float ChargeAmount;
+
 	virtual void Equip(class AMainPlayer* Player) override;
 
 	FORCEINLINE float GetAttackRange() { return AttackRange; }
-
 	FORCEINLINE float GetChargeAmount() { return ChargeAmount; }
 
 	UFUNCTION(BlueprintCallable)

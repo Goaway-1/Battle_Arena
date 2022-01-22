@@ -27,24 +27,18 @@ public:
 
 	virtual void BeginPlay() override;
 
-	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "SkeltalMesh")
+private:
+	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Weapon", Meta = (AllowPrivateAccess = true))
 	class USkeletalMeshComponent* SkeletalMesh;
 
-	UFUNCTION()
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Weapon", Meta = (AllowPrivateAccess = true))
+	EWeaponPos WeaponPos;
+public:
 	virtual void Equip(class AMainPlayer* Player);
 
-	UFUNCTION()
 	void UnEquip();
 
-	virtual void OnOverlapBegin(UPrimitiveComponent* OverlappedComponent, AActor* OtherActor, UPrimitiveComponent* OtherComp, int32 OtherBodyIndex, bool bFromSweep, const FHitResult& SweepResult) override;
-
-	virtual void OnOverlapEnd(UPrimitiveComponent* OverlappedComponent, AActor* OtherActor, UPrimitiveComponent* OtherComp, int32 OtherBodyIndex) override;
-
-	//ºÎÂøµÉ Pos ÁöÁ¤ 
-	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Pos")
-	EWeaponPos WeaponPos;
-
 	FORCEINLINE void SetWeaponPosLoc(EWeaponPos Pos) { WeaponPos = Pos; }
-
 	FORCEINLINE EWeaponPos GetWeaponPos() { return WeaponPos; }
+	FORCEINLINE USkeletalMeshComponent* GetSkeletalMesh() { return SkeletalMesh; }
 };

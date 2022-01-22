@@ -29,8 +29,17 @@ private:
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Meta = (AllowPrivateAccess = true))
 	USkeletalMeshComponent* ArrowMesh;
 
-	UPROPERTY(VisibleAnywhere, Category = "Arrow")
-	EArrowStatus ArrowStatus;
+	UPROPERTY(VisibleAnywhere, BlueprintReadWrite, Category = "Arrow | Physic", Meta = (AllowPrivateAccess = true))
+	class URadialForceComponent* RadiaForce;
+
+	UPROPERTY(VisibleAnywhere, BlueprintReadWrite, Category = "Arrow | Physic", Meta = (AllowPrivateAccess = true))
+	USphereComponent* ArrowCollision;
+
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Arrow | Damage", Meta = (AllowPrivateAccess = true))
+	TSubclassOf<UDamageType> DamageType;
+
+	UPROPERTY(EditDefaultsOnly, Category = "Arrow | Sound", Meta = (AllowPrivateAccess = true))
+	class USoundWave* ShotSound;
 
 	UPROPERTY(VisibleAnywhere, Category = "Arrow")
 	bool bisFire = false;
@@ -38,13 +47,13 @@ private:
 	UPROPERTY(VisibleAnywhere, Category = "Arrow")
 	float FirePower;
 
-	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Arrow | Damage",Meta = (AllowPrivateAccess = true))
-	TSubclassOf<UDamageType> DamageType;
+	UPROPERTY(VisibleAnywhere, Category = "Arrow")
+	EArrowStatus ArrowStatus;
 
-	UPROPERTY(VisibleAnywhere, Category = "Arrow | Damage")
+	UPROPERTY(VisibleAnywhere, Category = "Arrow")
 	class AActor* ArrowOwner;
 
-	UPROPERTY(VisibleAnywhere, Category = "Arrow | Damage")
+	UPROPERTY(VisibleAnywhere, Category = "Arrow")
 	class AController* ArrowController;
 
 	UPROPERTY(VisibleAnywhere, Category = "Arrow | Damage")
@@ -52,25 +61,7 @@ private:
 
 	UPROPERTY(VisibleAnywhere, Category = "Arrow | Damage")
 	int AttackCnt;
-
-	UPROPERTY(VisibleAnywhere, BlueprintReadWrite, Category = "Arrow | Physic", Meta = (AllowPrivateAccess = true))
-	class URadialForceComponent* RadiaForce;
-
-	UPROPERTY(VisibleAnywhere, BlueprintReadWrite, Category = "Arrow | Physic", Meta = (AllowPrivateAccess = true))
-	USphereComponent* ArrowCollision;
-
-	UPROPERTY(VisibleAnywhere, Category = "Arrow | Destory")
-    FTimerHandle DestroyHandle;
-
-	UPROPERTY(VisibleAnywhere, Category = "Arrow | Destory")
-	float DestroyTime;
-
-	UPROPERTY(EditDefaultsOnly, Category = "Sound", Meta = (AllowPrivateAccess = true))
-	class USoundWave* ShotSound;
 public:
-	UFUNCTION()
-	void DestroyArrow();
-	
 	UFUNCTION()
 	void OnOverlapBegin(UPrimitiveComponent* OverlappedComponent, AActor* OtherActor, UPrimitiveComponent* OtherComp, int32 OtherBodyIndex, bool bFromSweep, const FHitResult& SweepResult);
 	
@@ -81,7 +72,7 @@ public:
 	void Fire(float Amount,int Cnt);
 
 	UFUNCTION()
-	void OnStateBegin();
+	void SetBowState();
 
 	UFUNCTION()
 	void SetArrowStatus(EArrowStatus Status);

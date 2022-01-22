@@ -2,7 +2,7 @@
 #include "Arrow.h"
 
 ABowWeapon::ABowWeapon() {
-	WeaponPos = EWeaponPos::EWP_Bow;
+	SetWeaponPosLoc(EWeaponPos::EWP_Bow);
 }
 void ABowWeapon::BeginPlay() {
 	Super::BeginPlay();
@@ -46,7 +46,6 @@ void ABowWeapon::SetChargeAmount(float value) {
 }
 void ABowWeapon::BeginCharge_Implementation() {
 	if(!Arrow) return;
-	
 	if(DrowSound != nullptr) UGameplayStatics::PlaySound2D(this, DrowSound);
 }
 void ABowWeapon::EndCharge_Implementation() {
@@ -69,7 +68,7 @@ void ABowWeapon::Reload() {
 
 	if (!Arrow) {
 		Arrow = GetWorld()->SpawnActor<AArrow>(ArrowClass, FVector(0.f), FRotator(0.f), SpawnParams);
-		Arrow->AttachToComponent(SkeletalMesh, FAttachmentTransformRules::SnapToTargetNotIncludingScale, FName("arrow_attach_socket"));
+		Arrow->AttachToComponent(GetSkeletalMesh(), FAttachmentTransformRules::SnapToTargetNotIncludingScale, FName("arrow_attach_socket"));
 		Arrow->InitalArrow(BowOwner,BowController);
 	}
 }

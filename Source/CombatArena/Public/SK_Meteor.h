@@ -17,13 +17,26 @@ protected:
 
 public:	
 	virtual void Tick(float DeltaTime) override;
+	virtual void OnConstruction(const FTransform& Transform) override;
 
 private:
 	UPROPERTY(EditAnyWhere, BlueprintReadWrite , meta = (AllowPrivateAccess = "true"))
 	UBoxComponent* CollisionBox;
 
-	UPROPERTY(EditAnyWhere, BlueprintReadWrite, meta = (AllowPrivateAccess = "true"))
-	USkeletalMeshComponent* SkeletalMesh;
+	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "Meteor", Meta = (AllowPrivateAccess = true))
+	class UParticleSystemComponent* Flying_Particle;
+
+	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "Meteor | Particle", Meta = (AllowPrivateAccess = true))
+	class UParticleSystem* Moving_Particle;
+
+	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "Meteor | Particle", Meta = (AllowPrivateAccess = true))
+	class UParticleSystem* Impact_Particle;
+
+	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "MagicBall | Pos", Meta = (AllowPrivateAccess = true))
+	FRotator Rotate_Impact_Particle;
+
+	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "MagicBall | Pos", Meta = (AllowPrivateAccess = true))
+	FVector Location_Offset_Impact_Particle;
 
 	UPROPERTY(VisibleAnywhere)
 	class UEnemySkillFunction* SkillFunction;

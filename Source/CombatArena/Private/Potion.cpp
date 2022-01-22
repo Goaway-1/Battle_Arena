@@ -1,23 +1,14 @@
 #include "Potion.h"
 
 APotion::APotion() {
-
+	Mesh = CreateDefaultSubobject<UStaticMeshComponent>(TEXT("Mesh"));
+	Mesh->SetupAttachment(GetRootComponent());
 }
 
-void APotion::OnOverlapBegin(UPrimitiveComponent* OverlappedComponent, AActor* OtherActor, UPrimitiveComponent* OtherComp, int32 OtherBodyIndex, bool bFromSweep, const FHitResult& SweepResult) {
-	Super::OnOverlapBegin(OverlappedComponent, OtherActor, OtherComp, OtherBodyIndex, bFromSweep, SweepResult);
-}
-
-void APotion::OnOverlapEnd(UPrimitiveComponent* OverlappedComponent, AActor* OtherActor, UPrimitiveComponent* OtherComp, int32 OtherBodyIndex) {
-	Super::OnOverlapEnd(OverlappedComponent, OtherActor, OtherComp, OtherBodyIndex);
-}
-
-float APotion::UseItem(float Health) {
-	if (UsedSound != nullptr) UGameplayStatics::PlaySound2D(this, UsedSound);
-
+void APotion::UseItem(float &Health) {
 	Health += 10.f;
 	if (Health >= 100.f) Health = 100.f;
+	if (UsedSound != nullptr) UGameplayStatics::PlaySound2D(this, UsedSound);
 	if (OverlapParticle) UGameplayStatics::SpawnEmitterAtLocation(GetWorld(), OverlapParticle, GetActorLocation(), FRotator(0.f), true);
 	Destroy();
-	return Health;
 }

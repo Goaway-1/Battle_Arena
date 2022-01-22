@@ -1,7 +1,7 @@
 #include "ShieldWeapon.h"
 
 AShieldWeapon::AShieldWeapon() {
-	WeaponPos = EWeaponPos::EWP_Shield;
+	SetWeaponPosLoc(EWeaponPos::EWP_Shield);
 	ShiledMinAngle = -40.f;
 	ShiledMaxAngle = 40.f;
 }

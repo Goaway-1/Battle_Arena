@@ -17,18 +17,17 @@ public:
 	virtual void BeginPlay() override;
 
 private:
-	UPROPERTY(VisibleAnywhere, Category = "Angle")
+	UPROPERTY(VisibleAnywhere, Category = "Weapon | Angle")
 	float ShiledMinAngle;
 
-	UPROPERTY(VisibleAnywhere, Category = "Angle")
+	UPROPERTY(VisibleAnywhere, Category = "Weapon | Angle")
 	float ShiledMaxAngle;
 
-	UPROPERTY(EditDefaultsOnly, Category = "Paticle", Meta = (AllowPrivateAccess = true))
+	UPROPERTY(EditDefaultsOnly, Category = "Weapon | Paticle", Meta = (AllowPrivateAccess = true))
 	class UParticleSystem* HitedParticle;
 
-	UPROPERTY(EditDefaultsOnly, Category = "Sound", Meta = (AllowPrivateAccess = true))
+	UPROPERTY(EditDefaultsOnly, Category = "Weapon | Sound", Meta = (AllowPrivateAccess = true))
 	class USoundWave* HitedSound;
-
 public:
 	virtual void Equip(class AMainPlayer* Player) override;
 

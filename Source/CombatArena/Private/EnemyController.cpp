@@ -48,6 +48,8 @@ void AEnemyController::Sense(AActor* Actor, FAIStimulus Stimulus) {
 }
 
 void AEnemyController::StopBeTree() {
+    if (MyGameState) MyGameState->EndBattleSound();
+
     UBehaviorTreeComponent* BTComp = Cast<UBehaviorTreeComponent>(BrainComponent);
     if(BTComp) {
         BTComp->StopTree();

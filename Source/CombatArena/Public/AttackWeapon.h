@@ -28,43 +28,39 @@ public:
 
 	virtual void Equip(class AMainPlayer* Player) override;
 
-#pragma	region ATTACK
-	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Attack")
-	float AttackRange;
-
-	FORCEINLINE float GetAttackRange() { return AttackRange; }
-
-	/** Weapon Name */
-	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Combat", Meta = (AllowPrivateAccess = true))
+private:
+	UPROPERTY(EditAnywhere, Category = "Weapon", Meta = (AllowPrivateAccess = true))
 	EWeaponName WeaponName;
 
-	FORCEINLINE EWeaponName GetWeaponName() { return WeaponName; }
-
-	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Attack")
+	UPROPERTY(EditAnywhere, Category = "Weapon", Meta = (AllowPrivateAccess = true))
 	UCapsuleComponent* AttackCollision;
+
+	UPROPERTY(VisibleAnywhere, Category = "Weapon")
+	class AController* AtController;
+
+	UPROPERTY(VisibleAnywhere, Category = "Weapon")
+	class AActor* AtOwner;
+
+	UPROPERTY(EditAnywhere, Category = "Weapon", Meta = (AllowPrivateAccess = true))
+	TSubclassOf<UDamageType> DamageTypeClass;
+
+	UPROPERTY(VisibleAnywhere,Category = "Weapon", Meta = (AllowPrivateAccess = true))
+	TSubclassOf<UDamageType> AtDamageType;
+
+	UPROPERTY(EditAnywhere, Category = "Weapon", Meta = (AllowPrivateAccess = true))
+	float AttackRange;
+
+	UPROPERTY(EditAnyWhere, Category = "Weapon", Meta = (AllowPrivateAccess = true))
+	float Damage;
+
+public:
+	FORCEINLINE float GetAttackRange() { return AttackRange; }
+	FORCEINLINE EWeaponName GetWeaponName() { return WeaponName; }
 
 	UFUNCTION()
 	void OnAttackOverlap(UPrimitiveComponent* OverlappedComponent, AActor* OtherActor, UPrimitiveComponent* OtherComp, int32 OtherBodyIndex, bool bFromSweep, const FHitResult& SweepResult);
 	
-	UFUNCTION()
 	void SetAttackCollision(bool value);
-#pragma endregion
-#pragma region DAMAGE
-	UPROPERTY(EditAnyWhere, BlueprintReadWrite, Category = "Combat")
-	float Damage;
 
-	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Combat")
-	TSubclassOf<UDamageType> DamageTypeClass;
-#pragma endregion
-	UPROPERTY(VisibleAnywhere, BlueprintReadWrite, Category = "Combat")
-	class AController* AtController;
-
-	UPROPERTY(VisibleAnywhere, BlueprintReadWrite, Category = "Combat")
-	class AActor* AtOwner;
-
-	UPROPERTY(VisibleAnywhere, BlueprintReadWrite, Category = "Combat")
-	TSubclassOf<UDamageType> AtDamageType;
-
-	UFUNCTION()
 	void SetAttackInit(AController* CauserController, AActor* Causer, TSubclassOf<UDamageType> Type);
 };

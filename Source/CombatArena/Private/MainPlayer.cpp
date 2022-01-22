@@ -860,7 +860,8 @@ void AMainPlayer::ItemEquip() {
 	}
 	else if (ActiveOverlappingItem->GetItemType() == EItemType::EIT_Item) {
 		APotion* Potion = Cast<APotion>(ActiveOverlappingItem);
-		CurrentHealth = Potion->UseItem(CurrentHealth);
+		//CurrentHealth = Potion->UseItem(CurrentHealth);
+		Potion->UseItem(CurrentHealth);
 		SetHealthRatio();
 	}
 	if (AnimInstance && PickUpMontage) AnimInstance->Montage_Play(PickUpMontage);

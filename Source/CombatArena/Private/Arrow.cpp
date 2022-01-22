@@ -9,7 +9,6 @@ AArrow::AArrow()
 	FirePower = 0;
 	bisFire = false;
 	Damage = 20.f;
-	DestroyTime = 3.f;
 
 	/** ArrowCollision */
 	ArrowCollision = CreateDefaultSubobject<USphereComponent>(TEXT("ArrowCollision"));
@@ -34,16 +33,14 @@ AArrow::AArrow()
 	RadiaForce->DestructibleDamage = 1000.f;	//디스트럭티블 메쉬에 손상을 입히는 데미지량.
 }
 
-void AArrow::BeginPlay()
-{
+void AArrow::BeginPlay(){
 	Super::BeginPlay();
 }
 
-void AArrow::Tick(float DeltaTime)
-{
+void AArrow::Tick(float DeltaTime){
 	Super::Tick(DeltaTime);
 
-	OnStateBegin();
+	SetBowState();
 }
 
 void AArrow::InitalArrow(AActor* AOwner, AController* AController) {
@@ -51,7 +48,7 @@ void AArrow::InitalArrow(AActor* AOwner, AController* AController) {
 	ArrowController = AController;
 }
 
-void AArrow::OnStateBegin() {
+void AArrow::SetBowState() {
 	switch (ArrowStatus)
 	{
 	case EArrowStatus::EAS_InBow:
@@ -66,9 +63,6 @@ void AArrow::OnStateBegin() {
 			bisFire = true;
 		}
 		break;
-	case EArrowStatus::EAS_Destroy:
-		break;
-
 	default:
 		break;
 	}
@@ -85,11 +79,6 @@ void AArrow::Fire(float Amount,int Cnt) {
 	this->AttackCnt = Cnt;
 
 	if(ShotSound != nullptr) UGameplayStatics::PlaySound2D(this, ShotSound);
-
-	GetWorldTimerManager().SetTimer(DestroyHandle, this, &AArrow::DestroyArrow, DestroyTime, false);
-}
-void AArrow::DestroyArrow() {
-	Destroy();
 }
 void AArrow::OnOverlapBegin(UPrimitiveComponent* OverlappedComponent, AActor* OtherActor, UPrimitiveComponent* OtherComp, int32 OtherBodyIndex, bool bFromSweep, const FHitResult& SweepResult) {
 	if (OtherActor) {
@@ -104,4 +93,5 @@ void AArrow::OnOverlapBegin(UPrimitiveComponent* OverlappedComponent, AActor* Ot
 			OtherActor->AttachToActor(this, FAttachmentTransformRules::KeepWorldTransform);
 		}
 	}
+	Destroy();
 }
