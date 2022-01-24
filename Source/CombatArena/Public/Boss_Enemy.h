@@ -4,9 +4,7 @@
 #include "Enemy.h"
 #include "Boss_Enemy.generated.h"
 
-/**
- * 
- */
+
 UCLASS()
 class COMBATARENA_API ABoss_Enemy : public AEnemy
 {

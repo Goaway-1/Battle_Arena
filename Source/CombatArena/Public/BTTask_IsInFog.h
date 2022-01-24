@@ -12,11 +12,10 @@ class COMBATARENA_API UBTTask_IsInFog : public UBTTaskNode
 {
 	GENERATED_BODY()
 
+private:
+	bool bIsinFog = false;
 public:
 	UBTTask_IsInFog();
-
-	UPROPERTY()
-	bool bIsinFog = false;
 
 	virtual EBTNodeResult::Type ExecuteTask(UBehaviorTreeComponent& OwnerComp, uint8* NodeMemory) override;
 };

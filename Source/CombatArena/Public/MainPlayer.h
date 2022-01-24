@@ -22,7 +22,7 @@ enum class EMovementStatus : uint8 {
 	EMS_Default		UMETA(DisplayName = "Default")
 }; 
 
-/** Weapon¿« ¿Â¬¯ ø©∫Œ */
+/** WeaponÔøΩÔøΩ ÔøΩÔøΩÔøΩÔøΩ ÔøΩÔøΩÔøΩÔøΩ */
 UENUM(BlueprintType)
 enum class EWeaponStatus : uint8 {
 	EWS_Normal		UMETA(DisplayName = "Normal"),
@@ -33,7 +33,7 @@ enum class EWeaponStatus : uint8 {
 	EWS_Default		UMETA(DisplayName = "Default")
 };
 
-/** Shield¿« ªÛ≈¬ ø©∫Œ (πÊæÓø©∫Œ) */
+/** ShieldÔøΩÔøΩ ÔøΩÔøΩÔøΩÔøΩ ÔøΩÔøΩÔøΩÔøΩ (ÔøΩÔøΩÓø©ÔøΩÔøΩ) */
 UENUM(BlueprintType)
 enum class ECombatStatus : uint8 {
 	ECS_Normal			UMETA(DisplayName = "Normal"),
@@ -59,93 +59,53 @@ public:
 	virtual void Tick(float DeltaTime) override;
 
 	virtual void PossessedBy(AController* NewController) override;
-	class AMainController* PlayerController;		//GetController and Save
 
 	virtual void SetupPlayerInputComponent(class UInputComponent* PlayerInputComponent) override;
-
-#pragma region AIPERCEPTION
-	UPROPERTY(EditAnywhere,BlueprintReadOnly, Category = "AIPERCEPTION")
+	
+private:
+	/** AIPerception */
 	class UAIPerceptionStimuliSourceComponent* AIPerceptionSource;
-#pragma endregion
+
+	UPROPERTY(VisibleAnywhere, Meta = (AllowPrivateAccess = true))
+	class AMainController* PlayerController;	
+public:
+	FORCEINLINE AMainController* GetPlayerController() {return PlayerController;}
 
 #pragma region CAMERA
-	/** SpringArms */ 
-	UPROPERTY(VisibleAnywhere, BlueprintReadWrite, Category = "Camera")
+private:
+	class UCameraComponent* Camera;
+	TSubclassOf<UMatineeCameraShake> CamShake;
+	class APlayerCameraManager* CameraManager;
 	class USceneComponent* SpringArmSence;
-
-	UPROPERTY(VisibleAnywhere, BlueprintReadWrite, Category = "Camera")
 	class USpringArmComponent* SpringArm;
-
-	UPROPERTY(VisibleAnywhere, BlueprintReadWrite, Category = "Camera")
 	class USpringArmComponent* SpringArm_Sprinting;
-
-	UPROPERTY(VisibleAnywhere, BlueprintReadWrite, Category = "Camera")
 	class USpringArmComponent* SpringArm_Attacking;
-
-	UPROPERTY(VisibleAnywhere, BlueprintReadWrite, Category = "Camera")
 	class USpringArmComponent* SpringArm_Drawing;
-
-	UPROPERTY(VisibleAnywhere, BlueprintReadWrite, Category = "Camera")
 	class USpringArmComponent* SpringArm_Skilling;
 
-	UPROPERTY(VisibleAnywhere, BlueprintReadWrite, Category = "Camera")
-	class UCameraComponent* Camera;
+	int TurnAxis = 0;	//ÌöåÏ†Ñ Í∞ÅÎèÑ
 
-	/** Hited Camera Shake */
-	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Camera")
-	TSubclassOf<UMatineeCameraShake> CamShake;
-
-	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Camera")
-	class APlayerCameraManager* CameraManager;
-private:
-	UPROPERTY(EditDefaultsOnly, Category = "Camera", Meta = (AllowPrivateAccess = true))
+	UPROPERTY(VisibleAnywhere, Category = "Camera", Meta = (AllowPrivateAccess = true))
 	float CameraSpeed = 20.f;
 
-	/** Turn Axis */
-	int TurnAxis = 0;
-
+	UPROPERTY(VisibleAnywhere, Category = "Camera", Meta = (AllowPrivateAccess = true))
+	TSubclassOf<UMatineeCameraShake> RunShake;
 public:
 	void Lookup(float value);
-
 	void Turn(float value);
 
-	/** If Sprinting end then Zoom the camera and shaking */
-	UFUNCTION()
-	void ZoomInCam(USpringArmComponent* Arm, FRotator Rot = FRotator(0.f));
-
-	UFUNCTION()
-	void ZoomOutCam();
-
-	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Camera")
-	TSubclassOf<UMatineeCameraShake> RunShake;
-
-	UFUNCTION()
-	void RunCamShake();
-
-	UFUNCTION()
+	/** Set Player Rotaior */
 	void TurnInPlace(float value);
-
-	UFUNCTION()
 	void TurnMove();
+	FORCEINLINE int GetTurnAxis() { return TurnAxis; }
 
-	UFUNCTION()
-	FORCEINLINE int GetTurnAxis() {return TurnAxis; }
-
-	UFUNCTION()
+	/** If Sprinting end then Zoom the camera and shaking */
 	void SetArms(USpringArmComponent* Arm);
+	void ZoomInCam(USpringArmComponent* Arm, FRotator Rot = FRotator(0.f));
+	void ZoomOutCam();
+	void RunCamShake();
 #pragma endregion
-
 #pragma region MOVEMENT
-public:
-	void MoveForward(float Value);
-
-	void MoveRight(float Value);
-
-	virtual void Jump() override;
-
-	void OnSprinting();
-	void OffSprinting();
-
 private:
 	UPROPERTY(EditDefaultsOnly, Category = "Movement", Meta = (AllowPrivateAccess = true))
 	float BowSpeed;
@@ -156,172 +116,149 @@ private:
 	UPROPERTY(EditDefaultsOnly, Category = "Movement", Meta = (AllowPrivateAccess = true))
 	float SprintingSpeed;
 
-	//«ˆ¿Á ƒ≥∏Ø≈Õ¿« ªÛ≈¬∏¶ «•«ˆ (Ω∫≈œ,∑Ø¥◊,¡§¡ˆ,∞¯∞› µÓµÓ)
-	UPROPERTY(VisibleAnywhere, BlueprintReadWrite, Category = "Movement", Meta = (AllowPrivateAccess = true))
-	EMovementStatus MovementStatus;	
-
-	void SetMovementStatus(EMovementStatus Status);
-
-	FORCEINLINE EMovementStatus GetMovementStatus() { return MovementStatus; }
-
 	/** Dodge */
-public:
-	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "Movement | Dodge")
 	float DodgeSpeed;
-
-	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "Movement | Dodge")
 	bool bCanDodge;
 
-	//πÊ«‚
-	UPROPERTY(VisibleAnywhere, Category = "Movement | Dodge")
+	/** Turn In Place */
 	float DirX;
-
-	UPROPERTY(VisibleAnywhere ,Category = "Movement | Dodge")
 	float DirY;
 
-	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "Anims")
-	UAnimMontage* DodgeMontage;
+	/** Target Enemy */
+	bool bTargeting;
+public:
+	//ÔøΩÔøΩÔøΩÔøΩ ƒ≥ÔøΩÔøΩÔøΩÔøΩÔøΩÔøΩ ÔøΩÔøΩÔøΩ¬∏ÔøΩ «•ÔøΩÔøΩ (ÔøΩÔøΩÔøΩÔøΩ,ÔøΩÔøΩÔøΩÔøΩ,ÔøΩÔøΩÔøΩÔøΩ,ÔøΩÔøΩÔøΩÔøΩ ÔøΩÔøΩÔøΩ)
+	UPROPERTY(VisibleAnywhere, BlueprintReadWrite, Category = "Movement")
+	EMovementStatus MovementStatus;
 
+	virtual void Jump() override;
 
-	//UPROPERTY(EditDefaultsOnly, Category = "Montage", Meta = (AllowPrivateAccess = true))
-	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "Anims")
-	UAnimMontage* PickUpMontage;
-
-	UFUNCTION()
-	void Dodge();
+	FORCEINLINE EMovementStatus GetMovementStatus() { return MovementStatus; }
+	void SetMovementStatus(EMovementStatus Status);
+	void MoveForward(float Value);
+	void MoveRight(float Value);
+	void OnSprinting();
+	void OffSprinting();
+	
+	/** Dodge */
+	void Dodge(); 
+	void AnimDodge();
+	bool IsCanMove();
 
 	UFUNCTION(BlueprintCallable)
 	void DodgeEnd();
 
-	UFUNCTION()
-	void AnimDodge();
-
-	UFUNCTION()
-	bool IsCanMove();
-
-	/** Target ∞¸∑√ */
-	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Targeting")
-	bool bTargeting;
-
-	UFUNCTION()
+	/** Target Enemy */
 	void Targeting();
-
-	UFUNCTION()
 	void SetTargeting();
-
-	UFUNCTION()
 	void OnTargeting();
-
-	UFUNCTION()
 	void OffTargeting();
-
-	UFUNCTION()
-	bool GetTargeting() { return bTargeting; }
+	FORCEINLINE bool GetTargeting() { return bTargeting; }
 #pragma endregion
+#pragma region MONTAGE
+	UPROPERTY(EditDefaultsOnly, Category = "Montage", Meta = (AllowPrivateAccess = true))
+	int ComboMaxCnt;
 
-#pragma region ATTACK
-private:
-	UPROPERTY()
-	class UPlayerAttackFunction* AttackFunction;
-
-	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Anims", Meta = (AllowPrivateAccess = true))
-	class UAnimInstance* AnimInstance;
-
-	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "Anims", Meta = (AllowPrivateAccess = true))
+	UPROPERTY(EditDefaultsOnly, Category = "Montage", Meta = (AllowPrivateAccess = true))
 	class UAnimMontage* AttackMontage;
 
-	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "Anims", Meta = (AllowPrivateAccess = true))
+	UPROPERTY(EditDefaultsOnly, Category = "Montage", Meta = (AllowPrivateAccess = true))
 	class UAnimMontage* SwordAttackMontage;
 
-	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "Anims", Meta = (AllowPrivateAccess = true))
-	class UAnimMontage* MaceAttackMontage;	
-	
-	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "Anims", Meta = (AllowPrivateAccess = true))
+	UPROPERTY(EditDefaultsOnly, Category = "Montage", Meta = (AllowPrivateAccess = true))
+	class UAnimMontage* MaceAttackMontage;
+
+	UPROPERTY(EditDefaultsOnly, Category = "Montage", Meta = (AllowPrivateAccess = true))
 	class UAnimMontage* SpearAttackMontage;
 
-	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "Anims", Meta = (AllowPrivateAccess = true))
+	UPROPERTY(EditDefaultsOnly, Category = "Montage", Meta = (AllowPrivateAccess = true))
 	class UAnimMontage* SkillAttackMontage;
 
-	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "Anims", Meta = (AllowPrivateAccess = true))
+	UPROPERTY(EditDefaultsOnly, Category = "Montage", Meta = (AllowPrivateAccess = true))
 	class UAnimMontage* HitedMontage;
 
-	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "Anims", Meta = (AllowPrivateAccess = true))
+	UPROPERTY(EditDefaultsOnly, Category = "Montage", Meta = (AllowPrivateAccess = true))
 	class UAnimMontage* DeathMontage;
-
-	int ComboCnt;			
-
-	UPROPERTY(VisibleAnywhere,  Category = "Attack")
-	float DefaultAttackRange;		
-
-	UPROPERTY(VisibleAnywhere, Category = "Attack")
-	float AttackRange;		
 	
-	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "Anims", Meta = (AllowPrivateAccess = true))
-	int ComboMaxCnt;		
+	UPROPERTY(EditDefaultsOnly, Category = "Montage", Meta = (AllowPrivateAccess = true))
+	class UAnimMontage* DodgeMontage;
 
-	/** Weapon¿« ¿Â¬¯ ø©∫Œ */
-	UPROPERTY(VisibleAnywhere, BlueprintReadWrite, Category = "Weapon", Meta = (AllowPrivateAccess = true))
+	UPROPERTY(EditDefaultsOnly, Category = "Montage", Meta = (AllowPrivateAccess = true))
+	class UAnimMontage* PickUpMontage;
+
+	UPROPERTY(EditDefaultsOnly, Category = "Montage", Meta = (AllowPrivateAccess = true))
+	class UAnimMontage* FaintMontage;
+#pragma endregion
+#pragma region ATTACK
+private:
+	class UPlayerAttackFunction* AttackFunction;
+	class UAnimInstance* AnimInstance; 
+
+	UPROPERTY(VisibleAnywhere, BlueprintReadWrite, Category = "Combat | Weapon", Meta = (AllowPrivateAccess = true))
 	EWeaponStatus WeaponStatus;
 
-	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Combat", Meta = (AllowPrivateAccess = true))
+	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Combat", Meta = (AllowPrivateAccess = true))
+	ECombatStatus CombatStatus;
+
+	UPROPERTY(EditAnywhere, Category = "Combat", Meta = (AllowPrivateAccess = true))
 	TSubclassOf<UDamageType> PlayerDamageType;
 
-	UPROPERTY(VisibleAnywhere,  Category = "Combat")
-	float DefaultDamage;
+	UPROPERTY(EditAnywhere, Category = "Combat", Meta = (AllowPrivateAccess = true))
+	TSubclassOf<UDamageType> InternalDamageType;
 
 	UPROPERTY(VisibleAnywhere, Category = "Combat")
+	int AttackCnt = 0;
+
+	int ComboCnt;			
+	float DefaultAttackRange;		
+	float DefaultDamage;
+	float AttackRange;
 	float AttackDamage;
+
+	/** Attack Check */
+	UPROPERTY(VisibleAnywhere, Category = "Combat")
+	FString LastAttack = "";
+
+	UPROPERTY(VisibleAnywhere, Category = "Combat")
+	FString CurrentAttack = "";
 
 	/** Powerful Attack */
 	bool bAltPressed = false;
-
 	bool bLMBDown;
-
 	bool bAttacking;
-
 	bool bIsAttackCheck;
-
-	UPROPERTY(VisibleAnywhere, BlueprintReadOnly,Category = "Combat", Meta = (AllowPrivateAccess = true))
-	ECombatStatus CombatStatus;
-
-	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Bow", Meta = (AllowPrivateAccess = true))
+	
+	/** Bow */
 	class ABowWeapon* Bow;
 
-	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Bow", Meta = (AllowPrivateAccess = true))
-	float ChargeAmount = 0;
-
-	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Bow", Meta = (AllowPrivateAccess = true))
+	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Combat | Bow", Meta = (AllowPrivateAccess = true))
 	bool bBowCharging = false;
 
-public:
-	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Melee")
-	FString LastAttack = "";
-
-	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Melee")
-	FString CurrentAttack = "";
-
-	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Melee")
-	TSubclassOf<UDamageType> InternalDamageType;
-
-	FORCEINLINE void SetCurrentAttack(FString Value) { CurrentAttack = Value; }
-
+	UPROPERTY(EditAnywhere, BlueprintReadOnly,Category = "Combat | Bow", Meta = (AllowPrivateAccess = true))
+	float ChargeAmount = 0;
 public:
 	UFUNCTION(BlueprintCallable)
-	FORCEINLINE UPlayerAttackFunction* GetAttackFunction() { return AttackFunction; }
+	FORCEINLINE EWeaponStatus GetWeaponStatus() { return WeaponStatus; }
+	FORCEINLINE void SetWeaponStatus(EWeaponStatus Status) { WeaponStatus = Status; }
+
+	FORCEINLINE void SetCombatStatus(ECombatStatus State) { CombatStatus = State; }
+	FORCEINLINE ECombatStatus GetCombatStatus() { return CombatStatus; }
+
+	void SetAttackCnt();
+	FORCEINLINE int GetAttackCnt() { return AttackCnt; }
 
 	FORCEINLINE void SetAttackRange(float value) { AttackRange = value; }
 	FORCEINLINE float GetAttackRange() { return AttackRange; }
 
-	FORCEINLINE void SetWeaponStatus(EWeaponStatus Status) { WeaponStatus = Status; }
-
 	UFUNCTION(BlueprintCallable)
-	FORCEINLINE EWeaponStatus GetWeaponStatus() { return WeaponStatus; }
-
-	void Attack(bool bIsSpecial = false);
+	FORCEINLINE UPlayerAttackFunction* GetAttackFunction() { return AttackFunction; }
 
 	FORCEINLINE void SetAttackDamage(float Value) { AttackDamage = Value; }
 
-	/** ≥Î∆º∆ƒ¿Ã∏¶ ≈Î«œø© »£√‚ µ«∏Á Sweep ±∏√º ª˝º∫ */
+	void Attack(bool bIsSpecial = false);
+	FName GetAttackMontageSection(FString Type, int32 Section);
+
+	/** ÔøΩÔøΩ∆ºÔøΩÔøΩÔøΩÃ∏ÔøΩ ÔøΩÔøΩÔøΩœøÔøΩ »£ÔøΩÔøΩ ÔøΩ«∏ÔøΩ Sweep ÔøΩÔøΩ√º ÔøΩÔøΩÔøΩÔøΩ */
 	UFUNCTION(BlueprintCallable)
 	void StartAttack();
 
@@ -337,7 +274,7 @@ public:
 	UFUNCTION(BlueprintCallable)
 	void OffWeaponCollision();
 
-	/** ƒﬁ∫∏¿« ±∏«ˆ¿ª ¿ß«ÿº≠ ªÁøÎ */
+	/** ÔøΩﬁ∫ÔøΩÔøΩÔøΩ ÔøΩÔøΩÔøΩÔøΩÔøΩÔøΩ ÔøΩÔøΩÔøΩÿºÔøΩ ÔøΩÔøΩÔøΩ */
 	UFUNCTION(BlueprintCallable)
 	void AttackInputCheck();
 
@@ -347,96 +284,50 @@ public:
 	/** Set Can Use Powerful Attack */ 
 	FORCEINLINE void AltDown() { bAltPressed = true; }
 	FORCEINLINE void AltUp() { bAltPressed = false; }
+	FORCEINLINE void SetCurrentAttack(FString Value) { CurrentAttack = Value; }
 
-	FName GetAttackMontageSection(FString Type, int32 Section);
-
-	UFUNCTION()
+	/** Kick */
 	void Kick();
 
 	UFUNCTION(BlueprintCallable)
 	void KickStart();
 
 	/** Death */
-	UFUNCTION()
 	void Death();
 
 	UFUNCTION(BlueprintCallable)
 	void DeathEnd();
 
 	/** Hited */
-	UFUNCTION()
 	void Hited();
 
 	UFUNCTION(BlueprintCallable)
 	void HitEnd();
 
 	/** Shield */
-	FORCEINLINE void SetCombatStatus(ECombatStatus State) { CombatStatus = State; }
-	FORCEINLINE ECombatStatus GetCombatStatus() { return CombatStatus; }
-
-	UFUNCTION()
 	void Blocking();
-
-	UFUNCTION()
 	void UnBlocking();
-
-	UFUNCTION()
 	bool IsBlockingSuccess(AActor* DamageCauser);
 
 	/** Bow */
-	UFUNCTION()
 	void BeginCharge();
-
-	UFUNCTION()
 	void EndCharge();
-
-	UFUNCTION()
 	void BowAnimCharge();
-
 #pragma endregion
-private:
-	UPROPERTY(VisibleAnywhere, Category = "Combat")
-	int AttackCnt = 0;
-public:
-	UFUNCTION()
-	FORCEINLINE int GetAttackCnt() {return AttackCnt;}
-
-	UFUNCTION()
-	void SetAttackCnt();
 #pragma region BALANCE
 private:
-	UPROPERTY(VisibleAnywhere,  Category = "BALANCE")
-	FTimerHandle BalanceHandle;
-
-	UPROPERTY(VisibleAnywhere,  Category = "BALANCE")
-	float DecreaseBalanceTime;
-
-	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "BALANCE", Meta = (AllowPrivateAccess = true))
-	class UAnimMontage* FaintMontage;
-
-	UPROPERTY(VisibleAnywhere, Category = "BALANCE")
 	class UBalance* Balance;
-
-	UPROPERTY(VisibleAnywhere, Category = "Balance")
-	class ABoss_Enemy* BalanceTarget;
-
-	UPROPERTY(EditAnywhere, Category = "Balance")
+	class ABoss_Enemy* BalanceTarget; 
+	FTimerHandle BalanceHandle;
+	float DecreaseBalanceTime;
 	USphereComponent* EnemyBalanceOverlap;
-
-	UPROPERTY(VisibleAnywhere, Category = "Balance")
 	bool bCanSpecialAttack = false;
 public:
-	UFUNCTION()
 	void SetBalanceRatio();
-	
-	UFUNCTION()
 	void SetEnemyBalanceRatio();
-	
-	UFUNCTION()
 	void BrokenBalance();
-
-	UFUNCTION()
 	void RecoverBalance();
+	void CanSpeicalAttackToEnemy();		//if Enemy has broken the balance then player can use SpecialAttack
 
 	FORCEINLINE UBalance* GetBalance() { return Balance; }
 
@@ -445,179 +336,122 @@ public:
 
 	UFUNCTION()
 	void OnEnemyBalance_OverlapEnd(UPrimitiveComponent* OverlappedComponent, AActor* OtherActor, UPrimitiveComponent* OtherComp, int32 OtherBodyIndex);
-
-	UFUNCTION()
-	void CanEnemyBalance();
 #pragma endregion
-
 #pragma region SKILL
+private:
 	/** Skill */
-	UFUNCTION()
-	void SkillController();
-
-	UFUNCTION()
-	void SkillBegin();
-
-	UFUNCTION()
-	void SkillEnd();
-
-	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Skill")
 	class UPlayerSkillFunction* SkillFunction;
-#pragma endregion
 
-#pragma region THROW
-	UPROPERTY(EditDefaultsOnly, BlueprintReadWrite, Category = "Throw | Grenade")
+	/** Grenade */
+	UPROPERTY(EditDefaultsOnly, BlueprintReadWrite, Category = "Skill | Grenade", Meta = (AllowPrivateAccess = true))
 	TSubclassOf<class AGrenade> GrenadeClass;
 
-	UPROPERTY(EditAnyWhere, BlueprintReadWrite, Category = "Throw | Grenade")
+	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "Skill | Grenade", Meta = (AllowPrivateAccess = true))
+	bool bisThrow = false;
+
 	class AGrenade* Grenade;
+	FTimerHandle ThrowTimer;
+public:
+	/** Skill */
+	void SkillController();
+	void SkillBegin();
+	void SkillEnd();	
 
-	UPROPERTY(EditAnyWhere, BlueprintReadWrite, Category = "Throw | Grenade")
-	bool bisThrow = false;	
-
-	UPROPERTY(EditAnyWhere, BlueprintReadWrite, Category = "Throw | Grenade")
-	FTimerHandle ThrowTimer;	
-
-	UFUNCTION()
+	/** Grenade */
 	void Throw();
-
-	UFUNCTION()
 	void StartThrow();
-
-	UFUNCTION()
 	void Throwing();
-
-	UFUNCTION()
 	void EndThrow();
 #pragma endregion
-
 #pragma region HEALTH
-	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Health")
+private:
+	/** Health */
 	float MaxHealth;
-
-	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Health")
 	float CurrentHealth;
-
-	UPROPERTY()		//√º∑¬ ∫Ò¿≤
 	float HealthRatio = 0.f;
 
-	UFUNCTION()
-	void SetHealthRatio();
-
-	UFUNCTION()
-	FORCEINLINE float GetHealthRatio() { return HealthRatio; }
-
+	/** Stamina */
+	float MaxStamina;
+	float CurrentStamina;
+	float CoolUpStamina;
+	float CoolDownStamina;
+	float StaminaRatio = 0.f;
+public:
 	virtual float TakeDamage(float DamageAmount, struct FDamageEvent const& DamageEvent, class AController* EventInstigator, AActor* DamageCauser) override;
 
-	/** Stamina */
-	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Stamina")
-	float MaxStamina;
+	/** Health */
+	void SetHealthRatio();
+	FORCEINLINE float GetHealthRatio() { return HealthRatio; }
+	FORCEINLINE float GetMaxHealth() { return MaxHealth; }
+	FORCEINLINE float GetCurrentHealth() { return CurrentHealth; }
 
-	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Stamina")
-	float CurrentStamina;
-
-	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Stamina")
-	float CoolUpStamina; 
-	
-	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Stamina")
-	float CoolDownStamina;
-
-	UPROPERTY()		
-	float StaminaRatio = 0.f;
-
-	UFUNCTION()
+	/** Stamia */
 	void SetStaminaRatio();
-
-	UFUNCTION()
-	FORCEINLINE float GetStaminaRatio() { return StaminaRatio; }
-
+	FORCEINLINE float GetStaminaRatio() { return StaminaRatio; }	
+	FORCEINLINE float GetMaxStamina() { return MaxStamina; }
+	FORCEINLINE float GetCurrentStamina() { return CurrentStamina; }
 #pragma endregion
-
 #pragma region ACTIVE
 private:
-	UPROPERTY(VisibleAnywhere, Category ="Weapon")
+	UPROPERTY(VisibleAnywhere, Category = "Active | Weapon")
 	class AItem* ActiveOverlappingItem;
 
-	UPROPERTY(VisibleAnywhere, Category = "Weapon")
+	UPROPERTY(VisibleAnywhere, Category = "Active | Weapon")
 	class AShieldWeapon* CurrentShieldWeapon;
 
-	UPROPERTY(VisibleAnywhere, Category = "Weapon")
+	UPROPERTY(VisibleAnywhere, Category = "Active | Weapon")
 	class AWeapon* CurrentAttackWeapon;
 
-	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Particle", Meta = (AllowPrivateAccess = true))	//««∞› »ø∞˙
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Active | Particle", Meta = (AllowPrivateAccess = true))	//ÔøΩ«∞ÔøΩ »øÔøΩÔøΩ
 	class UParticleSystem* HitParticle;
 public:
-	FORCEINLINE void SetActiveOverlappingItem(AItem* item) { ActiveOverlappingItem = item; }
-
-	FORCEINLINE UParticleSystem* GetHitParticle() { return HitParticle; }
-
+	/** Set Weapon */
 	void SetShieldCurrentWeapon(AShieldWeapon* Weapon);
-	FORCEINLINE AShieldWeapon* GetShieldCurrentWeapon() { return CurrentShieldWeapon; }
-
 	void SetAttackCurrentWeapon(AWeapon* Weapon);
+
+	FORCEINLINE void SetActiveOverlappingItem(AItem* item) { ActiveOverlappingItem = item; }
+	FORCEINLINE UParticleSystem* GetHitParticle() { return HitParticle; }
+	FORCEINLINE AShieldWeapon* GetShieldCurrentWeapon() { return CurrentShieldWeapon; }
 	FORCEINLINE AWeapon* GetAttackCurrentWeapon() { return CurrentAttackWeapon; }
 
-	UFUNCTION()
-	void ItemEquip();
-
-	UFUNCTION()
-	void ItemDrop();
-
-	/** Special Attack */
-	UFUNCTION()
+	/** Special Attack (Balance Check) || EquipItem */
 	void ActiveInteraction();
-
-	UFUNCTION()
 	void DeactiveInteraction();
 
-	UFUNCTION()
-	void ActiveSpecialAttack();
+	void ItemEquip();
+	void ItemDrop();
 
 	UFUNCTION(BlueprintCallable)
 	void SpecialAttackApplyDamage();
+	void ActiveSpecialAttack();
 #pragma endregion
-
 #pragma region HUD
-
-	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "HUD")
+private:
+	/** In Range Of Enemy */
+	UPROPERTY(VisibleAnywhere, Category = "HUD")
 	class AEnemy* CombatTarget;
 
-	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category= "HUD")
+	UPROPERTY(EditAnywhere, Category = "HUD", Meta = (AllowPrivateAccess = true))
 	USphereComponent* EnemyHUDOverlap;
 
+	/** DamageText */
+	UPROPERTY(EditAnywhere, Category = "HUD", Meta = (AllowPrivateAccess = true))
+	TSubclassOf<class UDamageTextWidget> DamageTextWidget;
+
+	/** Pause Menu */
+	bool bESCDown;
+public:
 	UFUNCTION()
 	void OnEnemyHUD_OverlapBegin(UPrimitiveComponent* OverlappedComponent, AActor* OtherActor, UPrimitiveComponent* OtherComp, int32 OtherBodyIndex, bool bFromSweep, const FHitResult& SweepResult);
 
 	UFUNCTION()
 	void OnEnemyHUD_OverlapEnd(UPrimitiveComponent* OverlappedComponent, AActor* OtherActor, UPrimitiveComponent* OtherComp, int32 OtherBodyIndex);
 
-	/** DamageText */
-	UPROPERTY(EditAnywhere, BlueprintReadWrite,Category="HUD")
-	TSubclassOf<class UDamageTextWidget> DamageTextWidget;
-
-	/** Pause Menu */
-	UPROPERTY(VisibleAnywhere,BlueprintReadOnly,Category = "HUD")
-	bool bESCDown;
-
-	UFUNCTION()
-	void ESCUp();
-	
-	UFUNCTION()
+	UFUNCTION(BlueprintCallable)
 	void ESCDown();
 
-	UFUNCTION()
 	void SetFogSplatter();	
-#pragma endregion
-
-#pragma region SAVE&LOAD
-public:
-	UFUNCTION(BlueprintCallable)
-	void SaveData();
-
-	UFUNCTION(BlueprintCallable)
-	void LoadData();
 #pragma endregion	
-
 #pragma region SOUND
 private:
 	UPROPERTY(EditDefaultsOnly, Category = "Sound", Meta = (AllowPrivateAccess = true))
@@ -626,5 +460,4 @@ private:
 	UPROPERTY(EditDefaultsOnly, Category = "Sound", Meta = (AllowPrivateAccess = true))
 	TArray<class USoundWave*> DeathSound;
 #pragma endregion
-
 };

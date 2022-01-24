@@ -1,14 +1,14 @@
 #include "SkillFunction.h"
+#include "Components/DecalComponent.h"
+#include "Enemy.h"
 #include "Lazer.h"
 
-USkillFunction::USkillFunction()
-{
+USkillFunction::USkillFunction(){
 	PrimaryComponentTick.bCanEverTick = true;
 	bGround = false;
 }
 
-void USkillFunction::BeginPlay()
-{
+void USkillFunction::BeginPlay(){
 	Super::BeginPlay();
 	
 }

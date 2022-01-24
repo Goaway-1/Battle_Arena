@@ -4,12 +4,13 @@
 #include "SkillFunction.h"
 #include "EnemySkillFunction.generated.h"
  
-DECLARE_DELEGATE(FSkillEnd)   //SK_Meteor의 바닥 충돌 여부를 위함.
+DECLARE_DELEGATE(FSkillEnd)   //Meteor
 
 UCLASS()
 class COMBATARENA_API UEnemySkillFunction : public USkillFunction
 {
 	GENERATED_BODY()
+
 public:
 	UEnemySkillFunction();
 
@@ -17,20 +18,20 @@ protected:
 	virtual void BeginPlay() override;
 
 private:
-	UPROPERTY(VisibleAnywhere,  Category = "Skill | Decal")
+	UPROPERTY(VisibleAnywhere, Category = "Skill | Decal")
 	class UDecalComponent* ESkillDecal;
 
-	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Skill | Decal", Meta = (AllowPrivateAccess = true))
+	UPROPERTY(EditAnywhere, Category = "Skill | Decal", Meta = (AllowPrivateAccess = true))
 	class UMaterialInterface* DecalMaterial;
 
-	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Skill | Meteor", Meta = (AllowPrivateAccess = true))
+	UPROPERTY(EditAnywhere, Category = "Skill | Meteor", Meta = (AllowPrivateAccess = true))
 	TSubclassOf<UDamageType> MeteorDamageType;
 
 	UPROPERTY(VisibleAnywhere, Category = "Skill | Meteor")
-	class ASK_Meteor* Meteor;
+	class AMeteor* Meteor;
 
 	UPROPERTY(EditDefaultsOnly, Category = "Skill | Meteor")
-	TSubclassOf<class ASK_Meteor> MeteorClass;
+	TSubclassOf<class AMeteor> MeteorClass;
 
 	UPROPERTY(VisibleAnywhere, Category = "Skill | Lazer")
 	FVector LazerLoc;
@@ -38,13 +39,13 @@ private:
 	UPROPERTY(VisibleAnywhere, Category = "Skill | Lazer")
 	FRotator LazerRot;
 
-	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Skill | Lazer", Meta = (AllowPrivateAccess = true))
+	UPROPERTY(EditAnywhere, Category = "Skill | Lazer", Meta = (AllowPrivateAccess = true))
 	int LazerCnt = 12;
 
 	UPROPERTY(VisibleAnywhere, Category = "Skill | Magic")
 	class AMagicBall* Magic;
 
-	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Skill | Magic", Meta = (AllowPrivateAccess = true))
+	UPROPERTY(EditAnywhere, Category = "Skill | Magic", Meta = (AllowPrivateAccess = true))
 	TSubclassOf<class AActor> MagicClass;
 
 	UPROPERTY(VisibleAnywhere, Category = "Skill | Info", Meta = (AllowPrivateAccess = true))
@@ -85,5 +86,6 @@ public:
 	UFUNCTION()
 	void RandPos(FVector& Loc, FRotator& Rot);
 
+	UFUNCTION()
 	void SetHitCnt();
 };

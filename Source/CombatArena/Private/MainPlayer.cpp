@@ -13,7 +13,6 @@
 #include "Camera/PlayerCameraManager.h"
 #include "Components/WidgetComponent.h"
 #include "Blueprint/UserWidget.h"	
-#include "PlayerSaveGame.h"	
 #include "Components/DecalComponent.h"
 #include "PlayerSkillFunction.h"
 #include "BowWeapon.h"
@@ -25,9 +24,8 @@ AMainPlayer::AMainPlayer()
 {
  	PrimaryActorTick.bCanEverTick = true;
 
-#pragma region AIPERCETION
 	AIPerceptionSource = CreateDefaultSubobject<UAIPerceptionStimuliSourceComponent>(TEXT("AIPerceptionSource"));
-#pragma endregion
+
 #pragma region CAMERA
 	/** SpringArms */
 	SpringArmSence = CreateDefaultSubobject<USceneComponent>(TEXT("SpringArmSence"));
@@ -54,7 +52,7 @@ AMainPlayer::AMainPlayer()
 	Camera->SetupAttachment(SpringArm, USpringArmComponent::SocketName);
 	Camera->bUsePawnControlRotation = false;
 
-	//È¸ÀüÇØµµ ÇÃ·¹ÀÌ¾î¿¡°Ô ¿µÇâ X
+	//È¸ï¿½ï¿½ï¿½Øµï¿½ ï¿½Ã·ï¿½ï¿½Ì¾î¿¡ï¿½ï¿½ ï¿½ï¿½ï¿½ï¿½ X
 	bUseControllerRotationYaw = false; 
 	bUseControllerRotationRoll = false;
 	bUseControllerRotationPitch = false;
@@ -62,9 +60,9 @@ AMainPlayer::AMainPlayer()
 #pragma endregion
 #pragma	region	MOVEMENT
 	GetCharacterMovement()->bUseControllerDesiredRotation = false; // on&off	
-	GetCharacterMovement()->bOrientRotationToMovement = false;	//ÀÌµ¿¹æÇâ È¸Àü
+	GetCharacterMovement()->bOrientRotationToMovement = false;	//ï¿½Ìµï¿½ï¿½ï¿½ï¿½ï¿½ È¸ï¿½ï¿½
 	GetCharacterMovement()->RotationRate = FRotator(0.f,150.f,0.f);
-	GetCharacterMovement()->JumpZVelocity = 600.f;	//º¯ÇÏÁö ¾Ê¾Æ!
+	GetCharacterMovement()->JumpZVelocity = 600.f;	//ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ ï¿½Ê¾ï¿½!
 	GetCharacterMovement()->AirControl = 0.5f;
 
 	MovementStatus = EMovementStatus::EMS_Normal;
@@ -125,7 +123,7 @@ AMainPlayer::AMainPlayer()
 	CoolUpStamina = 5.f;
 #pragma endregion
 #pragma region ACTIVE
-	GetCapsuleComponent()->SetCollisionProfileName(TEXT("Player"));	//ÄÝ¸®Àü ¼³Á¤
+	GetCapsuleComponent()->SetCollisionProfileName(TEXT("Player"));	//ï¿½Ý¸ï¿½ï¿½ï¿½ ï¿½ï¿½ï¿½ï¿½
 
 	ActiveOverlappingItem = nullptr;
 	CurrentShieldWeapon = nullptr;
@@ -140,7 +138,6 @@ AMainPlayer::AMainPlayer()
 	EnemyHUDOverlap->OnComponentEndOverlap.AddDynamic(this, &AMainPlayer::OnEnemyHUD_OverlapEnd);
 
 	CombatTarget = nullptr;
-
 	bESCDown = false;
 #pragma endregion
 }
@@ -164,7 +161,7 @@ void AMainPlayer::PossessedBy(AController* NewController) {
 	AttackFunction->SetOwner(GetMesh(),PlayerController);
 	CameraManager = PlayerController->PlayerCameraManager;	
 
-	//Ä«¸Þ¶ó °¢µµ Á¶Á¤.
+	//Ä«ï¿½Þ¶ï¿½ ï¿½ï¿½ï¿½ï¿½ ï¿½ï¿½ï¿½ï¿½.
 	CameraManager->ViewPitchMax = 50.f;
 	CameraManager->ViewPitchMin = -70.f;
 }
@@ -184,55 +181,54 @@ void AMainPlayer::Tick(float DeltaTime)
 
 	/** Anim Charging */
 	BowAnimCharge();
-	CurrentHealth = 100.f;
 	
-	/** Player¿Í EnemyÀÇ Balance Ratio */
+	/** Playerï¿½ï¿½ Enemyï¿½ï¿½ Balance Ratio */
 	SetBalanceRatio();
 
 	SetEnemyBalanceRatio();	
 	
 	/** Active Special Attack */
-	CanEnemyBalance();
+	CanSpeicalAttackToEnemy();
 }
 
 void AMainPlayer::SetupPlayerInputComponent(UInputComponent* PlayerInputComponent)
 {
 	Super::SetupPlayerInputComponent(PlayerInputComponent);
 
-	//Camera
+	/** Camera */
 	PlayerInputComponent->BindAxis(FName("Lookup"), this, &AMainPlayer::Lookup);
 	PlayerInputComponent->BindAxis(FName("Turn"), this, &AMainPlayer::Turn);
 
-	//Movement
+	/** Movement */
 	PlayerInputComponent->BindAxis(FName("MoveForward"), this, &AMainPlayer::MoveForward);
 	PlayerInputComponent->BindAxis(FName("MoveRight"), this, &AMainPlayer::MoveRight);
 
-	//Jump
+	/** Jump */
 	PlayerInputComponent->BindAction("Jump", EInputEvent::IE_Pressed, this, &AMainPlayer::Jump);
 	PlayerInputComponent->BindAction("Jump", EInputEvent::IE_Released, this, &ACharacter::StopJumping);
 
-	//Dodge
+	/** Dodge */
 	PlayerInputComponent->BindAction("Dodge", EInputEvent::IE_Pressed, this, &AMainPlayer::Dodge);
 
-	//SetTargeting
+	/** SetTargeting */
 	PlayerInputComponent->BindAction("Tab", EInputEvent::IE_Pressed, this, &AMainPlayer::SetTargeting);
 
-	//sprinting
+	/** Sprinting */
 	PlayerInputComponent->BindAction("Shift", EInputEvent::IE_Pressed, this, &AMainPlayer::OnSprinting);
 	PlayerInputComponent->BindAction("Shift", EInputEvent::IE_Released, this, &AMainPlayer::OffSprinting);
 
-	//attack
+	/** Attack */
 	PlayerInputComponent->BindAction("LMB", EInputEvent::IE_Pressed, this, &AMainPlayer::LMBDown);
 	PlayerInputComponent->BindAction("LMB", EInputEvent::IE_Released, this, &AMainPlayer::LMBUp);
 
-	//Block
+	/** Block */
 	PlayerInputComponent->BindAction("Block", EInputEvent::IE_Pressed, this, &AMainPlayer::Blocking);
 	PlayerInputComponent->BindAction("Block", EInputEvent::IE_Released, this, &AMainPlayer::UnBlocking);
 
-	//Kick
+	/** Kick */
 	PlayerInputComponent->BindAction("Kick", EInputEvent::IE_Pressed, this, &AMainPlayer::Kick);
 
-	//Active
+	/** Active */
 	PlayerInputComponent->BindAction("Active", EInputEvent::IE_Pressed, this, &AMainPlayer::ActiveInteraction);
 	PlayerInputComponent->BindAction("DeActive", EInputEvent::IE_Pressed, this, &AMainPlayer::DeactiveInteraction);	
 
@@ -241,7 +237,6 @@ void AMainPlayer::SetupPlayerInputComponent(UInputComponent* PlayerInputComponen
 
 	/** Pause Menu */
 	PlayerInputComponent->BindAction("Quit", EInputEvent::IE_Pressed, this, &AMainPlayer::ESCDown);
-	PlayerInputComponent->BindAction("Quit", EInputEvent::IE_Released, this, &AMainPlayer::ESCUp);
 
 	/** Charge & Fire */
 	PlayerInputComponent->BindAction("Charge",EInputEvent::IE_Pressed,this, &AMainPlayer::BeginCharge);
@@ -288,7 +283,7 @@ void AMainPlayer::TurnInPlace(float value) {
 	}
 }
 void AMainPlayer::TurnMove() {
-	GetCharacterMovement()->bOrientRotationToMovement = false;	//ÀÌµ¿¹æÇâ È¸Àü
+	GetCharacterMovement()->bOrientRotationToMovement = false;	//ï¿½Ìµï¿½ï¿½ï¿½ï¿½ï¿½ È¸ï¿½ï¿½
 	FRotator ViewRotation = CameraManager->GetCameraRotation();
 	ViewRotation.Pitch = ViewRotation.Roll = 0;
 	SetActorRotation(ViewRotation);
@@ -420,7 +415,6 @@ void AMainPlayer::RunCamShake() {
 	}
 }
 #pragma endregion
-
 #pragma region ATTACK
 void AMainPlayer::LMBDown() {
 	if(AttackFunction->GetKicking() || GetMovementStatus() == EMovementStatus::EMS_Dodge || !GetCharacterMovement()->CurrentFloor.IsWalkableFloor()) return;
@@ -490,25 +484,21 @@ void AMainPlayer::Attack(bool bIsSpecial) {
 	}
 	else if (AnimInstance && PlayMontage)		/** NOMAL ATTACK */
 	{ 
-		if (!AnimInstance->Montage_IsPlaying(PlayMontage)) {	//°ø°ÝÁßÀÌ ¾Æ´Ò¶§ (Ã³À½ °ø°Ý)
+		if (!AnimInstance->Montage_IsPlaying(PlayMontage)) {	//ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ ï¿½Æ´Ò¶ï¿½ (Ã³ï¿½ï¿½ ï¿½ï¿½ï¿½ï¿½)
 			AnimInstance->Montage_Play(PlayMontage);
 			ComboCnt = 0;
 		}
-		else {													//°ø°ÝÁßÀÏ¶§ 2Å¸ 3Å¸
+		else {													//ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½Ï¶ï¿½ 2Å¸ 3Å¸
 			AnimInstance->Montage_Play(PlayMontage);
 			AnimInstance->Montage_JumpToSection(GetAttackMontageSection("Attack", ComboCnt), PlayMontage);
-
-			/** Combo Event */
-			//if (ComboCnt == 2) {
-			//	ZoomInCam(SpringArm_Attacking,FRotator(0.f,-30.f,0.f));
-			//}
 		}
 	}
 }
 void AMainPlayer::StartAttack() {
 	/** Use AttackFunction */
-	//FString Type = "Player";
-	//AttackFunction->SkillAttackStart(GetActorLocation(), GetActorForwardVector(), PlayerDamageType, Type, GetHitParticle(), GetAttackRange(), AttackDamage);
+	FString Type = "Player";
+	AttackFunction->SkillAttackStart(GetActorLocation(), GetActorForwardVector(), PlayerDamageType, Type, GetHitParticle(), GetAttackRange(), AttackDamage,AttackCnt);
+	SetAttackCnt();
 }
 void AMainPlayer::EndAttack() {
 	bAttacking = false;
@@ -529,6 +519,7 @@ void AMainPlayer::OffWeaponCollision() {
 void AMainPlayer::StartPowerfulAttack() {
 	FString Type = "Player";
 	AttackFunction->SkillAttackStart(GetActorLocation(), GetActorForwardVector(), PlayerDamageType, Type, GetHitParticle(), GetAttackRange(), AttackDamage * 2,GetAttackCnt());
+	SetAttackCnt();
 }
 void AMainPlayer::AttackInputCheck() {
 	if (bIsAttackCheck) {
@@ -580,7 +571,8 @@ float AMainPlayer::TakeDamage(float DamageAmount, struct FDamageEvent const& Dam
 	else {
 		GetWorldTimerManager().ClearTimer(BalanceHandle);
 		GetWorldTimerManager().SetTimer(BalanceHandle, FTimerDelegate::CreateLambda([&] { Balance->SetDecreaseBalance(true);}), DecreaseBalanceTime, false);
-	}SetBalanceRatio();
+	}
+	SetBalanceRatio();
 
 	/** KnockBack */
 	Hited();
@@ -699,12 +691,12 @@ void AMainPlayer::EndCharge() {
 		Bow = Cast<ABowWeapon>(CurrentAttackWeapon);
 		if (Bow) {
 			Bow->EndCharge();
-			/** 1. œi´Âµ¥ ´ç±â°í ÀÖÀ» °æ¿ì */
+			/** 1. ï¿½iï¿½Âµï¿½ ï¿½ï¿½ï¿½ï¿½ ï¿½ï¿½ï¿½ï¿½ ï¿½ï¿½ï¿½ */
 			if(!bBowCharging && (MovementStatus == EMovementStatus::EMS_Drawing)) {
 				ChargeAmount = 0;
 				BeginCharge();
 			}
-			/** 2. ´ç±â´Ù°¡ ³ùÀ» °æ¿ì */
+			/** 2. ï¿½ï¿½ï¿½Ù°ï¿½ ï¿½ï¿½ï¿½ï¿½ ï¿½ï¿½ï¿½ */
 			else {
 				SetMovementStatus(EMovementStatus::EMS_Normal);
 				bBowCharging = false;
@@ -759,7 +751,7 @@ void AMainPlayer::OnEnemyBalance_OverlapEnd(UPrimitiveComponent* OverlappedCompo
 		if (EnemyTest && BalanceTarget) BalanceTarget = nullptr;
 	}
 }
-void AMainPlayer::CanEnemyBalance() {
+void AMainPlayer::CanSpeicalAttackToEnemy() {
 	if(BalanceTarget == nullptr) bCanSpecialAttack = false;
 	if (BalanceTarget) {
 		if (BalanceTarget->GetIsFainted() && !bCanSpecialAttack) bCanSpecialAttack = true;
@@ -841,7 +833,6 @@ void AMainPlayer::DeactiveInteraction() {
 	if (GetWeaponStatus() != EWeaponStatus::EWS_Normal) ItemDrop();
 }
 void AMainPlayer::ActiveSpecialAttack() {
-	UE_LOG(LogTemp, Warning, TEXT("ActiveSpecialAttack"));
 	BalanceTarget->SpecialHitMontage();
 	Attack(true);
 }
@@ -860,7 +851,6 @@ void AMainPlayer::ItemEquip() {
 	}
 	else if (ActiveOverlappingItem->GetItemType() == EItemType::EIT_Item) {
 		APotion* Potion = Cast<APotion>(ActiveOverlappingItem);
-		//CurrentHealth = Potion->UseItem(CurrentHealth);
 		Potion->UseItem(CurrentHealth);
 		SetHealthRatio();
 	}
@@ -872,7 +862,7 @@ void AMainPlayer::ItemDrop() {
 		CurrentAttackWeapon->UnEquip();
 		CurrentAttackWeapon = nullptr;
 		AttackDamage = DefaultDamage;
-		AttackRange = DefaultAttackRange;				//°ø°Ý ¹üÀ§ Á¶Àý
+		AttackRange = DefaultAttackRange;				//ï¿½ï¿½ï¿½ï¿½ ï¿½ï¿½ï¿½ï¿½ ï¿½ï¿½ï¿½ï¿½
 		if (CurrentShieldWeapon == nullptr) SetWeaponStatus(EWeaponStatus::EWS_Normal);
 	}
 	else if (CurrentShieldWeapon != nullptr) {
@@ -906,42 +896,19 @@ void AMainPlayer::OnEnemyHUD_OverlapEnd(UPrimitiveComponent* OverlappedComponent
 		}
 	}
 }
-void AMainPlayer::ESCUp() {
-	bESCDown = false;
-}
+
 void AMainPlayer::ESCDown(){
-	bESCDown = true;
-	if (PlayerController) {
+	if (!bESCDown) {
+		bESCDown = true;
 		PlayerController->TogglePauseMenu();
+		PlayerController->SetPause(true);
+	}
+	else {
+		bESCDown = false;
+		PlayerController->SetPause(false);
 	}
 }
 void AMainPlayer::SetFogSplatter() {
 	(PlayerController->GetFogSplatterVisible()) ? PlayerController->RemoveFogSplatter() : PlayerController->DisplayFogSplatter();
-}
-#pragma endregion
-
-#pragma region SAVE&LOAD
-void AMainPlayer::SaveData() {
-	UPlayerSaveGame* SaveGameInstance = Cast<UPlayerSaveGame>(UGameplayStatics::CreateSaveGameObject(UPlayerSaveGame::StaticClass()));
-
-	SaveGameInstance->CharacterStats.Health = CurrentHealth;
-	SaveGameInstance->CharacterStats.MaxHealth = MaxHealth;
-	SaveGameInstance->CharacterStats.Stamina	= CurrentStamina;
-	SaveGameInstance->CharacterStats.MaxStamina = MaxStamina;
-	SaveGameInstance->CharacterStats.Location = GetActorLocation();
-
-	UGameplayStatics::SaveGameToSlot(SaveGameInstance,SaveGameInstance->PlayerName,SaveGameInstance->UserIndex);
-}
-
-void AMainPlayer::LoadData() {
-	UPlayerSaveGame* LoadGameInstance = Cast<UPlayerSaveGame>(UGameplayStatics::CreateSaveGameObject(UPlayerSaveGame::StaticClass()));
-
-	LoadGameInstance = Cast<UPlayerSaveGame>(UGameplayStatics::LoadGameFromSlot(LoadGameInstance->PlayerName,LoadGameInstance->UserIndex));
-	
-	CurrentHealth = LoadGameInstance->CharacterStats.Health;
-	MaxHealth = LoadGameInstance->CharacterStats.MaxHealth;
-	CurrentStamina = LoadGameInstance->CharacterStats.Stamina;
-	MaxStamina = LoadGameInstance->CharacterStats.MaxStamina;
-	SetActorLocation(LoadGameInstance->CharacterStats.Location);
 }
 #pragma endregion

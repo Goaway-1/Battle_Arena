@@ -12,10 +12,10 @@ class COMBATARENA_API UBTTask_Attack : public UBTTaskNode
 public:
 	UBTTask_Attack();
 
-	virtual EBTNodeResult::Type ExecuteTask(UBehaviorTreeComponent& OwnerComp, uint8* NodeMemory) override;
+private:
+	bool IsAttacking;
 protected:
-
 	virtual void TickTask(UBehaviorTreeComponent& OwnerComp, uint8* NodeMemory,float DeltaSeconds) override;
-
-	bool IsAttacking = false;
+public:
+	virtual EBTNodeResult::Type ExecuteTask(UBehaviorTreeComponent& OwnerComp, uint8* NodeMemory) override;
 };

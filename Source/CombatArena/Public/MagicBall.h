@@ -19,35 +19,36 @@ public:
 	virtual void Tick(float DeltaTime) override;
 
 private:
-	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "MagicBall", Meta = (AllowPrivateAccess = true))
+	UPROPERTY(EditDefaultsOnly, Category = "MagicBall", Meta = (AllowPrivateAccess = true))
 	class UProjectileMovementComponent* Projectile;
 
-	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "MagicBall", Meta = (AllowPrivateAccess = true))
+	UPROPERTY(EditDefaultsOnly, Category = "MagicBall", Meta = (AllowPrivateAccess = true))
 	class USphereComponent* Sphere;
 
-	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "MagicBall", Meta = (AllowPrivateAccess = true))
+	UPROPERTY(EditDefaultsOnly, Category = "MagicBall", Meta = (AllowPrivateAccess = true))
 	class UParticleSystemComponent* Flying_Particle;
 
-	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "MagicBall | Particle", Meta = (AllowPrivateAccess = true))
+	UPROPERTY(EditDefaultsOnly, Category = "MagicBall | Particle", Meta = (AllowPrivateAccess = true))
 	class UParticleSystem* Moving_Particle;
 
-	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "MagicBall | Particle", Meta = (AllowPrivateAccess = true))
+	UPROPERTY(EditDefaultsOnly, Category = "MagicBall | Particle", Meta = (AllowPrivateAccess = true))
 	class UParticleSystem* Impact_Particle;
-
-	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "MagicBall | Pos", Meta = (AllowPrivateAccess = true))
-	FRotator Rotate_Impact_Particle;
 	
-	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "MagicBall | Pos", Meta = (AllowPrivateAccess = true))
+	UPROPERTY(EditDefaultsOnly, Category = "MagicBall | Pos", Meta = (AllowPrivateAccess = true))
 	FVector Location_Offset_Impact_Particle;
+
+	FRotator Rotate_Impact_Particle;
 
 	UPROPERTY(EditAnywhere, Category = "MagicBall | HitInfo", Meta = (AllowPrivateAccess = true))
 	TSubclassOf<UDamageType> MagicDamageType;
 
-	UPROPERTY(VisibleAnywhere, Category = "MagicBall | HitInfo", Meta = (AllowPrivateAccess = true))
-	int HitCnt;
-
-	UPROPERTY(EditDefaultsOnly, Category = "Sound", Meta = (AllowPrivateAccess = true))
+	UPROPERTY(EditDefaultsOnly, Category = "MagicBall | Sound", Meta = (AllowPrivateAccess = true))
 	class USoundBase* MagicSound;
+
+	UPROPERTY(EditAnywhere, Category = "MagicBall | Damage", Meta = (AllowPrivateAccess = true))
+	float Damage = 10.0f;
+
+	int HitCnt;
 public:
 	virtual void OnConstruction(const FTransform& Transform) override;
 

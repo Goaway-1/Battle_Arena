@@ -4,10 +4,7 @@
 #include "Blueprint/UserWidget.h"
 #include "HealthWidget.generated.h"
 
-/**
- * HealthBar
- */
-UCLASS(Abstract)		//√ﬂªÛ»≠ ∞≥≥‰
+UCLASS(Abstract)		
 class COMBATARENA_API UHealthWidget : public UUserWidget
 {
 	GENERATED_BODY()

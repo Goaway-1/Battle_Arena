@@ -5,12 +5,11 @@
 UBTTask_Attack::UBTTask_Attack() {
 	NodeName = "Attack";
 
-	bNotifyTick = true;	//tick 사용
+	bNotifyTick = true;	
 	IsAttacking = false;
 }
 
 EBTNodeResult::Type UBTTask_Attack::ExecuteTask(UBehaviorTreeComponent& OwnerComp, uint8* NodeMemory) {
-
 	Super::ExecuteTask(OwnerComp, NodeMemory);
 
 	auto Enemy = Cast<AEnemy>(OwnerComp.GetAIOwner()->GetPawn());
@@ -18,8 +17,7 @@ EBTNodeResult::Type UBTTask_Attack::ExecuteTask(UBehaviorTreeComponent& OwnerCom
 
 	Enemy->Attack("Melee");
 	IsAttacking = true;
-	Enemy->OnAttackEnd.AddLambda([this]()-> void
-	{
+	Enemy->OnAttackEnd.AddLambda([this]()-> void {
 		IsAttacking = false;
 	});
 
@@ -29,8 +27,5 @@ EBTNodeResult::Type UBTTask_Attack::ExecuteTask(UBehaviorTreeComponent& OwnerCom
 void UBTTask_Attack::TickTask(UBehaviorTreeComponent& OwnerComp, uint8* NodeMemory, float DeltaSeconds){
 	Super::TickTask(OwnerComp, NodeMemory, DeltaSeconds);
 
-	//여기서 테스크 종료
-	if (!IsAttacking) {
-		FinishLatentTask(OwnerComp, EBTNodeResult::Succeeded);
-	}
+	if (!IsAttacking) FinishLatentTask(OwnerComp, EBTNodeResult::Succeeded);
 }

@@ -13,7 +13,6 @@ class COMBATARENA_API UBTDecorator_MoveOrSkill : public UBTDecorator
 	GENERATED_BODY()
 public:
 	UBTDecorator_MoveOrSkill();
-
 protected:
 	virtual bool CalculateRawConditionValue(UBehaviorTreeComponent& OwnerComp, uint8* NodeMemory) const override;
 };

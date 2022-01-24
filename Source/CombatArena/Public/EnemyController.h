@@ -17,44 +17,34 @@ public:
 
 	virtual void Tick(float DeltaTime) override;
 
-	//키값들 -> 다른 코드에서 참조하기 편리하다.
-	static const FName HomePosKey;
-	static const FName PatrolPosKey;	
-	static const FName TargetActor;
-	static const FName IsInFog; 
-	static const FName IsFaint;
-
-	UPROPERTY(EditAnyWhere, BlueprintReadOnly, Category = "AI")
+private:
+	UPROPERTY(EditAnyWhere, Category = "AI", Meta = (AllowPrivateAccess = true))
 	class UBehaviorTree* BTree;
 
-	UPROPERTY(EditAnyWhere, BlueprintReadOnly, Category = "AI")
+	UPROPERTY(EditAnyWhere, Category = "AI", Meta = (AllowPrivateAccess = true))
 	class UBlackboardData* BData;	
 
-	UPROPERTY(EditAnyWhere, BlueprintReadWrite, Category= "AI")
+	UPROPERTY(EditAnyWhere, Category= "AI", Meta = (AllowPrivateAccess = true))
 	class UAIPerceptionComponent* AIPerception;
 
-	UPROPERTY(EditAnyWhere, BlueprintReadWrite, Category = "AI")
+	UPROPERTY(EditAnyWhere, Category = "AI", Meta = (AllowPrivateAccess = true))
 	TSubclassOf<UAISense> TSense;
 
 	class AMainGameStateBase* MyGameState;
 public:
+	//BlackTree Keys
+	static const FName HomePosKey;
+	static const FName PatrolPosKey;
+	static const FName TargetActor;
+	static const FName IsInFog;
+	static const FName IsFaint;
+
 	UFUNCTION()
 	void Sense(AActor* Actor, FAIStimulus Stimulus);
 
-	UFUNCTION()	//Enemy 사망시
 	void StopBeTree();
-
-	UFUNCTION()
 	FVector GetTargetVec();
-
-	UFUNCTION()
-	class AActor* GetCurrentTarget();
-
-	/** Is In Fog */
-	UFUNCTION()
+	AActor* GetCurrentTarget();
 	void SetVisibleInFog(bool bisin);
-
-	/** IsFaint */
-	UFUNCTION()
 	void SetIsFaint(bool bisin);
 };

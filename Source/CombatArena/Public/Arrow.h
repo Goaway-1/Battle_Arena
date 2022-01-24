@@ -37,7 +37,10 @@ private:
 
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Arrow | Damage", Meta = (AllowPrivateAccess = true))
 	TSubclassOf<UDamageType> DamageType;
-
+	
+	UPROPERTY(EditDefaultsOnly, Category = "Arrow | Damage", Meta = (AllowPrivateAccess = true))
+	float Damage = 5.f;
+	
 	UPROPERTY(EditDefaultsOnly, Category = "Arrow | Sound", Meta = (AllowPrivateAccess = true))
 	class USoundWave* ShotSound;
 
@@ -55,9 +58,6 @@ private:
 
 	UPROPERTY(VisibleAnywhere, Category = "Arrow")
 	class AController* ArrowController;
-
-	UPROPERTY(VisibleAnywhere, Category = "Arrow | Damage")
-	float Damage;
 
 	UPROPERTY(VisibleAnywhere, Category = "Arrow | Damage")
 	int AttackCnt;

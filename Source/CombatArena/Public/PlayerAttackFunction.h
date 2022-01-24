@@ -1,4 +1,3 @@
-// Fill out your copyright notice in the Description page of Project Settings.
 #pragma once
 
 #include "EngineMinimal.h"
@@ -6,9 +5,6 @@
 #include "Engine/SkeletalMeshSocket.h"
 #include "PlayerAttackFunction.generated.h"
 
-/**
- * 
- */
 UCLASS()
 class COMBATARENA_API UPlayerAttackFunction : public UAttackFunction
 {
@@ -18,31 +14,24 @@ public:
 	UPlayerAttackFunction();
 
 	virtual void BeginPlay() override;
-
-#pragma region KICK
-
-	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Attack | Kick")
+private:
+	UPROPERTY(EditAnywhere, Category = "AttackFunction | Kick", Meta = (AllowPrivateAccess = true))
 	float KickRange;
 
-	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Attack | Kick")
+	UPROPERTY(EditAnywhere, Category = "AttackFunction | Kick", Meta = (AllowPrivateAccess = true))
 	float KickRadius;
 
-	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Attack | Kick")
-	bool bKicking;			//현재 Kick 중인지
+	UPROPERTY(VisibleAnywhere, Category = "AttackFunction | Kick")
+	bool bKicking;
 
-	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Attack | Kick")
-	bool bCanKick;			//Kick이 가능한지
-
-	UFUNCTION()
+	UPROPERTY(VisibleAnywhere, Category = "AttackFunction | Kick")
+	bool bCanKick;			
+public:
 	void Kick(UAnimInstance* Anim, UAnimMontage* Montage);
-
-	UFUNCTION()
 	void KickStart(FVector Location,FVector Forward);
 
 	UFUNCTION(BlueprintCallable)
 	void KickEnd();
 
 	FORCEINLINE bool GetKicking() { return bKicking; }
-
-#pragma endregion
 };

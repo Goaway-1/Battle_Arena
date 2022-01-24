@@ -4,9 +4,6 @@
 #include "Blueprint/UserWidget.h"
 #include "DamageTextWidget.generated.h"
 
-/**
- * 
- */
 UCLASS(Abstract)
 class COMBATARENA_API UDamageTextWidget : public UUserWidget
 {
@@ -23,13 +20,14 @@ private:
 	UPROPERTY(Meta = (BindWidgetAnim), Meta = (AllowPrivateAccess = true), Transient)	//Á÷·ÄÈ­
 	class UWidgetAnimation* Fade;
 
-public:
-	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Variables")
+	UPROPERTY(EditAnywhere, Category = "DamageText")
 	FVector2D InintialScreenLocation;
 	
-	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Variables")
+	UPROPERTY(EditAnywhere, Category = "DamageText")
 	FVector2D FinalScreenLocation;
 
-	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Variables")
+	UPROPERTY(EditAnywhere, Category = "DamageText")
 	float DamageToDisplay;
+public:
+	void SetInitialSetting (FVector2D &vec, float &name);
 };

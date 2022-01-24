@@ -4,9 +4,6 @@
 #include "BehaviorTree/BTTaskNode.h"
 #include "BTTask_Faint.generated.h"
 
-/**
- * 
- */
 UCLASS()
 class COMBATARENA_API UBTTask_Faint : public UBTTaskNode
 {
@@ -14,8 +11,8 @@ class COMBATARENA_API UBTTask_Faint : public UBTTaskNode
 
 public:
 	UBTTask_Faint();
-
 	virtual EBTNodeResult::Type ExecuteTask(UBehaviorTreeComponent& OwnerComp, uint8* NodeMemory) override;
-protected:
-	bool IsFaint = false;
+
+private:
+	bool IsFaint;
 };

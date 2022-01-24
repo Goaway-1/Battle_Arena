@@ -8,7 +8,6 @@ AArrow::AArrow()
  	PrimaryActorTick.bCanEverTick = true;
 	FirePower = 0;
 	bisFire = false;
-	Damage = 20.f;
 
 	/** ArrowCollision */
 	ArrowCollision = CreateDefaultSubobject<USphereComponent>(TEXT("ArrowCollision"));
@@ -28,9 +27,9 @@ AArrow::AArrow()
 	RadiaForce = CreateDefaultSubobject<URadialForceComponent>(TEXT("RadiaForce"));
 	RadiaForce->SetupAttachment(GetRootComponent());
 
-	RadiaForce->ImpulseStrength = 5000.f;		//Ãæµ¹Èû
-	RadiaForce->ForceStrength = 1000.f;			//ÈûÀÇ °­µµ
-	RadiaForce->DestructibleDamage = 1000.f;	//µð½ºÆ®·°Æ¼ºí ¸Þ½¬¿¡ ¼Õ»óÀ» ÀÔÈ÷´Â µ¥¹ÌÁö·®.
+	RadiaForce->ImpulseStrength = 5000.f;		//ï¿½æµ¹ï¿½ï¿½
+	RadiaForce->ForceStrength = 1000.f;			//ï¿½ï¿½ï¿½ï¿½ ï¿½ï¿½ï¿½ï¿½
+	RadiaForce->DestructibleDamage = 1000.f;	//ï¿½ï¿½Æ®ï¿½ï¿½Æ¼ï¿½ï¿½ ï¿½Þ½ï¿½ï¿½ï¿½ ï¿½Õ»ï¿½ï¿½ï¿½ ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½.
 }
 
 void AArrow::BeginPlay(){
@@ -87,7 +86,7 @@ void AArrow::OnOverlapBegin(UPrimitiveComponent* OverlappedComponent, AActor* Ot
 		AEnemy* Enemy = Cast<AEnemy>(OtherActor);
 		if (Enemy) {
 			Enemy->SetCurrentAttack(GetName() + Enemy->GetName() + FString::FromInt(AttackCnt));
-			UGameplayStatics::ApplyDamage(Enemy, 10.f, ArrowController, ArrowOwner, DamageType);
+			UGameplayStatics::ApplyDamage(Enemy, Damage, ArrowController, ArrowOwner, DamageType);
 			ArrowCollision->SetSimulatePhysics(false);
 			SetActorLocation(GetActorLocation());
 			OtherActor->AttachToActor(this, FAttachmentTransformRules::KeepWorldTransform);

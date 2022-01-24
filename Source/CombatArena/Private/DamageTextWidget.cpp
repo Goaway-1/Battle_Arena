@@ -23,3 +23,9 @@ void UDamageTextWidget::NativeTick(const FGeometry& MyGeometry, float InDeltaTim
 	InintialScreenLocation = UKismetMathLibrary::Vector2DInterpTo(InintialScreenLocation,FinalScreenLocation,InDeltaTime,1.0f);
 	SetPositionInViewport(InintialScreenLocation);
 }
+
+void UDamageTextWidget::SetInitialSetting(FVector2D& vec, float& name) {
+	InintialScreenLocation = vec;
+	DamageToDisplay = name;
+	this->AddToViewport();
+}

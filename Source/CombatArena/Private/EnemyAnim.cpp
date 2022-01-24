@@ -10,6 +10,6 @@ void UEnemyAnim::NativeUpdateAnimation(float DeltaSeconds) {
 
 	if (Enemy) {
 		FVector CurrentSpeed = Enemy->GetVelocity();
-		Speed = FVector(CurrentSpeed.X, CurrentSpeed.Y, 0).Size();	//현재 속도
+		Speed = FVector(CurrentSpeed.X, CurrentSpeed.Y, 0).Size();
 	}
 }

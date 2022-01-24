@@ -4,9 +4,6 @@
 #include "Blueprint/UserWidget.h"
 #include "StaminaWidget.generated.h"
 
-/**
- * Stamina
- */
 UCLASS(Abstract)
 class COMBATARENA_API UStaminaWidget : public UUserWidget
 {

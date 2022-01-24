@@ -15,93 +15,66 @@ public:
 	virtual void BeginPlay() override;
 
 #pragma region WIDGET
-	UPROPERTY(VisibleAnywhere, Category = "Widget | PlayerWidget")
+private:
 	class UHealthWidget* HealthBarOutLine;
 
-	UPROPERTY(VisibleAnywhere, Category = "Widget | PlayerWidget")
 	class AMainPlayer* MainPlayer;
 
 	//Health Bar
-	UPROPERTY(VisibleAnywhere, Category = "Widget | PlayerWidget")
 	class UUserWidget* PlayerWidget;
 
-	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Widget | PlayerWidget")
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Widget", Meta = (AllowPrivateAccess = true))
 	TSubclassOf<class UUserWidget> WPlayerMainHealth;
 
-	UFUNCTION()
-	void SetPlayerHealth();		//PlayerÀÇ Ã¼·Â UI ÁöÁ¤. MainPlayer¿¡¼­ È£Ãâ
-
-	//Stamina
-	UPROPERTY(VisibleAnywhere, Category = "Widget | PlayerWidget")
 	class UStaminaWidget* StaminaBarOutLine;
 
-	UFUNCTION()
-	void SetPlayerStamina();
-
 	/** Pause Menu */
-	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "HUD")
+	UPROPERTY(EditAnywhere, Category = "Widget", Meta = (AllowPrivateAccess = true))
 	TSubclassOf<UUserWidget> WPauseMenu;
 
-	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "HUD")
+	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Widget", Meta = (AllowPrivateAccess = true))
 	UUserWidget* PauseMenu;
 
 	bool bPauseMenuVisible;
 
-	UFUNCTION(BlueprintNativeEvent,BlueprintCallable, Category= "HUD")
+	/** Fog */
+	UPROPERTY(EditAnywhere, Category = "Widget", Meta = (AllowPrivateAccess = true))
+	TSubclassOf<UUserWidget> WFogSplatter;
+
+	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Widget", Meta = (AllowPrivateAccess = true))
+	UUserWidget* FogSplatter;
+
+	bool bFogSplatterVisible;
+
+	/* Balacne **/
+	class UBalanceWidget* BalanceBarOutLine;
+	class UBalanceWidget* EnemyBalanceBarOutLine;
+	class ABoss_Enemy* BalanceTargetEnemy;
+public:
+	void SetPlayerHealth();		//Playerï¿½ï¿½ Ã¼ï¿½ï¿½ UI ï¿½ï¿½ï¿½ï¿½. MainPlayerï¿½ï¿½ï¿½ï¿½ È£ï¿½ï¿½
+	void SetPlayerStamina();
+
+	UFUNCTION(BlueprintNativeEvent)
 	void DisplayPauseMenu();
 
-	UFUNCTION(BlueprintNativeEvent, BlueprintCallable,Category = "HUD")
+	UFUNCTION(BlueprintNativeEvent)
 	void RemovePauseMenu();
 
 	void TogglePauseMenu(); 
 
-	/** FogSplatter */
-	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "HUD")
-	TSubclassOf<UUserWidget> WFogSplatter;
-
-	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "HUD")
-	UUserWidget* FogSplatter;
-
-	UPROPERTY()
-	bool bFogSplatterVisible;
-
-	UFUNCTION()
+	/** Fog */
 	FORCEINLINE bool GetFogSplatterVisible() { return bFogSplatterVisible; }
 
-	UFUNCTION(BlueprintNativeEvent, BlueprintCallable, Category = "HUD")
+	UFUNCTION(BlueprintNativeEvent)
 	void DisplayFogSplatter();
 
-	UFUNCTION(BlueprintNativeEvent, BlueprintCallable, Category = "HUD")
+	UFUNCTION(BlueprintNativeEvent)
 	void RemoveFogSplatter();
 
 	void ToggleFogSplatter();
-#pragma endregion
 
-#pragma region BALANCE
-/*
- @ Witer -> Richardqwe46
- @ Content -> Balance is controller of Player & Enemy Balance Ratio.
-*/
-
-protected:
-	UPROPERTY(VisibleAnywhere, Category = "Widget | Balance")
-	class UBalanceWidget* BalanceBarOutLine;
-
-	UPROPERTY(VisibleAnywhere, Category = "Widget | Balance")
-	class UBalanceWidget* EnemyBalanceBarOutLine;
-
-	UPROPERTY(VisibleAnywhere, Category = "Widget | Balance")
-	class ABoss_Enemy* BalanceTargetEnemy;
-
-public:
-	UFUNCTION()
+	/** Balacne */
 	void SetPlayerBalance();
-
-	UFUNCTION()
 	void SetBalanceTarget(ABoss_Enemy* value);
-
-	UFUNCTION()
 	void SetEnemyBalance();
-
-#pragma endregion
 };

@@ -10,7 +10,7 @@ class COMBATARENA_API UMainPlayerAnim : public UAnimInstance
 	GENERATED_BODY()
 	
 public:
-	virtual void NativeInitializeAnimation() override;	//»ý¼º½Ã µ¿ÀÛ
+	virtual void NativeInitializeAnimation() override;	//ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ ï¿½ï¿½ï¿½ï¿½
 
 	virtual void NativeUpdateAnimation(float DeltaSeconds) override;
 

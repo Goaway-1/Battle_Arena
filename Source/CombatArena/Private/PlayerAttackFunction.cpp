@@ -24,25 +24,21 @@ void UPlayerAttackFunction::Kick(UAnimInstance* Anim, UAnimMontage* Montage) {
 }
 
 void UPlayerAttackFunction::KickStart(FVector Location, FVector Forward) {
-	//찾아낼 액터의 트레이스 채널
 	TArray<TEnumAsByte<EObjectTypeQuery>> TraceObjectTypes;		
 	TraceObjectTypes.Add(UEngineTypes::ConvertToObjectType(ECollisionChannel::ECC_GameTraceChannel2));
 
-	//찾아낼 액터의 타입
 	UClass* SeekClass = AEnemy::StaticClass();
-
-	//찾아낸 액터를 저장할 배열
 	TArray<AActor*> OutActors;
-
-	//무시될 액터의 배열
 	TArray<AActor*> IgnoreActors;	
 	IgnoreActors.Init(Owner, 1);	
 
 	bool bResult= UKismetSystemLibrary::SphereOverlapActors(GetWorld(), Owner->GetActorLocation(), 200.f, TraceObjectTypes, SeekClass, IgnoreActors, OutActors);
 
 	/** Draw Image */
-	FColor DrawColor = bResult ? FColor::Green : FColor::Red;
-	DrawDebugSphere(GetWorld(), Owner->GetActorLocation(), 200.f, 12, DrawColor, false, 0.5f);
+	if (bDrawAttack) {
+		FColor DrawColor = bResult ? FColor::Green : FColor::Red;
+		DrawDebugSphere(GetWorld(), Owner->GetActorLocation(), 200.f, 12, DrawColor, false, 0.5f);
+	}
 
 	/** 실질적인 알고리즘 */
 	if (bResult) {

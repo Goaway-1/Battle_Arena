@@ -21,7 +21,7 @@ void AMainController::BeginPlay() {
 			PlayerWidget->AddToViewport();
 			PlayerWidget->SetVisibility(ESlateVisibility::Visible);	
 
-			//Health, Stamina, BalanceÀÇ Progress¸¦ Ã£´Â ºÎºÐ
+			//Health, Stamina, Balanceï¿½ï¿½ Progressï¿½ï¿½ Ã£ï¿½ï¿½ ï¿½Îºï¿½
 			HealthBarOutLine = PlayerWidget->WidgetTree->FindWidget<UHealthWidget>("PlayerHealth_BP");
 			StaminaBarOutLine = PlayerWidget->WidgetTree->FindWidget<UStaminaWidget>("PlayerStanima_BP");
 			BalanceBarOutLine = PlayerWidget->WidgetTree->FindWidget<UBalanceWidget>("PlayerBalance_BP"); 
@@ -54,11 +54,11 @@ void AMainController::BeginPlay() {
 }
 
 void AMainController::SetPlayerHealth() {
-	HealthBarOutLine->SetOwnerHealth(MainPlayer->GetHealthRatio(), MainPlayer->MaxHealth, MainPlayer->CurrentHealth);
+	HealthBarOutLine->SetOwnerHealth(MainPlayer->GetHealthRatio(), MainPlayer->GetMaxHealth(), MainPlayer->GetCurrentHealth());
 }
 
 void AMainController::SetPlayerStamina() {
-	StaminaBarOutLine->SetOwnerStamina(MainPlayer->GetStaminaRatio(), MainPlayer->MaxStamina, MainPlayer->CurrentStamina);
+	StaminaBarOutLine->SetOwnerStamina(MainPlayer->GetStaminaRatio(), MainPlayer->GetMaxStamina(), MainPlayer->GetCurrentStamina());
 }
 
 void AMainController::SetPlayerBalance() {	
@@ -69,6 +69,7 @@ void AMainController::SetBalanceTarget(ABoss_Enemy* value) {
 	BalanceTargetEnemy = value;
 	EnemyBalanceBarOutLine->SetEnemyOwner(value);
 }
+
 void AMainController::SetEnemyBalance() {
 	if(!BalanceTargetEnemy || BalanceTargetEnemy->GetBalance()->GetCurrentBalance() <= 0.f) return;
 	EnemyBalanceBarOutLine->SetOwnerBalance(BalanceTargetEnemy->GetBalance()->GetBalanceRatio(), BalanceTargetEnemy->GetBalance()->GetMaxBalance(), BalanceTargetEnemy->GetBalance()->GetCurrentBalance());

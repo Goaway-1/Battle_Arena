@@ -11,16 +11,14 @@ EBTNodeResult::Type UBTTask_IsInFog::ExecuteTask(UBehaviorTreeComponent& OwnerCo
 	Super::ExecuteTask(OwnerComp, NodeMemory);
 
 	if (!bIsinFog) {
-		bIsinFog = true;
-		UE_LOG(LogTemp, Warning, TEXT("Enemy is in fog"));
-
-		/** Set Fog Event */
 		AEnemyController* EnemyController = Cast<AEnemyController>(OwnerComp.GetAIOwner());
 		AEnemy* Enemy = Cast<AEnemy>(EnemyController->GetPawn());
 		if (!Enemy) return EBTNodeResult::Failed;
-
 		Enemy->ActiveFogEvent();
+
+		bIsinFog = true;
 		return EBTNodeResult::Succeeded;
 	}
+	bIsinFog = false;
 	return EBTNodeResult::Failed;
 }

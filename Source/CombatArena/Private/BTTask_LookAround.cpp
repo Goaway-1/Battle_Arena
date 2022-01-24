@@ -10,7 +10,7 @@ EBTNodeResult::Type UBTTask_LookAround::ExecuteTask(UBehaviorTreeComponent& Owne
 	Super::ExecuteTask(OwnerComp, NodeMemory);
 
 	/** 실패 시 걸어가고 성공시 플레이어 주변 탐색 */
-	int rand = UKismetMathLibrary::RandomIntegerInRange(0, 1);
+	int rand = UKismetMathLibrary::RandomIntegerInRange(0, 2);
 	bool bResult = (rand == 0) ? true : false;
 	if(!bResult) return EBTNodeResult::Failed; 
 

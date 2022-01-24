@@ -12,22 +12,15 @@ class COMBATARENA_API UBalanceWidget : public UUserWidget
 {
 	GENERATED_BODY()
 
-public:
-	UFUNCTION()
-	void SetEnemyOwner(AEnemy* OtherActor);
-
-	UFUNCTION()
-	void SetPlayerOwner(AController* OtherActor);
-
-	UFUNCTION()
-	void SetOwnerBalance(float Ratio, float Max, float Current);
 protected:
-	UPROPERTY()
 	TWeakObjectPtr<AEnemy> Enemy;
 
-	UPROPERTY()
 	TWeakObjectPtr<APlayerController> PlayerController;
 
 	UPROPERTY(meta = (BindWidget))
 	class UProgressBar* BalanceBar;
+public:
+	void SetEnemyOwner(AEnemy* OtherActor);
+	void SetPlayerOwner(AController* OtherActor);
+	void SetOwnerBalance(float Ratio, float Max, float Current);
 };

@@ -4,9 +4,6 @@
 #include "SkillFunction.h"
 #include "PlayerSkillFunction.generated.h"
 
-/**
- * 
- */
 UCLASS()
 class COMBATARENA_API UPlayerSkillFunction : public USkillFunction
 {
@@ -25,17 +22,17 @@ private:
 	class UMaterialInterface* DecalMaterial;
 
 public:
-	virtual void TickComponent(float DeltaTime, ELevelTick TickType, FActorComponentTickFunction* ThisTickFunction) override;
+	void TickComponent(float DeltaTime, ELevelTick TickType, FActorComponentTickFunction* ThisTickFunction) override;
 
-	virtual void SetInitial(APawn* P, USkeletalMeshComponent* S, AController* C, AActor* A) override;
+	void SetInitial(APawn* P, USkeletalMeshComponent* S, AController* C, AActor* A) override;
 
-	virtual void LazerAttack() override;
+	void LazerAttack() override;
 
-	virtual void LazerEnd() override;
+	void LazerEnd() override;
 
-	virtual void GroundAttack() override;
+	void GroundAttack() override;
 
-	virtual void SetSkillLocation() override;
+	void SetSkillLocation() override;
 
-	virtual void ConfirmTargetAndContinue() override;
+	void ConfirmTargetAndContinue() override;
 };

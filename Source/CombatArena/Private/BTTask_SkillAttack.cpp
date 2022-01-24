@@ -7,7 +7,7 @@
 UBTTask_SkillAttack::UBTTask_SkillAttack() {
 	NodeName = "SkillAttack";
 
-	bNotifyTick = true;	//tick 사용
+	bNotifyTick = true;
 	IsAttacking = false;
 }
 
@@ -28,10 +28,9 @@ EBTNodeResult::Type UBTTask_SkillAttack::ExecuteTask(UBehaviorTreeComponent& Own
 
 	Enemy->Attack("Skill");
 	IsAttacking = true;
-	Enemy->OnAttackEnd.AddLambda([this]()-> void
-		{
-			IsAttacking = false;
-		});
+	Enemy->OnAttackEnd.AddLambda([this]()-> void{
+		IsAttacking = false;
+	});
 
 	return EBTNodeResult::InProgress;
 }
@@ -39,8 +38,5 @@ EBTNodeResult::Type UBTTask_SkillAttack::ExecuteTask(UBehaviorTreeComponent& Own
 void UBTTask_SkillAttack::TickTask(UBehaviorTreeComponent& OwnerComp, uint8* NodeMemory, float DeltaSeconds) {
 	Super::TickTask(OwnerComp, NodeMemory, DeltaSeconds);
 
-	//여기서 테스크 종료
-	if (!IsAttacking) {
-		FinishLatentTask(OwnerComp, EBTNodeResult::Succeeded);
-	}
+	if (!IsAttacking) FinishLatentTask(OwnerComp, EBTNodeResult::Succeeded);
 }

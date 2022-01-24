@@ -18,43 +18,29 @@ protected:
 public:	
 	virtual void Tick(float DeltaTime) override;
 
-	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Mesh")
+private:
+	UPROPERTY(EditAnywhere, Category = "Grenade | Mesh", Meta = (AllowPrivateAccess = true))
 	UStaticMeshComponent* Mesh;
 
-	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Mesh")
+	UPROPERTY(EditAnywhere, Category = "Grenade | Mesh", Meta = (AllowPrivateAccess = true))
 	class USphereComponent* Collision;
 
-	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Mesh")
+	UPROPERTY(EditAnywhere, Category = "Grenade | Mesh", Meta = (AllowPrivateAccess = true))
 	class UProjectileMovementComponent* Projectile;
 
+	UPROPERTY(EditAnywhere, Category = "Grenade | Smoke", Meta = (AllowPrivateAccess = true))
+	class UParticleSystemComponent* Smoke;
+
 	/** Time */
-	UPROPERTY(VisibleAnywhere, Category = "Smoke")
 	FTimerHandle SpawnSmokeHandle;
-
-	UPROPERTY(VisibleAnywhere, Category = "Smoke")
 	float SpawnSmokeTime;
-
-	UPROPERTY(VisibleAnywhere, Category = "Smoke")
 	float SmokeTime = 6.0f;		//Smoke가 다 필때까지의 시간.
 
-	/** Smoke Growing Check*/
-	UPROPERTY(VisibleAnywhere, Category = "Smoke")
 	bool isGrowing = false;
-
-	/** UParticleSystem */
-	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Smoke")
-	class UParticleSystemComponent* Smoke;
 public:
-	UFUNCTION()
 	void SpawnSmoke();
-
-	UFUNCTION()
-	void GrowingSmoke();
-
-	UFUNCTION() 
+	FORCEINLINE void GrowingSmoke() { isGrowing = true; }
 	void DestorySmoke();
-
-	UFUNCTION()
 	void SetFire(FRotator Rot);
 
 	UFUNCTION()

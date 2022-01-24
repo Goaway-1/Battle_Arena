@@ -4,9 +4,6 @@
 #include "GameFramework/GameStateBase.h"
 #include "MainGameStateBase.generated.h"
 
-/**
- * 
- */
 UCLASS()
 class COMBATARENA_API AMainGameStateBase : public AGameStateBase
 {

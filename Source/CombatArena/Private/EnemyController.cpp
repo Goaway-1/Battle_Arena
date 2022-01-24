@@ -18,12 +18,11 @@ AEnemyController::AEnemyController() {
 void AEnemyController::BeginPlay() {
 	Super::BeginPlay();
 
-    //기존 존재하는 OnTargetPerceptionUpdated 델리게이트를 Controller가 아닌 C++에서 구현
     AIPerception->OnTargetPerceptionUpdated.AddDynamic(this, &AEnemyController::Sense);
 
     if (UseBlackboard(BData, Blackboard)){
         if (!RunBehaviorTree(BTree)) return;
-        Blackboard->SetValueAsVector(HomePosKey, GetPawn()->GetActorLocation());	//Location을 HomePosKey에..
+        Blackboard->SetValueAsVector(HomePosKey, GetPawn()->GetActorLocation());
     }
 
     MyGameState = GetWorld()->GetGameState<AMainGameStateBase>();
@@ -63,7 +62,7 @@ FVector AEnemyController::GetTargetVec() {
     AMainPlayer* Player = Cast<AMainPlayer>(Blackboard->GetValueAsObject(TargetActor));
     if(Player) {
         FVector Vec =  Player->GetActorLocation();
-        Vec.Z -= 86.f;      //바닥에 타겟 표현 위함.
+        Vec.Z -= 86.f;      
         return Vec; 
     }
     else return FVector(0.f);

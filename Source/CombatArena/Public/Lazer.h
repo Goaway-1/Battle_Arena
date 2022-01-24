@@ -30,25 +30,21 @@ private:
 	
 	UPROPERTY(EditAnywhere, BlueprintReadWrite ,Meta = (AllowPrivateAccess = true))
 	USphereComponent* LazerEndDetector;
+
+	UPROPERTY(EditAnywhere, Category = "Lazer | Damage", Meta = (AllowPrivateAccess = true))
+	float Damage = 7.0f;
+
+	UPROPERTY(EditAnywhere, Category = "Lazer | HitInfo", Meta = (AllowPrivateAccess = true))
+	TSubclassOf<UDamageType> LazerDamageType;
 	
 	/** Overlap & Dealing */
-	UPROPERTY(VisibleAnywhere, Category = "HitInfo", Meta = (AllowPrivateAccess = true))
+	UPROPERTY(VisibleAnywhere, Category = "Lazer | HitInfo")
 	TArray<class AMainPlayer*> OverlapingEnemies;
 
-	UPROPERTY(VisibleAnywhere, Category = "HitInfo", Meta = (AllowPrivateAccess = true))
-	bool bContinueDealing;
-
-	UPROPERTY(VisibleAnywhere, Category = "HitInfo", Meta = (AllowPrivateAccess = true))
 	FLatentActionInfo LatentInfo;
-
-	UPROPERTY(EditAnywhere, Category = "HitInfo", Meta = (AllowPrivateAccess = true))
-	TSubclassOf<UDamageType> LazerDamageType;
-
-	UPROPERTY(EditAnywhere, Category = "HitInfo", Meta = (AllowPrivateAccess = true))
-	AController* SpawnController;
-
-	UPROPERTY(VisibleAnywhere, Category = "HitInfo", Meta = (AllowPrivateAccess = true))
-	int HitCnt;
+	AController* HitedController;
+	bool bContinueDealing = false;
+	int HitCnt = 0;
 public:
 	UFUNCTION()
 	void OverlapBeginActor(UPrimitiveComponent* OverlappedComponent, AActor* OtherActor, UPrimitiveComponent* OtherComp, int32 OtherBodyIndex, bool bFromSweep, const FHitResult& SweepResult);
@@ -56,8 +52,6 @@ public:
 	UFUNCTION()
 	void OverlapEndActor(UPrimitiveComponent* OverlappedComponent, AActor* OtherActor, UPrimitiveComponent* OtherComp, int32 OtherBodyIndex);
 
-	UFUNCTION()
 	void Dealing();
-
 	FORCEINLINE void SetCnt(int cnt) { HitCnt = cnt; }
 };

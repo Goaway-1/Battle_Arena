@@ -5,7 +5,7 @@
 UBTTask_Faint::UBTTask_Faint() {
 	NodeName = "Faint";
 
-	bNotifyTick = false;	//tick »ç¿ë
+	bNotifyTick = false;	
 	IsFaint = false;
 }
 

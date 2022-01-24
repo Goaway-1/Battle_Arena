@@ -11001,7 +11001,61 @@
   5. Potion클래스 수정
     - Potion클래스의 UseItem이 기존 반환값이 float형식이였는데 반환하지 않고 주소값을 가져와 직접 Health를 수정
       ```c++
+      //Potion.h
       void UseItem(float &Health);
       ```
+**<h3>Realization</h3>**
+  - null
+
+## **01.23**
+> **<h3>Today Dev Story</h3>**
+- ## <span style = "color:yellow;">코드 수정</span>
+  1. BTDecorator_IsInAttackRange클래스 수정
+    - 해당 클래스는 적이 플레이어를 공격할 수 있는 거리인지 판단하여 bool을 반환하는 클래스
+    - 공격 거리는 적마다 다르기 때문에 CanAttackDistance라는 float 변수를 선언하여 비헤이비어 트리에서 수정 하도록 선언
+      ```c++
+      //BTDecorator_IsInAttackRange.h
+      private:
+        UPROPERTY(EditAnywhere, Meta = (AllowPrivateAccess = true))
+        float CanAttackDistance = 500.f
+      ```
+
+  2. SkillAttackFunction클래스 오류 수정
+    - "Unresolved extermal symbol"이라는 오류 코드 발생
+    - LNK에러로 코드에는 이상이 없으나 컴파일러가 이해를 못하는 것을 의미....
+    - 해당 클래스 헤더 이상하게 상속되어 있던 것이 문제
+
+  3. PlayerSaveGame클래스 제거
+
+**<h3>Realization</h3>**
+  - null
+
+## **01.24**
+> **<h3>Today Dev Story</h3>**
+- ## <span style = "color:yellow;">일시 정지</span>
+  - MainPlayer클래스의 ESCDown()메서드에 정의
+
+    <details><summary>cpp 코드</summary> 
+    
+    ```c++
+    //MainPlayer.cpp
+    void AMainPlayer::ESCDown(){
+      if (!bESCDown) {
+        bESCDown = true;
+        PlayerController->TogglePauseMenu();
+        PlayerController->SetPause(true);
+      }
+      else {
+        bESCDown = false;
+        PlayerController->SetPause(false);
+      }
+    }
+    ```
+    </details>
+
+- ## <span style = "color:yellow;">코드 수정</span>
+  - 모든 코드 수정 완료
+  
+
 **<h3>Realization</h3>**
   - null

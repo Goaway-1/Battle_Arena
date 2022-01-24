@@ -3,8 +3,7 @@
 #include "MainPlayer.h"
 #include "Enemy.h"
 
-AGrenade::AGrenade()
-{
+AGrenade::AGrenade(){
 	PrimaryActorTick.bCanEverTick = true;
 	SpawnSmokeTime = 1.5f;
 	
@@ -20,42 +19,38 @@ AGrenade::AGrenade()
 	Projectile->SetUpdatedComponent(Mesh);		
 	Projectile->bAutoActivate = false;
 
-	/** ParticleSystem (Setup Plz) */
+	/** ParticleSystem */
 	Smoke = CreateDefaultSubobject<UParticleSystemComponent>(TEXT("Smoke"));
 	Smoke->SetupAttachment(Mesh);
 	Smoke->SetVisibility(false);
 }
-
-void AGrenade::BeginPlay()
-{
+void AGrenade::BeginPlay(){
 	Super::BeginPlay();	
 
 	Collision->OnComponentBeginOverlap.AddDynamic(this, &AGrenade::OnOverlapBegin);		
 	Collision->OnComponentEndOverlap.AddDynamic(this, &AGrenade::OnOverlapEnd);		
 }
-
 void AGrenade::Tick(float DeltaTime)
 {
 	Super::Tick(DeltaTime);
 
 	if (isGrowing && Smoke) {
-		float tmp = Collision->GetUnscaledSphereRadius();
-		tmp += (DeltaTime * 100.0f);
-		Collision->SetSphereRadius(tmp);
+		float Csize = Collision->GetUnscaledSphereRadius();
+		Csize += (DeltaTime * 100.0f);
+		Collision->SetSphereRadius(Csize);
 
 		FVector temp = Smoke->GetRelativeScale3D();
 		temp += FVector(DeltaTime * 0.3f);
 		Smoke->SetRelativeScale3D(temp);
 		SmokeTime -= DeltaTime;
 
-		if(tmp > 700.f && SmokeTime <= 0) {	
+		if(Csize > 700.f && SmokeTime <= 0) {
 			isGrowing = false;
 			GetWorldTimerManager().ClearTimer(SpawnSmokeHandle);
 			GetWorldTimerManager().SetTimer(SpawnSmokeHandle, this, &AGrenade::DestorySmoke, SpawnSmokeTime, false);
 		}
 	}
 }
-
 void AGrenade::SetFire(FRotator Rot) {
 	DetachFromActor(FDetachmentTransformRules::KeepWorldTransform);
 	SetActorLocation(GetActorLocation());
@@ -67,9 +62,7 @@ void AGrenade::SetFire(FRotator Rot) {
 
 	GetWorldTimerManager().SetTimer(SpawnSmokeHandle, this, &AGrenade::SpawnSmoke, SpawnSmokeTime, false);
 }
-
 void AGrenade::SpawnSmoke() {
-	UE_LOG(LogTemp, Warning, TEXT("Active Smoke"));
 	if(Smoke) {
 		Collision->SetCollisionEnabled(ECollisionEnabled::QueryOnly);
 		Smoke->SetVisibility(true);
@@ -77,44 +70,23 @@ void AGrenade::SpawnSmoke() {
 		GetWorldTimerManager().SetTimer(SpawnSmokeHandle, this, &AGrenade::GrowingSmoke, SpawnSmokeTime, false);
 	}
 }
-
-void AGrenade::GrowingSmoke() {
-	UE_LOG(LogTemp, Warning, TEXT("Growing Smoke"));
-	isGrowing = true;
-}
-
 void AGrenade::DestorySmoke() {
-	UE_LOG(LogTemp, Warning, TEXT("Destory Smoke"));
 	Smoke->DestroyComponent();
 	Destroy();
 }
-
 void AGrenade::OnOverlapBegin(UPrimitiveComponent* OverlappedComponent, AActor* OtherActor, UPrimitiveComponent* OtherComp, int32 OtherBodyIndex, bool bFromSweep, const FHitResult& SweepResult) {
 	if (OtherActor) {
 		AMainPlayer* Player = Cast<AMainPlayer>(OtherActor);
 		AEnemy* Enemy = Cast<AEnemy>(OtherActor);
-		if (Player) {
-			UE_LOG(LogTemp, Warning, TEXT("Player : %s Can not See Forward!"), *Player->GetName());
-			Player->SetFogSplatter();
-		}
-		if (Enemy) {
-			UE_LOG(LogTemp, Warning, TEXT("Enemy : %s Can not See Forward!"),*Enemy->GetName());
-			Enemy->SetVisibleInFog(true, SmokeTime);
-		}
+		if (Player) Player->SetFogSplatter();
+		if (Enemy) Enemy->SetVisibleInFog(true, SmokeTime);
 	}
 }
-
 void AGrenade::OnOverlapEnd(UPrimitiveComponent* OverlappedComponent, AActor* OtherActor, UPrimitiveComponent* OtherComp, int32 OtherBodyIndex) {
 	if (OtherActor) {
 		AMainPlayer* Player = Cast<AMainPlayer>(OtherActor);
 		AEnemy* Enemy = Cast<AEnemy>(OtherActor);
-		if (Player) {
-			UE_LOG(LogTemp, Warning, TEXT("Player : %s Can See"), *Player->GetName());
-			Player->SetFogSplatter();
-		}
-		if (Enemy) {
-			UE_LOG(LogTemp, Warning, TEXT("Enemy : %s Can See"), *Enemy->GetName());
-			Enemy->SetVisibleInFog(false);
-		}
+		if (Player) Player->SetFogSplatter();
+		if (Enemy) Enemy->SetVisibleInFog(false);
 	}
 }

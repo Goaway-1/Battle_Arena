@@ -18,24 +18,16 @@ void UAttackFunction::TickComponent(float DeltaTime, ELevelTick TickType, FActor
 	Super::TickComponent(DeltaTime, TickType, ThisTickFunction);
 }
 
-void UAttackFunction::SetOwner(USkeletalMeshComponent* TakeMesh,AController* TakeController ) {
+void UAttackFunction::SetOwner(USkeletalMeshComponent* TakeMesh,AController* TakeController) {
 	Owner = GetOwner();
 	Mesh = TakeMesh;
 	Controller = TakeController;
 }
 
-void UAttackFunction::SkillAttackStart(FVector Location, FVector Forward, TSubclassOf<UDamageType> DamageType,FString Type, UParticleSystem* HitParticle,float AttackRange,float Damage, int AttackCnt)
-{
-	//Ã£¾Æ³¾ ¾×ÅÍÀÇ Æ®·¹ÀÌ½º Ã¤³Î
+void UAttackFunction::SkillAttackStart(FVector Location, FVector Forward, TSubclassOf<UDamageType> DamageType,FString Type, UParticleSystem* HitParticle,float AttackRange,float Damage, int AttackCnt){
 	TArray<TEnumAsByte<EObjectTypeQuery>> TraceObjectTypes;
-
-	//Ã£¾Æ³¾ ¾×ÅÍÀÇ Å¸ÀÔ
 	UClass* SeekClass = nullptr;
-
-	//Ã£¾Æ³½ ¾×ÅÍ¸¦ ÀúÀåÇÒ ¹è¿­
 	TArray<AActor*> OutActors;
-
-	//¹«½ÃµÉ ¾×ÅÍÀÇ ¹è¿­
 	TArray<AActor*> IgnoreActors;
 	IgnoreActors.Init(Owner, 1);
 
@@ -51,23 +43,25 @@ void UAttackFunction::SkillAttackStart(FVector Location, FVector Forward, TSubcl
 	bool bResult = UKismetSystemLibrary::SphereOverlapActors(GetWorld(), Owner->GetActorLocation(), AttackRange, TraceObjectTypes, SeekClass, IgnoreActors, OutActors);
 
 	/** Draw Image */
-	FColor DrawColor = bResult ? FColor::Green : FColor::Red;
-	DrawDebugSphere(GetWorld(), Owner->GetActorLocation(), AttackRange, 12, DrawColor, false, 0.5f);
+	if (bDrawAttack) {
+		FColor DrawColor = bResult ? FColor::Green : FColor::Red;
+		DrawDebugSphere(GetWorld(), Owner->GetActorLocation(), AttackRange, 12, DrawColor, false, 0.5f);
+	}
 
-	/** ½ÇÁúÀûÀÎ ¾Ë°í¸®Áò */
+	/** ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ ï¿½Ë°ï¿½ï¿½ï¿½ï¿½  || ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ Å©ï¿½ï¿½*/
 	if (bResult) {
-		for (auto& HitActor : OutActors)
-		{
-			// ³»ÀûÀÇ Å©±â
+		for (auto& HitActor : OutActors) {
 			float Inner = Owner->GetDotProductTo(HitActor);
 			if (Inner > 0.3f) {
-				if (Type == "Player"){
-					AEnemy* EHited = Cast<AEnemy>(HitActor);
+				if (Type == "Player") {
+					Hited = Cast<AEnemy>(HitActor);
+					auto EHited = Cast<AEnemy>(HitActor);
 					EHited->SetCurrentAttack(Owner->GetName() + EHited->GetName() + FString::FromInt(AttackCnt));
 					if (EHited) UGameplayStatics::ApplyDamage(EHited, Damage, Controller, Owner, DamageType);
 				}
 				else if (Type == "Enemy") {
-					AMainPlayer* MHited = Cast<AMainPlayer>(HitActor);
+					Hited = Cast<AMainPlayer>(HitActor);
+					auto MHited = Cast<AMainPlayer>(HitActor);
 					MHited->SetCurrentAttack(Owner->GetName() + MHited->GetName() + FString::FromInt(AttackCnt));
 					if (MHited) UGameplayStatics::ApplyDamage(MHited, Damage, Controller, Owner, DamageType);
 				}
@@ -83,7 +77,5 @@ void UAttackFunction::SpawnDamageText(FVector WorldLocation, float Damage, TSubc
 	WorldLocation.Y += UKismetMathLibrary::RandomFloatInRange(-50.f, 50.f);
 	UGameplayStatics::ProjectWorldToScreen(DamageController, WorldLocation, DamageTextVec);
 	DamageWidget = CreateWidget<UDamageTextWidget>(GetWorld(), DamageTextWidget);
-	DamageWidget->InintialScreenLocation = DamageTextVec;
-	DamageWidget->DamageToDisplay = Damage;
-	DamageWidget->AddToViewport();
+	DamageWidget->SetInitialSetting(DamageTextVec, Damage);
 }

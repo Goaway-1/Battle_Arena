@@ -1,24 +1,22 @@
 #pragma once
 
 #include "EngineMinimal.h"
-#include "Components/ActorComponent.h"
 #include "Components/DecalComponent.h"
-#include "Enemy.h"
+#include "Components/ActorComponent.h"
 #include "SkillFunction.generated.h"
 
-
-UCLASS( ClassGroup=(Custom), meta=(BlueprintSpawnableComponent) )
+UCLASS(ClassGroup = (Custom), meta = (BlueprintSpawnableComponent))
 class COMBATARENA_API USkillFunction : public UActorComponent
 {
 	GENERATED_BODY()
 
-public:	
+public:
 	USkillFunction();
 
 protected:
 	virtual void BeginPlay() override;
 
-public:	
+public:
 	virtual void TickComponent(float DeltaTime, ELevelTick TickType, FActorComponentTickFunction* ThisTickFunction) override;
 
 	/** Initial */
@@ -47,7 +45,6 @@ public:
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Skill | Ground")
 	FVector out;
 
-	/** 초기 설정 */
 	UFUNCTION()
 	virtual void SetInitial(APawn* P, USkeletalMeshComponent* S, AController* C, AActor* A);
 

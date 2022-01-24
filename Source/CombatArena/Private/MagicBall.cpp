@@ -50,7 +50,7 @@ void AMagicBall::OnOverlapBegin(UPrimitiveComponent* OverlappedComponent, AActor
 		AMainPlayer* Player = Cast<AMainPlayer>(OtherActor);
 		if (Player) {
 			Player->SetCurrentAttack(GetName() + "AttackMagic" + FString::FromInt(HitCnt));
-			UGameplayStatics::ApplyDamage(Player, 15.f, Player->GetController(), this, MagicDamageType);
+			UGameplayStatics::ApplyDamage(Player, Damage, Player->GetController(), this, MagicDamageType);
 		}
 	}
 }

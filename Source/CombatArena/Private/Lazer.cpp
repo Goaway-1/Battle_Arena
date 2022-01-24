@@ -4,8 +4,7 @@
 #include "Kismet/KismetSystemLibrary.h"
 #include "PlayerAttackFunction.h"
 
-ALazer::ALazer()
-{
+ALazer::ALazer(){
  	PrimaryActorTick.bCanEverTick = true;
 
 	DefaultSceneRoot = CreateDefaultSubobject<USceneComponent>(TEXT("DefaultSceneRoot"));
@@ -20,11 +19,7 @@ ALazer::ALazer()
 
 	LazerArm->TargetArmLength = 4500.f;
 	LazerEndDetector->SetSphereRadius(52.f);
-
-	/** Dealing */
-	bContinueDealing = false;
 }
-
 void ALazer::BeginPlay()
 {
 	Super::BeginPlay();
@@ -37,28 +32,22 @@ void ALazer::BeginPlay()
 	LatentInfo.ExecutionFunction = "Dealing";
 	LatentInfo.UUID = 123;
 	LatentInfo.Linkage = 1;
-
-	HitCnt = 0;
 }
-
-void ALazer::Tick(float DeltaTime)
-{
+void ALazer::Tick(float DeltaTime){
 	Super::Tick(DeltaTime);
 }
-
 void ALazer::OverlapBeginActor(UPrimitiveComponent* OverlappedComponent, AActor* OtherActor, UPrimitiveComponent* OtherComp, int32 OtherBodyIndex, bool bFromSweep, const FHitResult& SweepResult) {
 	if (OtherActor) {
 		bContinueDealing = true;
 		AMainPlayer* Player = Cast<AMainPlayer>(OtherActor);
 
 		if (Player) {
-			SpawnController = Player->GetController();
+			HitedController = Player->GetController();
 			OverlapingEnemies.Add(Player);
 			Dealing();
 		}
 	}
 }
-
 void ALazer::OverlapEndActor(UPrimitiveComponent* OverlappedComponent, AActor* OtherActor, UPrimitiveComponent* OtherComp, int32 OtherBodyIndex) {
 	if (OtherActor) {
 		AMainPlayer* Player = Cast<AMainPlayer>(OtherActor);
@@ -67,13 +56,12 @@ void ALazer::OverlapEndActor(UPrimitiveComponent* OverlappedComponent, AActor* O
 		bContinueDealing = false;
 	}
 }
-
 void ALazer::Dealing() {
 	if (bContinueDealing) {
-		for (auto i : OverlapingEnemies) {
-			AMainPlayer* Player = Cast<AMainPlayer>(i);
+		for (auto hited : OverlapingEnemies) {
+			AMainPlayer* Player = Cast<AMainPlayer>(hited);
 			Player->SetCurrentAttack(GetName() + "AttackLazer" + FString::FromInt(HitCnt));
-			UGameplayStatics::ApplyDamage(Player,5.f, SpawnController,this, LazerDamageType);
+			UGameplayStatics::ApplyDamage(Player, Damage, HitedController,this, LazerDamageType);
 			if (++HitCnt > 2) HitCnt = 0;
 		}
 		UKismetSystemLibrary::Delay(this, 1.0f, LatentInfo);

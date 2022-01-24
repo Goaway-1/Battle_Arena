@@ -224,12 +224,10 @@ void AEnemy::SetVisibleInFog(bool bisin, int time) {
 	SmokeTime = time + 2.f;
 }
 void AEnemy::ActiveFogEvent() {
-	UE_LOG(LogTemp, Warning, TEXT("Enemy ActiveFogEvent"));
 	if (IsInFogMontage && Anim) Anim->Montage_Play(IsInFogMontage);
 	GetWorldTimerManager().SetTimer(FogHandle, this, &AEnemy::DeactiveFogEvent, SmokeTime, false);
 }
 void AEnemy::DeactiveFogEvent() {
-	UE_LOG(LogTemp, Warning, TEXT("Enemy DeactiveFogEvent"));
 	Anim->Montage_Stop(0.1f);
 	SetVisibleInFog(false);
 }

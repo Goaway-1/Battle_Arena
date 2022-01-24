@@ -1,10 +1,9 @@
 #include "Boss_Enemy.h"
 #include "EnemyAttackFunction.h"
 
-
 ABoss_Enemy::ABoss_Enemy() {
 	/** INIT*/
-	GetCharacterMovement()->MaxWalkSpeed = 200.f;
+	GetCharacterMovement()->MaxWalkSpeed = 300.f;
 	MaxHealth = 100.f;
 	CurrentHealth = MaxHealth;
 
@@ -13,7 +12,7 @@ ABoss_Enemy::ABoss_Enemy() {
 	AttackRange = 280.f;
 	KnockBackPower = 800.f;
 
-	ESkillFunction = CreateDefaultSubobject<UEnemySkillFunction>("ESkillFunction");	//´Üµ¶
+	ESkillFunction = CreateDefaultSubobject<UEnemySkillFunction>("ESkillFunction");	
 
 	/** Balance */
 	Balance = CreateDefaultSubobject<UBalance>("Balance");
@@ -63,7 +62,7 @@ float ABoss_Enemy::TakeDamage(float DamageAmount, struct FDamageEvent const& Dam
 	return DamageAmount;
 }
 void ABoss_Enemy::SkillAttack() {
-	//Skill ºÒ·¯¿À±â
+	//Skill ï¿½Ò·ï¿½ï¿½ï¿½ï¿½ï¿½
 	if (bisSkill) return;
 	bisSkill = true;
 

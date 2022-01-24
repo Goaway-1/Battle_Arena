@@ -10,15 +10,14 @@ void UStaminaWidget::SetOwnerStamina(float Ratio, float Max, float Current) {
 	FNumberFormattingOptions Opts;
 	Opts.SetMaximumFractionalDigits(0);
 
-	StaminaBar->SetPercent(Ratio);
-	CurrentStaminaLabel->SetText(FText::AsNumber(Current, &Opts));
-	MaxStaminaLabel->SetText(FText::AsNumber(Max, &Opts));
-
 	/** Set StaminaBar Color */
 	if (Ratio <= 0.3f) BarColor = FLinearColor::Green;
 	else BarColor = FLinearColor(1.0f, 1.0f, 1.0f, 0.25f);
 
 	StaminaBar->SetFillColorAndOpacity(BarColor);
+	StaminaBar->SetPercent(Ratio);
+	CurrentStaminaLabel->SetText(FText::AsNumber(Current, &Opts));
+	MaxStaminaLabel->SetText(FText::AsNumber(Max, &Opts));
 }
 
 void UStaminaWidget::SetOwner(AController* OtherActor) {

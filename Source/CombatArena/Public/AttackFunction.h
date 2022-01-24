@@ -24,22 +24,25 @@ protected:
 public:	
 	virtual void TickComponent(float DeltaTime, ELevelTick TickType, FActorComponentTickFunction* ThisTickFunction) override;
 
+
 protected:
-	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Owner")
+	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "AttackFunction | Owner")
 	class AActor* Owner;
 
-	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Owner")
+	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "AttackFunction | Owner")
 	class UAnimInstance* OwnerAnimInstance;
 
-	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Owner")
-	class ACharacter* Hited = nullptr;
+	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "AttackFunction | Owner")
+	class ACharacter* Hited;
 
-	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Owner")
+	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "AttackFunction | Owner")
 	class AController* Controller;
 
-	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Owner")
+	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "AttackFunction | Owner")
 	class USkeletalMeshComponent* Mesh;
-
+	
+	UPROPERTY(VisibleAnywhere, Category = "AttackFunction | Debug", Meta = (AllowPrivateAccess = true))
+	bool bDrawAttack = false;
 public:
 	UFUNCTION()
 	void SetOwner(USkeletalMeshComponent* TakeMesh, AController* TakeController);

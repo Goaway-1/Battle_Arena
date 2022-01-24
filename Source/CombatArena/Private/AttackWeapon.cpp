@@ -30,7 +30,7 @@ void AAttackWeapon::OnAttackOverlap(UPrimitiveComponent* OverlappedComponent, AA
 		AEnemy* Enemy = Cast<AEnemy>(OtherActor);
 		AMainPlayer* Player = Cast<AMainPlayer>(AtOwner);
 		ABoss_Enemy* BEnemy = Cast<ABoss_Enemy>(Enemy);
-		if (BEnemy) Player->PlayerController->SetBalanceTarget(BEnemy);
+		if (BEnemy) Player->GetPlayerController()->SetBalanceTarget(BEnemy);
 		if (Enemy) {
 			Enemy->SetCurrentAttack(AtOwner->GetName() + this->GetName() + FString::FromInt(Player->GetAttackCnt()));
 			UGameplayStatics::ApplyDamage(Enemy, Damage, AtController, AtOwner, AtDamageType);
@@ -52,7 +52,7 @@ void AAttackWeapon::Equip(class AMainPlayer* Player) {
 			Player->ItemDrop();
 		}
 
-		/** ÀåÂø ·ÎÁ÷ */
+		/** ï¿½ï¿½ï¿½ï¿½ ï¿½ï¿½ï¿½ï¿½ */
 		const USkeletalMeshSocket* HandSocket = nullptr;
 		if (GetWeaponPos() == EWeaponPos::EWP_Melee) HandSocket = Player->GetMesh()->GetSocketByName("MeleeWeapon");
 		else if (GetWeaponPos() == EWeaponPos::EWP_Shield) HandSocket = Player->GetMesh()->GetSocketByName("ShieldWeapon");
@@ -62,7 +62,7 @@ void AAttackWeapon::Equip(class AMainPlayer* Player) {
 			HandSocket->AttachActor(this, Player->GetMesh());
 			Player->SetWeaponStatus(EWeaponStatus::EWS_Melee);
 
-			Player->SetAttackRange(GetAttackRange());		//¿À¸¥ÂÊ ¹«±â¸¸ °Å¸® ÁöÁ¤
+			Player->SetAttackRange(GetAttackRange());		//ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ ï¿½ï¿½ï¿½â¸¸ ï¿½Å¸ï¿½ ï¿½ï¿½ï¿½ï¿½
 			Player->SetAttackCurrentWeapon(this);
 			Player->SetAttackDamage(Damage);	
 

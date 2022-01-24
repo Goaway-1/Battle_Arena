@@ -1,7 +1,7 @@
 #include "EnemySkillFunction.h"
 #include "MainPlayer.h"
 #include "EnemyController.h"
-#include "SK_Meteor.h"
+#include "Meteor.h"
 #include "Kismet/KismetMathLibrary.h"
 #include "MagicBall.h"
 #include "Lazer.h"
@@ -19,6 +19,8 @@ void UEnemySkillFunction::BeginPlay() {
 }
 void UEnemySkillFunction::TickComponent(float DeltaTime, ELevelTick TickType, FActorComponentTickFunction* ThisTickFunction) {
 	Super::TickComponent(DeltaTime, TickType, ThisTickFunction);
+
+	SetSkillLocation();
 }
 void UEnemySkillFunction::SetInitial(APawn* P, USkeletalMeshComponent* S, AController* C, AActor* A) {
 	Super::SetInitial(P, S, C, A);
@@ -27,7 +29,7 @@ void UEnemySkillFunction::SetInitial(APawn* P, USkeletalMeshComponent* S, AContr
 	ESkillDecal->SetDecalMaterial(DecalMaterial);
 }
 void UEnemySkillFunction::LazerAttack() {
-	/** Lazer 생성 (존재한다면 무시) */
+	/** Lazer  */
 	if (Lazer.Num() == 0) {
 		FActorSpawnParameters SpawnParams;
 		SpawnParams.Owner = OwnerActor;
@@ -37,7 +39,7 @@ void UEnemySkillFunction::LazerAttack() {
 		}
 	}
 
-	/** Lazer들의 위치 및 활성화 */
+	/** Lazer */
 	for (int32 i = 0; i < Lazer.Num(); i++) {
 		RandPos(LazerLoc, LazerRot);
 		ALazer* laz = Cast<ALazer>(Lazer[i]);
@@ -63,7 +65,6 @@ void UEnemySkillFunction::RandPos(FVector& Loc, FRotator& Rot) {
 	Loc = OwnerActor->GetActorLocation();
 	Rot = OwnerActor->GetActorRotation();
 	
-
 	Loc.X += UKismetMathLibrary::RandomFloatInRange(-1000.f, 1000.f);
 	Loc.Y += UKismetMathLibrary::RandomFloatInRange(-1000.f, 1000.f);
 	Loc.Z += 300.f;
@@ -113,7 +114,7 @@ void UEnemySkillFunction::ConfirmTargetAndContinue() {
 		for (auto i : OverlapedEnemy) {
 			AMainPlayer* PlayerOverlaped = Cast<AMainPlayer>(i);
 			PlayerOverlaped->SetCurrentAttack(GetName() + "AttackMeteor" + FString::FromInt(HitCnt));
-			UGameplayStatics::ApplyDamage(PlayerOverlaped, 10.f, OwnerController,OwnerPawn, MeteorDamageType);
+			UGameplayStatics::ApplyDamage(PlayerOverlaped, Meteor->GetDamage(), OwnerController,OwnerPawn, MeteorDamageType);
 			SetHitCnt();
 		}
 	}
@@ -128,7 +129,7 @@ void UEnemySkillFunction::SpawnMeteor() {
 	FVector tmp = out;
 	tmp.Z += 1000.f;
 
-	Meteor = GetWorld()->SpawnActor<ASK_Meteor>(MeteorClass, FVector(tmp), FRotator(0.f), SpawnParams);
+	Meteor = GetWorld()->SpawnActor<AMeteor>(MeteorClass, FVector(tmp), FRotator(0.f), SpawnParams);
 	Meteor->SetInitial(this);
 	if (MeteorSound.Num() > 0) UGameplayStatics::SpawnSoundAtLocation(this, MeteorSound[0], Meteor->GetActorLocation());
 }

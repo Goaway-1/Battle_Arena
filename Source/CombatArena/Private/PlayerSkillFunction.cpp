@@ -60,9 +60,9 @@ void UPlayerSkillFunction::SetSkillLocation() {
 	QueryParams.bTraceComplex = true;
 	APawn* OwnerPawn = OwnerController->GetPawn();
 
-	if (OwnerPawn) QueryParams.AddIgnoredActor(OwnerPawn->GetUniqueID());	//ÁÖÀÎÀº ¹«½Ã
+	if (OwnerPawn) QueryParams.AddIgnoredActor(OwnerPawn->GetUniqueID());	//ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ ï¿½ï¿½ï¿½ï¿½
 
-	//ÇÃ·¹ÀÌ¾îÀÇ ½ÃÁ¡¿¡ ÀÖ´Â °÷
+	//ï¿½Ã·ï¿½ï¿½Ì¾ï¿½ï¿½ï¿½ ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ ï¿½Ö´ï¿½ ï¿½ï¿½
 	bool TryTrace = GetWorld()->LineTraceSingleByChannel(HitResult, ViewPoint, ViewPoint + ViewRotation.Vector() * 10000.f, ECC_Visibility, QueryParams);
 	if (TryTrace) {
 		out = HitResult.ImpactPoint;
