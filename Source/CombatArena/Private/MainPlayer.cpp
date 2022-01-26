@@ -4,7 +4,6 @@
 #include "Enemy.h"
 #include "Boss_Enemy.h"
 #include "MainController.h"
-#include "HealthWidget.h"
 #include "PlayerAttackFunction.h"
 #include "Potion.h"
 #include "Kismet/KismetSystemLibrary.h"
@@ -296,7 +295,6 @@ void AMainPlayer::SetArms(USpringArmComponent* Arm) {
 	Arm->bInheritYaw = true;
 }
 #pragma endregion
-
 #pragma region MOVEMENT
 void AMainPlayer::MoveForward(float Value) {
 	if (!IsCanMove()) return;
@@ -708,12 +706,11 @@ void AMainPlayer::EndCharge() {
 void AMainPlayer::BowAnimCharge() {
 	if (Bow && bBowCharging) ChargeAmount = Bow->GetChargeAmount();
 }
-#pragma endregion
-
 void AMainPlayer::SetAttackCnt() {
 	AttackCnt++;
 	if(AttackCnt > 2) AttackCnt = 0;
 }
+#pragma endregion
 #pragma region BALANCE
 void AMainPlayer::SetBalanceRatio() {
 	if (Balance->GetCurrentBalance() > 0.f) {
@@ -759,7 +756,6 @@ void AMainPlayer::CanSpeicalAttackToEnemy() {
 	}
 }
 #pragma endregion
-
 #pragma region SKILL
 void AMainPlayer::SkillController() {
 	if(GetCombatStatus() != ECombatStatus::ECS_Skilling) {
@@ -789,7 +785,6 @@ void AMainPlayer::SkillEnd() {
 	SkillFunction->GroundAttack();
 }
 #pragma endregion
-
 #pragma region THROW
 void AMainPlayer::Throw() {
 	(GetMovementStatus() == EMovementStatus::EMS_Throwing) ? EndThrow() : StartThrow();
@@ -819,7 +814,6 @@ void AMainPlayer::EndThrow() {
 	SetMovementStatus(EMovementStatus::EMS_Normal);
 }
 #pragma endregion
-
 #pragma region ACTIVE
 void AMainPlayer::ActiveInteraction() {
 	/** Active SpecialAttack */
@@ -878,7 +872,6 @@ void AMainPlayer::SetAttackCurrentWeapon(AWeapon* Weapon) {
 	CurrentAttackWeapon = Weapon;
 }
 #pragma endregion
-
 #pragma region HUD
 void AMainPlayer::OnEnemyHUD_OverlapBegin(UPrimitiveComponent* OverlappedComponent, AActor* OtherActor, UPrimitiveComponent* OtherComp, int32 OtherBodyIndex, bool bFromSweep, const FHitResult& SweepResult) {
 	if (OtherActor) {
@@ -896,8 +889,8 @@ void AMainPlayer::OnEnemyHUD_OverlapEnd(UPrimitiveComponent* OverlappedComponent
 		}
 	}
 }
-
 void AMainPlayer::ESCDown(){
+	UE_LOG(LogTemp, Warning, TEXT("ECS"));
 	if (!bESCDown) {
 		bESCDown = true;
 		PlayerController->TogglePauseMenu();

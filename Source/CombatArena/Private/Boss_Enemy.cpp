@@ -1,5 +1,5 @@
 #include "Boss_Enemy.h"
-#include "EnemyAttackFunction.h"
+#include "EnemySkillFunction.h"
 
 ABoss_Enemy::ABoss_Enemy() {
 	/** INIT*/

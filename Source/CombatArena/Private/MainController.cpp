@@ -82,8 +82,8 @@ void AMainController::DisplayPauseMenu_Implementation() {
 		PauseMenu->SetVisibility(ESlateVisibility::Visible);
 
 		/** InputMode */
-		FInputModeUIOnly InputModeUIOnly;
-		SetInputMode(InputModeUIOnly);
+		FInputModeGameAndUI InputModeGameAndUI;
+		SetInputMode(InputModeGameAndUI);
 		bShowMouseCursor = true;
 	}
 }

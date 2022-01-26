@@ -148,7 +148,7 @@ float AEnemy::TakeDamage(float DamageAmount, struct FDamageEvent const& DamageEv
 		return DamageAmount;
 	}
 
-	if (HitedMontage && Anim) {
+	if (HitedMontage && Anim && !IsAttacking) {
 		Anim->Montage_Play(HitedMontage);
 		Anim->Montage_JumpToSection("Hited_F", DeathMontage);
 	}

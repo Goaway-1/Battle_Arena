@@ -2,7 +2,7 @@
 
 #include "EngineMinimal.h"
 #include "MainController.h"
-#include "EnemySkillFunction.h"
+#include "EnemyAttackFunction.h"
 #include "EnemyAnim.h"
 #include "EnemyController.h"
 #include "BrainComponent.h"

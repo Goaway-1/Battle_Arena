@@ -8,7 +8,7 @@ AMeteor::AMeteor()
 	PrimaryActorTick.bCanEverTick = true;
 	CollisionBox = CreateDefaultSubobject<UBoxComponent>(TEXT("CollisionBox"));
 	Flying_Particle = CreateDefaultSubobject<UParticleSystemComponent>(TEXT("Flying_Particle"));
-	CollisionBox->SetupAttachment(GetRootComponent());
+	RootComponent = CollisionBox;
 	Flying_Particle->SetupAttachment(CollisionBox);
 	Flying_Particle->SetRelativeScale3D(FVector(3.0f));
 

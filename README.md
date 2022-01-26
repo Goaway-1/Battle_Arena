@@ -11053,9 +11053,27 @@
     ```
     </details>
 
-- ## <span style = "color:yellow;">코드 수정</span>
-  - 모든 코드 수정 완료
-  
+**<h3>Realization</h3>**
+  - null
+
+## **01.26**
+> **<h3>Today Dev Story</h3>**
+- ## <span style = "color:yellow;">적 피격 애니메이션</span>
+  - 적이 공격 중일때는 피격 애니메이션을 실행 하지 않음
+
+    <details><summary>cpp 코드</summary> 
+    
+    ```c++  
+    //Enemy.cpp
+    float AEnemy::TakeDamage(float DamageAmount, struct FDamageEvent const& DamageEvent, class AController* EventInstigator, AActor* DamageCauser) {
+      ...
+      if (HitedMontage && Anim && !IsAttacking) {
+        Anim->Montage_Play(HitedMontage);
+        Anim->Montage_JumpToSection("Hited_F", DeathMontage);
+      }
+    }
+    ```
+    </details>
 
 **<h3>Realization</h3>**
   - null

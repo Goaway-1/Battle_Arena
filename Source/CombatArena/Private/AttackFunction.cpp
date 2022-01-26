@@ -5,6 +5,9 @@
 #include "Blueprint/UserWidget.h"
 #include "Kismet/GameplayStatics.h"
 #include "Kismet/KismetMathLibrary.h"
+#include "MainPlayer.h"
+#include "Enemy.h"
+
 
 UAttackFunction::UAttackFunction(){
 	PrimaryComponentTick.bCanEverTick = true;
@@ -48,19 +51,16 @@ void UAttackFunction::SkillAttackStart(FVector Location, FVector Forward, TSubcl
 		DrawDebugSphere(GetWorld(), Owner->GetActorLocation(), AttackRange, 12, DrawColor, false, 0.5f);
 	}
 
-	/** �������� �˰����  || ������ ũ��*/
 	if (bResult) {
 		for (auto& HitActor : OutActors) {
 			float Inner = Owner->GetDotProductTo(HitActor);
 			if (Inner > 0.3f) {
 				if (Type == "Player") {
-					Hited = Cast<AEnemy>(HitActor);
 					auto EHited = Cast<AEnemy>(HitActor);
 					EHited->SetCurrentAttack(Owner->GetName() + EHited->GetName() + FString::FromInt(AttackCnt));
 					if (EHited) UGameplayStatics::ApplyDamage(EHited, Damage, Controller, Owner, DamageType);
 				}
 				else if (Type == "Enemy") {
-					Hited = Cast<AMainPlayer>(HitActor);
 					auto MHited = Cast<AMainPlayer>(HitActor);
 					MHited->SetCurrentAttack(Owner->GetName() + MHited->GetName() + FString::FromInt(AttackCnt));
 					if (MHited) UGameplayStatics::ApplyDamage(MHited, Damage, Controller, Owner, DamageType);
