@@ -890,7 +890,6 @@ void AMainPlayer::OnEnemyHUD_OverlapEnd(UPrimitiveComponent* OverlappedComponent
 	}
 }
 void AMainPlayer::ESCDown(){
-	UE_LOG(LogTemp, Warning, TEXT("ECS"));
 	if (!bESCDown) {
 		bESCDown = true;
 		PlayerController->TogglePauseMenu();
@@ -898,6 +897,7 @@ void AMainPlayer::ESCDown(){
 	}
 	else {
 		bESCDown = false;
+		PlayerController->TogglePauseMenu();
 		PlayerController->SetPause(false);
 	}
 }

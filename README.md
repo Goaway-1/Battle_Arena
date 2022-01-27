@@ -11077,3 +11077,14 @@
 
 **<h3>Realization</h3>**
   - null
+
+## **01.27**
+> **<h3>Today Dev Story</h3>**
+- ## <span style = "color:yellow;">Pause Menu 수정</span>
+  - <img src="Image/Edit_PauseMenu.gif" height="300" title="Edit_PauseMenu">
+  - <img src="Image/Pause_Menu_Logic.png" height="300" title="Pause_Menu_Logic">
+  - ESC키, P키를 통해서 일시정지 메뉴를 호출하도록 구현
+  - 코드는 기존과 동일
+
+**<h3>Realization</h3>**
+  - null
