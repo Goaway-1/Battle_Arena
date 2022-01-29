@@ -11088,3 +11088,11 @@
 
 **<h3>Realization</h3>**
   - null
+
+## **01.29**
+> **<h3>Today Dev Story</h3>**
+- ## <span style = "color:yellow;">Timer Error 수정</span>
+  - <img src="Image/TimerError.png" height="300" title="TimerError">
+
+**<h3>Realization</h3>**
+  - null
