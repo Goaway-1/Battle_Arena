@@ -19,7 +19,7 @@
 |Axis|S & W|Forward Move| 
 |Axis|A & D|Right Move| 
 
-[개발일기](https://github.com/Goaway-1/Battle_Arena/DevLog.md)
+[개발일기](https://github.com/Goaway-1/Battle_Arena/blob/master/DevLog.md)
 
 
 > **<h3>목차</h3>**
