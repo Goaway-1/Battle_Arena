@@ -26,17 +26,6 @@
 |Enemy_1|300.f|300.f|100.f||
 |Weapon_1|null|null|200.f||
 
-> **<h3>응용 사이트</h3>**
- [오디오 변환기](https://online-audio-converter.com/ko/)
- [무료 소리](https://freesound.org/)
- [오디오 증폭기](https://www.mp3louder.com/ko/)
- [오디오 자르기](https://mp3cut.net/ko/)
- [카메라관련 유튜브](https://www.youtube.com/watch?v=u0MfT5BsH7Q)
-
-> **추후 할일**
-  1. Infinity Blade : fire Lands 를 사용하여 꾸미기
-  3. 카오스 디스트럭션 툴을 사용하여 무너짐 표현
-
 ## **07.27**
 > **<h3>Today Dev Story</h3>**
 - ## <span style = "color:yellow;">기초적인 설정</span>
@@ -11093,6 +11082,74 @@
 > **<h3>Today Dev Story</h3>**
 - ## <span style = "color:yellow;">Timer Error 수정</span>
   - <img src="Image/TimerError.png" height="300" title="TimerError">
+
+- ## <span style = "color:yellow;">Enemy OnAttackEnd</span>
+  - 기존 Enemy클래스에서 관리되었는데 이는 클래스를 블루프린트로 만들때 오류를 발생
+    - 그래서 주석 처리 후 생성하고 추후에 주석을 해제해서 제작했었음
+  - 그 것을 해결하고자 Enemy클래스에서 다중 상속되어 그런듯 싶어서 애니메이션을 관리하는 EnemyAnim클래스로 이전
+    - 이전 하였기 때문에 SkillAttack과 Attack클래스 내용 수정.
+
+    <details><summary>cpp 코드</summary> 
+    
+    ```c++  
+    //EnemyAmim.cpp
+    void UEnemyAnim::NativeInitializeAnimation() {
+      if(!Enemy) Enemy = Cast<AEnemy>(TryGetPawnOwner());
+
+      OnMontageEnded.AddDynamic(this, &UEnemyAnim::OnAttackMontageEnded);
+    }
+    void UEnemyAnim::OnAttackMontageEnded(UAnimMontage* Montage, bool bInterrupted) {
+      if (!Enemy->GetIsAttacking()) return;
+      Enemy->SetIsAttacking(false);
+      OnAttackEnd.Broadcast();
+    }
+    ```
+    ```c++
+    //BTTask_SkillAttack.cpp
+    EBTNodeResult::Type UBTTask_SkillAttack::ExecuteTask(UBehaviorTreeComponent& OwnerComp, uint8* NodeMemory) {
+      Super::ExecuteTask(OwnerComp, NodeMemory);
+      ...
+      Enemy->Attack("Skill");
+      IsAttacking = true;
+      auto Anim = Cast<UEnemyAnim>(Enemy->GetMesh()->GetAnimInstance());
+      Anim->OnAttackEnd.AddLambda([this]()-> void{
+        IsAttacking = false;
+      });
+
+      return EBTNodeResult::InProgress;
+    }
+    ```
+    ```c++
+    //BTTask_Attack.cpp
+    EBTNodeResult::Type UBTTask_Attack::ExecuteTask(UBehaviorTreeComponent& OwnerComp, uint8* NodeMemory) {
+      Super::ExecuteTask(OwnerComp, NodeMemory);
+
+      auto Enemy = Cast<ABoss_Enemy>(OwnerComp.GetAIOwner()->GetPawn());
+      if (!Enemy)	return EBTNodeResult::Failed;
+
+      Enemy->Attack("Melee");
+      IsAttacking = true;
+      auto Anim = Cast<UEnemyAnim>(Enemy->GetMesh()->GetAnimInstance());
+      Anim->OnAttackEnd.AddLambda([this]()-> void {
+        IsAttacking = false;
+        });
+      return EBTNodeResult::InProgress;
+    }
+    ```
+    </details>
+    <details><summary>h 코드</summary> 
+    
+    ```c++  
+    //EnemyAmim.h
+    DECLARE_MULTICAST_DELEGATE(FOnAttackEndDelegate);
+
+    public:
+      FOnAttackEndDelegate OnAttackEnd;
+
+      UFUNCTION()
+      void OnAttackMontageEnded(UAnimMontage* Montage, bool bInterrupted);
+    ```
+    </details>
 
 **<h3>Realization</h3>**
   - null

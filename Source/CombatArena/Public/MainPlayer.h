@@ -77,10 +77,21 @@ private:
 	TSubclassOf<UMatineeCameraShake> CamShake;
 	class APlayerCameraManager* CameraManager;
 	class USceneComponent* SpringArmSence;
+
+
+	UPROPERTY(VisibleAnywhere, Category = "Camera", Meta = (AllowPrivateAccess = true))
 	class USpringArmComponent* SpringArm;
+
+	UPROPERTY(VisibleAnywhere, Category = "Camera", Meta = (AllowPrivateAccess = true))
 	class USpringArmComponent* SpringArm_Sprinting;
+	
+	UPROPERTY(VisibleAnywhere, Category = "Camera", Meta = (AllowPrivateAccess = true))
 	class USpringArmComponent* SpringArm_Attacking;
+	
+	UPROPERTY(VisibleAnywhere, Category = "Camera", Meta = (AllowPrivateAccess = true))
 	class USpringArmComponent* SpringArm_Drawing;
+	
+	UPROPERTY(VisibleAnywhere, Category = "Camera", Meta = (AllowPrivateAccess = true))
 	class USpringArmComponent* SpringArm_Skilling;
 
 	int TurnAxis = 0;	//회전 각도

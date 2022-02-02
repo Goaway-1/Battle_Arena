@@ -52,7 +52,7 @@ void AAttackWeapon::Equip(class AMainPlayer* Player) {
 			Player->ItemDrop();
 		}
 
-		/** ���� ���� */
+		/** WeaponPos에 따른 Attach */
 		const USkeletalMeshSocket* HandSocket = nullptr;
 		if (GetWeaponPos() == EWeaponPos::EWP_Melee) HandSocket = Player->GetMesh()->GetSocketByName("MeleeWeapon");
 		else if (GetWeaponPos() == EWeaponPos::EWP_Shield) HandSocket = Player->GetMesh()->GetSocketByName("ShieldWeapon");
@@ -62,7 +62,7 @@ void AAttackWeapon::Equip(class AMainPlayer* Player) {
 			HandSocket->AttachActor(this, Player->GetMesh());
 			Player->SetWeaponStatus(EWeaponStatus::EWS_Melee);
 
-			Player->SetAttackRange(GetAttackRange());		//������ ���⸸ �Ÿ� ����
+			Player->SetAttackRange(GetAttackRange());		
 			Player->SetAttackCurrentWeapon(this);
 			Player->SetAttackDamage(Damage);	
 

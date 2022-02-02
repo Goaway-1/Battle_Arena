@@ -2,8 +2,6 @@
 
 #include "EngineMinimal.h"
 #include "Item.h"
-#include "MainPlayer.h"
-#include "Enemy.h"
 #include "Engine/SkeletalMeshSocket.h"
 #include "Weapon.generated.h"
 

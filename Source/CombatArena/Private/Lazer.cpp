@@ -60,6 +60,7 @@ void ALazer::Dealing() {
 	if (bContinueDealing) {
 		for (auto hited : OverlapingEnemies) {
 			AMainPlayer* Player = Cast<AMainPlayer>(hited);
+			if(!Player) return;
 			Player->SetCurrentAttack(GetName() + "AttackLazer" + FString::FromInt(HitCnt));
 			UGameplayStatics::ApplyDamage(Player, Damage, HitedController,this, LazerDamageType);
 			if (++HitCnt > 2) HitCnt = 0;

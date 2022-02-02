@@ -118,7 +118,7 @@ void UEnemySkillFunction::ConfirmTargetAndContinue() {
 			SetHitCnt();
 		}
 	}
-	Meteor->Destroy();
+	Meteor = nullptr;
 }
 void UEnemySkillFunction::SpawnMeteor() {
 	FActorSpawnParameters SpawnParams;

@@ -42,7 +42,7 @@ private:
 	TArray<class AMainPlayer*> OverlapingEnemies;
 
 	FLatentActionInfo LatentInfo;
-	AController* HitedController;
+	AController* HitedController = nullptr;
 	bool bContinueDealing = false;
 	int HitCnt = 0;
 public:

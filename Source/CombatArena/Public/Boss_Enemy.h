@@ -4,12 +4,10 @@
 #include "Enemy.h"
 #include "Boss_Enemy.generated.h"
 
-
 UCLASS()
 class COMBATARENA_API ABoss_Enemy : public AEnemy
 {
 	GENERATED_BODY()
-
 #pragma region INIT
 private:
 	ABoss_Enemy();

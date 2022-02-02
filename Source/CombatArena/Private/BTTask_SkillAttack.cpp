@@ -1,7 +1,8 @@
 #include "BTTask_SkillAttack.h"
 #include "EnemyController.h"
-#include "Enemy.h"
+#include "Boss_Enemy.h"
 #include "MainPlayer.h"
+#include "EnemyAnim.h"
 #include "BehaviorTree/BlackboardComponent.h"
 
 UBTTask_SkillAttack::UBTTask_SkillAttack() {
@@ -15,7 +16,7 @@ EBTNodeResult::Type UBTTask_SkillAttack::ExecuteTask(UBehaviorTreeComponent& Own
 
 	Super::ExecuteTask(OwnerComp, NodeMemory);
 
-	auto Enemy = Cast<AEnemy>(OwnerComp.GetAIOwner()->GetPawn());
+	auto Enemy = Cast<ABoss_Enemy>(OwnerComp.GetAIOwner()->GetPawn());
 	if (!Enemy)	return EBTNodeResult::Failed;
 
 	AMainPlayer* Target = Cast<AMainPlayer>(OwnerComp.GetBlackboardComponent()->GetValueAsObject(AEnemyController::TargetActor));
@@ -28,7 +29,8 @@ EBTNodeResult::Type UBTTask_SkillAttack::ExecuteTask(UBehaviorTreeComponent& Own
 
 	Enemy->Attack("Skill");
 	IsAttacking = true;
-	Enemy->OnAttackEnd.AddLambda([this]()-> void{
+	auto Anim = Cast<UEnemyAnim>(Enemy->GetMesh()->GetAnimInstance());
+	Anim->OnAttackEnd.AddLambda([this]()-> void{
 		IsAttacking = false;
 	});
 

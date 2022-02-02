@@ -169,6 +169,8 @@ void AMainPlayer::Tick(float DeltaTime)
 {
 	Super::Tick(DeltaTime);
 
+	if(GetVelocity().Size() <= 0.1f) OffSprinting();
+
 	/** if Run and then Shake Cam*/
 	RunCamShake();
 
@@ -417,7 +419,6 @@ void AMainPlayer::RunCamShake() {
 void AMainPlayer::LMBDown() {
 	if(AttackFunction->GetKicking() || GetMovementStatus() == EMovementStatus::EMS_Dodge || !GetCharacterMovement()->CurrentFloor.IsWalkableFloor()) return;
 	bLMBDown = true;
-	SetAttackCnt(); 
 	
 	//Action
 	if (GetMovementStatus() == EMovementStatus::EMS_Throwing) {
@@ -482,11 +483,11 @@ void AMainPlayer::Attack(bool bIsSpecial) {
 	}
 	else if (AnimInstance && PlayMontage)		/** NOMAL ATTACK */
 	{ 
-		if (!AnimInstance->Montage_IsPlaying(PlayMontage)) {	//�������� �ƴҶ� (ó�� ����)
+		if (!AnimInstance->Montage_IsPlaying(PlayMontage)) {	//애니메이션 실행 중 X
 			AnimInstance->Montage_Play(PlayMontage);
 			ComboCnt = 0;
 		}
-		else {													//�������϶� 2Ÿ 3Ÿ
+		else {													//애니메이션 실행 중
 			AnimInstance->Montage_Play(PlayMontage);
 			AnimInstance->Montage_JumpToSection(GetAttackMontageSection("Attack", ComboCnt), PlayMontage);
 		}
@@ -494,9 +495,9 @@ void AMainPlayer::Attack(bool bIsSpecial) {
 }
 void AMainPlayer::StartAttack() {
 	/** Use AttackFunction */
-	FString Type = "Player";
-	AttackFunction->SkillAttackStart(GetActorLocation(), GetActorForwardVector(), PlayerDamageType, Type, GetHitParticle(), GetAttackRange(), AttackDamage,AttackCnt);
+	FString Type = "Player";	
 	SetAttackCnt();
+	AttackFunction->SkillAttackStart(GetActorLocation(), GetActorForwardVector(), PlayerDamageType, Type, GetHitParticle(), GetAttackRange(), AttackDamage,AttackCnt);
 }
 void AMainPlayer::EndAttack() {
 	bAttacking = false;
@@ -504,6 +505,7 @@ void AMainPlayer::EndAttack() {
 }
 void AMainPlayer::OnWeaponCollision() {
 	if (GetAttackCurrentWeapon()->GetWeaponPos() == EWeaponPos::EWP_Melee) {
+		SetAttackCnt();
 		AAttackWeapon* Weapon = Cast<AAttackWeapon>(GetAttackCurrentWeapon());
 		Weapon->SetAttackCollision(true);
 	}
@@ -680,7 +682,7 @@ void AMainPlayer::BeginCharge() {
 			Bow->BeginCharge();
 			bBowCharging = true;
 			SetMovementStatus(EMovementStatus::EMS_Drawing);
-			ZoomInCam(SpringArm_Drawing, FRotator(0.f,-20.f,0.f));
+			ZoomInCam(SpringArm_Drawing, FRotator(0.f,-10.f,0.f));
 		}
 	}
 }
@@ -708,7 +710,7 @@ void AMainPlayer::BowAnimCharge() {
 }
 void AMainPlayer::SetAttackCnt() {
 	AttackCnt++;
-	if(AttackCnt > 2) AttackCnt = 0;
+	if(AttackCnt > 10) AttackCnt = 0;
 }
 #pragma endregion
 #pragma region BALANCE
@@ -732,7 +734,6 @@ void AMainPlayer::BrokenBalance() {
 	AnimInstance->Montage_JumpToSection("Faint", FaintMontage);
 }
 void AMainPlayer::RecoverBalance() {
-	UE_LOG(LogTemp, Warning, TEXT("Player Recover"));
 	if(GetMovementStatus() != EMovementStatus::EMS_Faint) return;
 	AnimInstance->Montage_Stop(0.1f);
 	SetMovementStatus(EMovementStatus::EMS_Normal);
@@ -816,6 +817,7 @@ void AMainPlayer::EndThrow() {
 #pragma endregion
 #pragma region ACTIVE
 void AMainPlayer::ActiveInteraction() {
+	if(!IsCanMove()) return;
 	/** Active SpecialAttack */
 	float Inner = this->GetDotProductTo(BalanceTarget);
 	if (Inner > 0.3f && bCanSpecialAttack && !bAttacking) ActiveSpecialAttack();
@@ -831,7 +833,6 @@ void AMainPlayer::ActiveSpecialAttack() {
 	Attack(true);
 }
 void AMainPlayer::SpecialAttackApplyDamage() {
-	UE_LOG(LogTemp, Warning, TEXT("MainPlayer :: ActiveSpecialAttack"));
 	BalanceTarget->SetCurrentAttack("SpecialAttack");
 	UGameplayStatics::ApplyDamage(BalanceTarget, 15.f, PlayerController, this, PlayerDamageType);
 }
@@ -848,7 +849,7 @@ void AMainPlayer::ItemEquip() {
 		Potion->UseItem(CurrentHealth);
 		SetHealthRatio();
 	}
-	if (AnimInstance && PickUpMontage) AnimInstance->Montage_Play(PickUpMontage);
+	//if (AnimInstance && PickUpMontage) AnimInstance->Montage_Play(PickUpMontage);
 	SetActiveOverlappingItem(nullptr);
 }
 void AMainPlayer::ItemDrop() {
@@ -856,7 +857,7 @@ void AMainPlayer::ItemDrop() {
 		CurrentAttackWeapon->UnEquip();
 		CurrentAttackWeapon = nullptr;
 		AttackDamage = DefaultDamage;
-		AttackRange = DefaultAttackRange;				//���� ���� ����
+		AttackRange = DefaultAttackRange;				
 		if (CurrentShieldWeapon == nullptr) SetWeaponStatus(EWeaponStatus::EWS_Normal);
 	}
 	else if (CurrentShieldWeapon != nullptr) {

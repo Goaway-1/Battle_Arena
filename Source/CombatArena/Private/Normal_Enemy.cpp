@@ -26,6 +26,7 @@ void ANormal_Enemy::Tick(float DeltaTime){
 }
 void ANormal_Enemy::PostInitializeComponents(){
 	Super::PostInitializeComponents();
+	
 }
 void ANormal_Enemy::SetupPlayerInputComponent(UInputComponent* PlayerInputComponent)
 {
@@ -39,9 +40,4 @@ float ANormal_Enemy::TakeDamage(float DamageAmount, struct FDamageEvent const& D
 }
 void ANormal_Enemy::Attack(FString type) {
 	Super::Attack(type);
-
-	if (type == "Melee") {
-		Anim->Montage_Play(AttackMontage);
-		Anim->Montage_JumpToSection(GetAttackMontageSection("Attack"), AttackMontage);
-	}
 }

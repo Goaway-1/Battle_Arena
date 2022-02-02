@@ -10,8 +10,6 @@
 #include "GameFramework/Character.h"
 #include "Enemy.generated.h"
 
-DECLARE_MULTICAST_DELEGATE(FOnAttackEndDelegate);
-
 class AMainController;
 
 UCLASS()
@@ -58,8 +56,8 @@ protected:
 	UAnimMontage* IsInFogMontage;
 	
 public:
-	UFUNCTION()
-	void OnAttackMontageEnded(UAnimMontage* Montage, bool bInterrupted);
+	//UFUNCTION()
+	//void OnAttackMontageEnded(UAnimMontage* Montage, bool bInterrupted);
 	
 	UFUNCTION()
 	virtual FName GetAttackMontageSection(FString Type);
@@ -67,6 +65,8 @@ public:
 #pragma region ATTACK
 private:
 	class UEnemyAttackFunction* AttackFunction;
+
+	UPROPERTY()
 	bool IsAttacking = false;
 
 	/** DamageType */
@@ -114,8 +114,13 @@ protected:
 	float KnockBackPower;
 
 	FString SkillType;
+
 public:
-	FOnAttackEndDelegate OnAttackEnd;
+	FORCEINLINE bool GetIsAttacking() { return IsAttacking; }
+
+	FORCEINLINE void SetIsAttacking(bool val) { IsAttacking = val; }
+public:
+	/*FOnAttackEndDelegate OnAttackEnd;*/
 
 	UFUNCTION(BlueprintCallable)
 	FORCEINLINE UEnemyAttackFunction* GetAttackFuntion() { return AttackFunction; }
@@ -190,7 +195,7 @@ private:
 	class UHealthWidget* HealthBar;
 
 	UPROPERTY()
-	float HealthRatio = 0.f;
+	float HealthRatio = 1.f;
 	
 	UPROPERTY(EditAnywhere,Category = "Widget | TargetWidget", Meta = (AllowPrivateAccess = true))
 	class UDecalComponent* TargetingDecal;

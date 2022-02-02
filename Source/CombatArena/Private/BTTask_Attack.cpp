@@ -1,6 +1,6 @@
 #include "BTTask_Attack.h"
 #include "EnemyController.h"
-#include "Enemy.h"
+#include "Normal_Enemy.h"
 
 UBTTask_Attack::UBTTask_Attack() {
 	NodeName = "Attack";
@@ -17,10 +17,10 @@ EBTNodeResult::Type UBTTask_Attack::ExecuteTask(UBehaviorTreeComponent& OwnerCom
 
 	Enemy->Attack("Melee");
 	IsAttacking = true;
-	Enemy->OnAttackEnd.AddLambda([this]()-> void {
+	auto Anim = Cast<UEnemyAnim>(Enemy->GetMesh()->GetAnimInstance());
+	Anim->OnAttackEnd.AddLambda([this]()-> void {
 		IsAttacking = false;
-	});
-
+		});
 	return EBTNodeResult::InProgress;
 }
 

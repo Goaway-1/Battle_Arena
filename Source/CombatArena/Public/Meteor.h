@@ -43,6 +43,7 @@ private:
 	class UEnemySkillFunction* SkillFunction;
 
 	bool bIsEnd = false;
+	FTimerHandle handle;
 
 public:
 	void SetInitial(UEnemySkillFunction* Function);

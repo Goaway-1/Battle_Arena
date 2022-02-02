@@ -13,9 +13,9 @@ class COMBATARENA_API UBalanceWidget : public UUserWidget
 	GENERATED_BODY()
 
 protected:
-	TWeakObjectPtr<AEnemy> Enemy;
+	TWeakObjectPtr<class AEnemy> Enemy;
 
-	TWeakObjectPtr<APlayerController> PlayerController;
+	TWeakObjectPtr<class APlayerController> PlayerController;
 
 	UPROPERTY(meta = (BindWidget))
 	class UProgressBar* BalanceBar;

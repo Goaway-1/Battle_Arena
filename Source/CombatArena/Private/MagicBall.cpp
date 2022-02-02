@@ -40,11 +40,11 @@ void AMagicBall::OnOverlapBegin(UPrimitiveComponent* OverlappedComponent, AActor
 	if (MagicSound) UGameplayStatics::SpawnSoundAtLocation(this, MagicSound, GetActorLocation());
 
 	Flying_Particle->Deactivate();
-	FTimerHandle handle;
+	GetWorld()->GetTimerManager().ClearTimer(handle);
 	GetWorld()->GetTimerManager().SetTimer(handle, [this]() {
 		Flying_Particle->DestroyComponent();
 		Destroy();
-		}, 2.0f, 1);
+		}, 2.0f, false);
 
 	if (OtherActor) {
 		AMainPlayer* Player = Cast<AMainPlayer>(OtherActor);

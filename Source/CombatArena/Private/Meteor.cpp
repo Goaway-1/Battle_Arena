@@ -55,9 +55,11 @@ void AMeteor::IsInGround() {
 
 	UGameplayStatics::SpawnEmitterAtLocation(GetWorld(), Impact_Particle, GetActorLocation() + Location_Offset_Impact_Particle, Rotate_Impact_Particle);
 	Flying_Particle->Deactivate();
-	FTimerHandle handle;
+	GetWorldTimerManager().ClearTimer(handle);
 	GetWorld()->GetTimerManager().SetTimer(handle, [this]() {
-		Flying_Particle->DestroyComponent();
-		Destroy();
-		}, 2.0f, 1);
+		if (this) {
+			Flying_Particle->DestroyComponent();
+			Destroy();
+		}
+	}, 1.5f, 1);
 }

@@ -33,6 +33,7 @@ void ABoss_Enemy::Tick(float DeltaTime) {
 }
 void ABoss_Enemy::PostInitializeComponents() {
 	Super::PostInitializeComponents();
+
 }
 void ABoss_Enemy::SetupPlayerInputComponent(UInputComponent* PlayerInputComponent){
 	Super::SetupPlayerInputComponent(PlayerInputComponent);
@@ -41,14 +42,12 @@ void ABoss_Enemy::SetupPlayerInputComponent(UInputComponent* PlayerInputComponen
 void ABoss_Enemy::Attack(FString type) {
 	Super::Attack(type);
 
-	if (type == "Melee") {
-		Anim->Montage_Play(AttackMontage);
-		Anim->Montage_JumpToSection(GetAttackMontageSection("Attack"), AttackMontage);
-	}
-	else if (type == "Skill" && !bisSkill) {
+	if (type == "Skill" && !bisSkill) {
 		Anim->Montage_Play(SkillAttackMontage);
 		Anim->Montage_JumpToSection(GetAttackMontageSection("Skill"), SkillAttackMontage);
 	}
+
+	return;
 }
 float ABoss_Enemy::TakeDamage(float DamageAmount, struct FDamageEvent const& DamageEvent, class AController* EventInstigator, AActor* DamageCauser) {
 	Super::TakeDamage(DamageAmount, DamageEvent, EventInstigator, DamageCauser);
@@ -57,12 +56,14 @@ float ABoss_Enemy::TakeDamage(float DamageAmount, struct FDamageEvent const& Dam
 	Balance->SetCurrentBalance(20.f);
 	Balance->SetDecreaseBalance(false);
 	if (Balance->GetCurrentBalance() >= 100.f) BrokenBalance();
-	else GetWorldTimerManager().SetTimer(BalanceHandle, FTimerDelegate::CreateLambda([&] { Balance->SetDecreaseBalance(true); }), DecreaseBalanceTime, false);
+	else {
+		GetWorldTimerManager().ClearTimer(BalanceHandle);
+		GetWorldTimerManager().SetTimer(BalanceHandle, FTimerDelegate::CreateLambda([&] { Balance->SetDecreaseBalance(true); }), DecreaseBalanceTime, false);
+	}
 
 	return DamageAmount;
 }
 void ABoss_Enemy::SkillAttack() {
-	//Skill �ҷ�����
 	if (bisSkill) return;
 	bisSkill = true;
 
@@ -70,13 +71,15 @@ void ABoss_Enemy::SkillAttack() {
 	if (SkillType == "Meteor") ESkillFunction->GroundAttack();
 	else if (SkillType == "Lazer") ESkillFunction->LazerAttack();
 	else if (SkillType == "Rush") {
-		float dis = GetDistanceTo(EnemyController->GetCurrentTarget()) / 1500.f;
+		float dis = GetDistanceTo(EnemyController->GetCurrentTarget()) / 1600.f;
+		GetWorldTimerManager().ClearTimer(SKillCoolTimer);
 		GetWorldTimerManager().SetTimer(SKillCoolTimer, this, &ABoss_Enemy::DashSkill, dis, false);
 		return;
 	}
 	else if (SkillType == "Magic") ESkillFunction->MagicAttack();
 
-	GetWorldTimerManager().SetTimer(SKillCoolTimer, this, &ABoss_Enemy::SkillAttackEnd, 1.0f, false);
+	//GetWorldTimerManager().ClearTimer(SKillCoolTimer);
+	//GetWorldTimerManager().SetTimer(SKillCoolTimer, this, &ABoss_Enemy::SkillAttackEnd, 1.0f, false);
 }
 void ABoss_Enemy::SkillAttackEnd() {
 	bisSkill = false;
@@ -88,7 +91,10 @@ void ABoss_Enemy::SkillAttackEnd() {
 }
 void ABoss_Enemy::DashSkill() {
 	Anim->Montage_JumpToSection("Attack5", SkillAttackMontage);
-	GetWorldTimerManager().SetTimer(SKillCoolTimer, this, &ABoss_Enemy::SkillAttackEnd, 0.79f, false);
+	//GetWorldTimerManager().ClearTimer(SKillCoolTimer);
+	//GetWorldTimerManager().SetTimer(SKillCoolTimer, this, &ABoss_Enemy::SkillAttackEnd, 1.0f, false);
+
+	return;
 }
 void ABoss_Enemy::StartLookAround(bool isLeft) {
 	/** Look At the Target */

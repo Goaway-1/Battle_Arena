@@ -34,7 +34,8 @@ AEnemy::AEnemy()
 	TargetingDecal = CreateDefaultSubobject<UDecalComponent>(TEXT("TargetingDecal"));
 	TargetingDecal->SetupAttachment(GetMesh());
 	TargetingDecal->SetRelativeLocation(FVector(0.f, 0.f, 0.f));
-	TargetingDecal->DecalSize = FVector(10.f, 10.f, 90.f);
+	TargetingDecal->SetRelativeRotation(FRotator(90.f,0.f,0.f));
+	TargetingDecal->DecalSize = FVector(500.f, 1500.f, 1500.f);
 	TargetingDecal->SetVisibility(false);
 #pragma endregion
 #pragma region ATTCK
@@ -95,9 +96,6 @@ void AEnemy::PostInitializeComponents()
 {
 	Super::PostInitializeComponents();
 	if(!Anim) Anim = Cast<UEnemyAnim>(GetMesh()->GetAnimInstance());
-
-	//행동이 끝나면 다른 함수에게 알려준다. ->OnMontageEnded는 델리게이트 
-	Anim->OnMontageEnded.AddDynamic(this, &AEnemy::OnAttackMontageEnded);
 }
 void AEnemy::SetupPlayerInputComponent(UInputComponent* PlayerInputComponent)
 {
@@ -112,6 +110,10 @@ void AEnemy::Attack(FString type) {
 	if (!AttackMontage && !Anim) return;
 	
 	IsAttacking = true;
+	if (type == "Melee") {
+		Anim->Montage_Play(AttackMontage);
+		Anim->Montage_JumpToSection(GetAttackMontageSection("Attack"), AttackMontage);
+	}
 }
 void AEnemy::AttackReady() {
 	LaunchCharacter(GetActorForwardVector() * 700.f, true, true);
@@ -139,8 +141,8 @@ float AEnemy::TakeDamage(float DamageAmount, struct FDamageEvent const& DamageEv
 	else if (DamageEvent.DamageTypeClass != InternalDamageType) return 0;
 	else return 0;
 
-	SetHealthRatio();
 	CurrentHealth -= DamageAmount;
+	SetHealthRatio();
 	HealthBar->SetOwnerHealth(GetHealthRatio(), MaxHealth, CurrentHealth);
 	if(CurrentHealth <= 0) {
 		CurrentHealth = 0;
@@ -198,21 +200,21 @@ FName AEnemy::GetAttackMontageSection(FString Type) {
 	else if (Type == "Skill") {
 		int range = FMath::RandRange(1, 4);
 		switch (range) {
-			case 1:
-				SkillType = "Meteor";
-				break;
-			case 2:
-				SkillType = "Lazer";
-				break;
-			case 3:
-				SkillType = "Magic";
-				break;
-			case 4:
-				SkillType = "Rush";
-				break;
-			default:
-				SkillType = "Error";
-				break;
+		case 1:
+			SkillType = "Meteor";
+			break;
+		case 2:
+			SkillType = "Lazer";
+			break;
+		case 3:
+			SkillType = "Magic";
+			break;
+		case 4:
+			SkillType = "Rush";
+			break;
+		default:
+			SkillType = "Error";
+			break;
 		}
 		return FName(*FString::Printf(TEXT("Attack%d"), range));
 	}
@@ -239,11 +241,6 @@ void AEnemy::OnWeaponOverlap(UPrimitiveComponent* OverlappedComponent, AActor* O
 			UGameplayStatics::ApplyDamage(Player, AttackDamage, EnemyController, GetController(), CollisionDamageType);
 		}
 	}
-}
-void AEnemy::OnAttackMontageEnded(UAnimMontage* Montage, bool bInterrupted) {
-	if (!IsAttacking) return;
-	IsAttacking = false;
-	OnAttackEnd.Broadcast();
 }
 #pragma endregion
 #pragma region HUD

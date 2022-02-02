@@ -49,6 +49,7 @@ private:
 	float Damage = 10.0f;
 
 	int HitCnt;
+	FTimerHandle handle;
 public:
 	virtual void OnConstruction(const FTransform& Transform) override;
 
