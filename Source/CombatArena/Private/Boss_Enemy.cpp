@@ -42,6 +42,7 @@ void ABoss_Enemy::SetupPlayerInputComponent(UInputComponent* PlayerInputComponen
 void ABoss_Enemy::Attack(FString type) {
 	Super::Attack(type);
 
+	SetIsAttacking(true);
 	if (type == "Skill" && !bisSkill) {
 		Anim->Montage_Play(SkillAttackMontage);
 		Anim->Montage_JumpToSection(GetAttackMontageSection("Skill"), SkillAttackMontage);
@@ -78,8 +79,8 @@ void ABoss_Enemy::SkillAttack() {
 	}
 	else if (SkillType == "Magic") ESkillFunction->MagicAttack();
 
-	//GetWorldTimerManager().ClearTimer(SKillCoolTimer);
-	//GetWorldTimerManager().SetTimer(SKillCoolTimer, this, &ABoss_Enemy::SkillAttackEnd, 1.0f, false);
+	GetWorldTimerManager().ClearTimer(SKillCoolTimer);
+	GetWorldTimerManager().SetTimer(SKillCoolTimer, this, &ABoss_Enemy::SkillAttackEnd, 1.0f, false);
 }
 void ABoss_Enemy::SkillAttackEnd() {
 	bisSkill = false;
@@ -91,8 +92,8 @@ void ABoss_Enemy::SkillAttackEnd() {
 }
 void ABoss_Enemy::DashSkill() {
 	Anim->Montage_JumpToSection("Attack5", SkillAttackMontage);
-	//GetWorldTimerManager().ClearTimer(SKillCoolTimer);
-	//GetWorldTimerManager().SetTimer(SKillCoolTimer, this, &ABoss_Enemy::SkillAttackEnd, 1.0f, false);
+	GetWorldTimerManager().ClearTimer(SKillCoolTimer);
+	GetWorldTimerManager().SetTimer(SKillCoolTimer, this, &ABoss_Enemy::SkillAttackEnd, 1.0f, false);
 
 	return;
 }

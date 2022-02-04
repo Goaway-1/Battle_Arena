@@ -56,9 +56,6 @@ protected:
 	UAnimMontage* IsInFogMontage;
 	
 public:
-	//UFUNCTION()
-	//void OnAttackMontageEnded(UAnimMontage* Montage, bool bInterrupted);
-	
 	UFUNCTION()
 	virtual FName GetAttackMontageSection(FString Type);
 #pragma endregion
@@ -66,7 +63,7 @@ public:
 private:
 	class UEnemyAttackFunction* AttackFunction;
 
-	UPROPERTY()
+	UPROPERTY(EditAnywhere, Category = "Attack", Meta = (AllowPrivateAccess = true))
 	bool IsAttacking = false;
 
 	/** DamageType */
@@ -104,7 +101,7 @@ private:
 	FString CurrentAttack = "";
 
 protected:
-	UPROPERTY(EditAnywhere, Category = "Attack", Meta = (AllowPrivateAccess = true))
+	UPROPERTY(EditAnywhere, Category = "Attack")
 	float AttackDamage;
 
 	UPROPERTY(EditDefaultsOnly, Category = "Attack", Meta = (AllowPrivateAccess = true))
@@ -120,8 +117,6 @@ public:
 
 	FORCEINLINE void SetIsAttacking(bool val) { IsAttacking = val; }
 public:
-	/*FOnAttackEndDelegate OnAttackEnd;*/
-
 	UFUNCTION(BlueprintCallable)
 	FORCEINLINE UEnemyAttackFunction* GetAttackFuntion() { return AttackFunction; }
 
@@ -187,9 +182,6 @@ public:
 private:
 	UPROPERTY(VisibleAnywhere, Category = "Widget | EnemyWidget", Meta = (AllowPrivateAccess = true))
 	class UWidgetComponent* HealthWidget;
-
-	UPROPERTY(EditAnywhere, Category = "Widget | EnemyWidget", Meta = (AllowPrivateAccess = true))
-	TSubclassOf<class UUserWidget> WEnemyHealth;
 
 	UPROPERTY()
 	class UHealthWidget* HealthBar;

@@ -11082,8 +11082,6 @@
 > **<h3>Today Dev Story</h3>**
 - ## <span style = "color:yellow;">Timer Error 수정</span>
   - <img src="Image/TimerError.png" height="300" title="TimerError">
-
-- ## <span style = "color:yellow;">Enemy OnAttackEnd</span>
   - 기존 Enemy클래스에서 관리되었는데 이는 클래스를 블루프린트로 만들때 오류를 발생
     - 그래서 주석 처리 후 생성하고 추후에 주석을 해제해서 제작했었음
   - 그 것을 해결하고자 Enemy클래스에서 다중 상속되어 그런듯 싶어서 애니메이션을 관리하는 EnemyAnim클래스로 이전
@@ -11156,4 +11154,39 @@
 
 ## **01.30**
 > **<h3>Today Dev Story</h3>**
+- ## <span style = "color:yellow;">Timer Error 수정_2</span>
+  - 위 에러 수정 중...
+  - Boss의 행동 중 특정한 사건으로 튕기지 않고 그냥 튕김 
+
+
+- ## <span style = "color:yellow;">컴파일 에러</span>
+  ```
+  LogOutputDevice: Error: Ensure condition failed: InvocationList[ CurFunctionIndex ] != InDelegate [File:f:\epicgames\ue_4.22\engine\source\runtime\core\public\UObject/ScriptDelegates.h] [Line: 556]
+  ```
+  - 추가된 에러 코드 계속 수정 중...
+  - AddDynamic() 대신 AddUniqueDynamic()사용하여 오류 제거
+    - AddDynamic은 같은 함수를 두번 추가할 경우 Broadcast()를 통해 호출되면 같은 함수가 두 번 호출
+    - AddUniqueDynamic은 같은 함수가 미리 바인딩되어있는 경우 한번만 바인딩하여 한번 호출
+
+    <details><summary>cpp 코드</summary> 
+    
+    ```c++ 
+    //EnemyAnim.cpp
+    void UEnemyAnim::PostInitProperties(){
+      Super::PostInitProperties();
+
+      OnMontageEnded.AddUniqueDynamic(this, &UEnemyAnim::OnAttackMontageEnded);
+    }
+    ```
+    </details>
+
+- ## <span style = "color:yellow;">컴파일 에러</span>
+- <img src="Image/ComplieError.png" height="300" title="ComplieError">
+  - 위 Timer Error를 수정하기 위해서 Delegate를 EnemyAnim의 PostInitProperties()클래스로 이전
+  - Super을 호출하지 않아서 오류가 발생했다는 오류이기에 작성하고 다시 컴파일했지만 오류 발생
+  - 해결방안
+    1. Super을 작성, DerivedDataCache, Intermediate, Saved파일 삭제 후 Sln 파일 재생성 -> 오류
+    2. EnemyAnim을 상속받은 블루프린트 모두 백업하고 삭제 후 Sln 파일 재생성 -> 오류
+    3. Binaries 폴더를 삭제하여 빌드관련 파일을 초기화하여 진행 -> 해결
+
 ## 프로젝트 종료

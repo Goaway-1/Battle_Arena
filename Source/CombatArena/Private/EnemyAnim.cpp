@@ -2,12 +2,17 @@
 #include "Enemy.h"
 
 void UEnemyAnim::NativeInitializeAnimation() {
+	Super::NativeInitializeAnimation();
 	if(!Enemy) Enemy = Cast<AEnemy>(TryGetPawnOwner());
 
-	OnMontageEnded.AddDynamic(this, &UEnemyAnim::OnAttackMontageEnded);
 }
+void UEnemyAnim::PostInitProperties(){
+	Super::PostInitProperties();
 
+	OnMontageEnded.AddUniqueDynamic(this, &UEnemyAnim::OnAttackMontageEnded);
+}
 void UEnemyAnim::NativeUpdateAnimation(float DeltaSeconds) {
+	Super::NativeUpdateAnimation(DeltaSeconds);
 	if (!Enemy) Enemy = Cast<AEnemy>(TryGetPawnOwner());
 
 	if (Enemy) {

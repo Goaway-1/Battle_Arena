@@ -13,7 +13,6 @@ UBTTask_SkillAttack::UBTTask_SkillAttack() {
 }
 
 EBTNodeResult::Type UBTTask_SkillAttack::ExecuteTask(UBehaviorTreeComponent& OwnerComp, uint8* NodeMemory) {
-
 	Super::ExecuteTask(OwnerComp, NodeMemory);
 
 	auto Enemy = Cast<ABoss_Enemy>(OwnerComp.GetAIOwner()->GetPawn());

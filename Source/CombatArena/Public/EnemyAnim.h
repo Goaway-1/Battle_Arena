@@ -12,6 +12,7 @@ class COMBATARENA_API UEnemyAnim : public UAnimInstance
 	GENERATED_BODY()
 public:
 	virtual void NativeInitializeAnimation() override;
+	virtual void PostInitProperties() override;
 	virtual void NativeUpdateAnimation(float DeltaSeconds) override;
 private:
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Movement", Meta = (AllowPrivateAccess = true))

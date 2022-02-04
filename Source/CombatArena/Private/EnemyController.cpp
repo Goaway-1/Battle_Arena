@@ -38,16 +38,20 @@ void AEnemyController::Sense(AActor* Actor, FAIStimulus Stimulus) {
         AMainPlayer* Player = Cast<AMainPlayer>(Actor);
         if(Player == nullptr) return;
         Blackboard->SetValueAsObject(TargetActor, Actor);
-        if(MyGameState) MyGameState->StartBattleSound();
+        if(!bIsHaveTarget && MyGameState) MyGameState->StartBattleSound();
+        bIsHaveTarget = true;
     }
 	else {
         Blackboard->ClearValue(TargetActor);
-        if (MyGameState) MyGameState->EndBattleSound();
+        if (bIsHaveTarget && MyGameState) MyGameState->EndBattleSound();
+        bIsHaveTarget = false;
     }
 }
 
 void AEnemyController::StopBeTree() {
-    if (MyGameState) MyGameState->EndBattleSound();
+    if (MyGameState && bIsHaveTarget) {
+        MyGameState->EndBattleSound();
+    }
 
     UBehaviorTreeComponent* BTComp = Cast<UBehaviorTreeComponent>(BrainComponent);
     if(BTComp) {

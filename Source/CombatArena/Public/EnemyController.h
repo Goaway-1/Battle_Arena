@@ -31,6 +31,7 @@ private:
 	TSubclassOf<UAISense> TSense;
 
 	class AMainGameStateBase* MyGameState;
+	bool bIsHaveTarget = false;
 public:
 	//BlackTree Keys
 	static const FName HomePosKey;

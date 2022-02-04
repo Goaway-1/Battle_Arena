@@ -87,9 +87,6 @@ void AArrow::OnOverlapBegin(UPrimitiveComponent* OverlappedComponent, AActor* Ot
 		if (Enemy) {
 			Enemy->SetCurrentAttack(GetName() + Enemy->GetName() + FString::FromInt(AttackCnt));
 			UGameplayStatics::ApplyDamage(Enemy, Damage, ArrowController, ArrowOwner, DamageType);
-			ArrowCollision->SetSimulatePhysics(false);
-			SetActorLocation(GetActorLocation());
-			OtherActor->AttachToActor(this, FAttachmentTransformRules::KeepWorldTransform);
 		}
 	}
 	Destroy();

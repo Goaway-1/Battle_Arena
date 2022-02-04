@@ -76,15 +76,10 @@ void AEnemy::BeginPlay(){
 	if (!Anim) Anim = Cast<UEnemyAnim>(GetMesh()->GetAnimInstance());
 	
 #pragma region HUD
-	if (WEnemyHealth) {
-		HealthWidget->SetWidgetClass(WEnemyHealth);
-		HealthWidget->SetDrawSize(FVector2D(150.f, 20.f));
-		HealthWidget->SetVisibility(false);
-	}
-
 	HealthBar = Cast<UHealthWidget>(HealthWidget->GetUserWidgetObject());
 	HealthBar->SetEnemyOwner(this);
 	HealthBar->SetOwnerHealth(GetHealthRatio(), MaxHealth, CurrentHealth);
+	HideEnemyHUD();
 #pragma endregion
 }
 void AEnemy::Tick(float DeltaTime)
@@ -137,7 +132,8 @@ void AEnemy::AttackEnd_Collision() {
 	RightWeapon->SetCollisionEnabled(ECollisionEnabled::NoCollision);
 }
 float AEnemy::TakeDamage(float DamageAmount, struct FDamageEvent const& DamageEvent, class AController* EventInstigator, AActor* DamageCauser) {
-	if (LastAttack != CurrentAttack) LastAttack = CurrentAttack;
+	if(CurrentHealth <= 0) return 0;
+	else if (LastAttack != CurrentAttack ) LastAttack = CurrentAttack;
 	else if (DamageEvent.DamageTypeClass != InternalDamageType) return 0;
 	else return 0;
 
@@ -194,7 +190,7 @@ void AEnemy::LaunchSky(FVector Pos) {
 FName AEnemy::GetAttackMontageSection(FString Type) {
 	if (Type == "Attack") {
 		int range = FMath::RandRange(1, GetAttackTypeCnt());
-		AttackDamage = (range == 1) ? 10.f : 20.f;
+		AttackDamage = (range == 1) ? 5.f : 7.f;
 		return FName(*FString::Printf(TEXT("Attack%d"), range));
 	}
 	else if (Type == "Skill") {

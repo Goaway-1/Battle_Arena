@@ -18,6 +18,8 @@ private:
 
 	class UAudioComponent* BattleAudio;
 
+
+	UPROPERTY(EditDefaultsOnly, Category = "Sound")
 	int BattleEnemyCnt;
 public:
 	void StartBattleSound();
