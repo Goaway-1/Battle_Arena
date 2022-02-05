@@ -78,7 +78,6 @@ private:
 	class APlayerCameraManager* CameraManager;
 	class USceneComponent* SpringArmSence;
 
-
 	UPROPERTY(VisibleAnywhere, Category = "Camera", Meta = (AllowPrivateAccess = true))
 	class USpringArmComponent* SpringArm;
 

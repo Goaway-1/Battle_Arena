@@ -45,12 +45,7 @@ void UAttackFunction::SkillAttackStart(FVector Location, FVector Forward, TSubcl
 
 	bool bResult = UKismetSystemLibrary::SphereOverlapActors(GetWorld(), Owner->GetActorLocation(), AttackRange, TraceObjectTypes, SeekClass, IgnoreActors, OutActors);
 
-	/** Draw Image */
-	if (bDrawAttack) {
-		FColor DrawColor = bResult ? FColor::Green : FColor::Red;
-		DrawDebugSphere(GetWorld(), Owner->GetActorLocation(), AttackRange, 12, DrawColor, false, 0.5f);
-	}
-
+	FColor DrawColor = FColor::Red;
 	if (bResult) {
 		for (auto& HitActor : OutActors) {
 			float Inner = Owner->GetDotProductTo(HitActor);
@@ -65,9 +60,11 @@ void UAttackFunction::SkillAttackStart(FVector Location, FVector Forward, TSubcl
 					MHited->SetCurrentAttack(Owner->GetName() + MHited->GetName() + FString::FromInt(AttackCnt));
 					if (MHited) UGameplayStatics::ApplyDamage(MHited, Damage, Controller, Owner, DamageType);
 				}
+				DrawColor = FColor::Green;
 			}
 		}
 	}
+	DrawDebugSphere(GetWorld(), Owner->GetActorLocation(), AttackRange, 12, DrawColor, false, 0.5f);
 }
 void UAttackFunction::SpawnDamageText(FVector WorldLocation, float Damage, TSubclassOf<class UDamageTextWidget> DamageTextWidget, AController* DisplayController) {
 	if(DamageTextWidget == nullptr) return;

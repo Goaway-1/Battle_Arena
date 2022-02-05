@@ -260,6 +260,7 @@ void AMainPlayer::Turn(float value) {
 	if (GetMovementStatus() == EMovementStatus::EMS_Faint) return;
 	AddControllerYawInput(value * CameraSpeed * GetWorld()->GetDeltaSeconds());
 
+	/** 이동속도에 따른 메서드 실행 */
 	if (GetVelocity().Size() <= 0.1f) TurnInPlace(value);
 	else TurnMove();
 }
@@ -271,6 +272,7 @@ void AMainPlayer::TurnInPlace(float value) {
 	PlayerController->GetPlayerViewPoint(ViewPoint, ViewRotation);
 	calculationY = UKismetMathLibrary::Abs(ViewRotation.Yaw - GetActorRotation().Yaw);
 
+	/** 이동속도에 따른 메서드 실행 */
 	if (calculationY <= 0.5f) {
 		GetCharacterMovement()->bUseControllerDesiredRotation = false;
 		TurnAxis = 0;
@@ -284,7 +286,7 @@ void AMainPlayer::TurnInPlace(float value) {
 	}
 }
 void AMainPlayer::TurnMove() {
-	GetCharacterMovement()->bOrientRotationToMovement = false;	//�̵����� ȸ��
+	GetCharacterMovement()->bOrientRotationToMovement = false;	
 	FRotator ViewRotation = CameraManager->GetCameraRotation();
 	ViewRotation.Pitch = ViewRotation.Roll = 0;
 	SetActorRotation(ViewRotation);
@@ -818,14 +820,13 @@ void AMainPlayer::EndThrow() {
 #pragma region ACTIVE
 void AMainPlayer::ActiveInteraction() {
 	if(!IsCanMove()) return;
-	/** Active SpecialAttack */
+
+	/** Active SpecialAttack || Active Item, Weapon */
 	float Inner = this->GetDotProductTo(BalanceTarget);
 	if (Inner > 0.3f && bCanSpecialAttack && !bAttacking) ActiveSpecialAttack();
-	/** Item or Weapon */
 	else if (ActiveOverlappingItem != nullptr) ItemEquip();
 }
 void AMainPlayer::DeactiveInteraction() {
-	/** Weapon */
 	if (GetWeaponStatus() != EWeaponStatus::EWS_Normal) ItemDrop();
 }
 void AMainPlayer::ActiveSpecialAttack() {
@@ -849,22 +850,20 @@ void AMainPlayer::ItemEquip() {
 		Potion->UseItem(CurrentHealth);
 		SetHealthRatio();
 	}
-	//if (AnimInstance && PickUpMontage) AnimInstance->Montage_Play(PickUpMontage);
 	SetActiveOverlappingItem(nullptr);
 }
 void AMainPlayer::ItemDrop() {
-	if (CurrentAttackWeapon != nullptr) {
+	if (CurrentAttackWeapon != nullptr) {	//무기가 존재한다면 해제
 		CurrentAttackWeapon->UnEquip();
 		CurrentAttackWeapon = nullptr;
 		AttackDamage = DefaultDamage;
-		AttackRange = DefaultAttackRange;				
-		if (CurrentShieldWeapon == nullptr) SetWeaponStatus(EWeaponStatus::EWS_Normal);
+		AttackRange = DefaultAttackRange;
 	}
-	else if (CurrentShieldWeapon != nullptr) {
+	else if (CurrentShieldWeapon != nullptr) {	//방패가 존재한다면 해제
 		CurrentShieldWeapon->UnEquip();
 		CurrentShieldWeapon = nullptr;
-		if (CurrentAttackWeapon == nullptr) SetWeaponStatus(EWeaponStatus::EWS_Normal);
 	}
+	if (CurrentAttackWeapon == nullptr) SetWeaponStatus(EWeaponStatus::EWS_Normal);
 }
 void AMainPlayer::SetShieldCurrentWeapon(AShieldWeapon* Weapon) {
 	CurrentShieldWeapon = Weapon;

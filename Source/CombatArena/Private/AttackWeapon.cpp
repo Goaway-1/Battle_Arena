@@ -62,9 +62,10 @@ void AAttackWeapon::Equip(class AMainPlayer* Player) {
 			HandSocket->AttachActor(this, Player->GetMesh());
 			Player->SetWeaponStatus(EWeaponStatus::EWS_Melee);
 
+			/** InitalSetting */
 			Player->SetAttackRange(GetAttackRange());		
 			Player->SetAttackCurrentWeapon(this);
-			Player->SetAttackDamage(Damage);	
+			Player->SetAttackDamage(GetDamage());
 
 			CollisionVolume->SetCollisionEnabled(ECollisionEnabled::NoCollision);
 		}

@@ -25,9 +25,6 @@ public:
 protected:
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "AttackFunction | Owner")
 	class AActor* Owner;
-
-	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "AttackFunction | Owner")
-	class UAnimInstance* OwnerAnimInstance;
 	
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "AttackFunction | Owner")
 	class AController* Controller;
@@ -35,8 +32,6 @@ protected:
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "AttackFunction | Owner")
 	class USkeletalMeshComponent* Mesh;
 
-	UPROPERTY(VisibleAnywhere, Category = "AttackFunction | Debug", Meta = (AllowPrivateAccess = true))
-	bool bDrawAttack = false;
 public:
 	UFUNCTION()
 	void SetOwner(USkeletalMeshComponent* TakeMesh, AController* TakeController);

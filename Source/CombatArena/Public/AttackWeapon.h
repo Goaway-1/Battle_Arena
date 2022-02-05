@@ -55,6 +55,7 @@ private:
 
 public:
 	FORCEINLINE float GetAttackRange() { return AttackRange; }
+	FORCEINLINE float GetDamage() { return Damage; }
 	FORCEINLINE EWeaponName GetWeaponName() { return WeaponName; }
 
 	UFUNCTION()
