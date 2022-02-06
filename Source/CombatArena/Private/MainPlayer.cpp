@@ -169,7 +169,7 @@ void AMainPlayer::Tick(float DeltaTime)
 {
 	Super::Tick(DeltaTime);
 
-	if(GetVelocity().Size() <= 0.1f) OffSprinting();
+	//if(GetVelocity().Size() <= 0.1f) OffSprinting();
 
 	/** if Run and then Shake Cam*/
 	RunCamShake();
@@ -499,7 +499,7 @@ void AMainPlayer::StartAttack() {
 	/** Use AttackFunction */
 	FString Type = "Player";	
 	SetAttackCnt();
-	AttackFunction->SkillAttackStart(GetActorLocation(), GetActorForwardVector(), PlayerDamageType, Type, GetHitParticle(), GetAttackRange(), AttackDamage,AttackCnt);
+	AttackFunction->SkillAttackStart(PlayerDamageType, Type, GetHitParticle(), GetAttackRange(), AttackDamage,AttackCnt);
 }
 void AMainPlayer::EndAttack() {
 	bAttacking = false;
@@ -520,7 +520,7 @@ void AMainPlayer::OffWeaponCollision() {
 }
 void AMainPlayer::StartPowerfulAttack() {
 	FString Type = "Player";
-	AttackFunction->SkillAttackStart(GetActorLocation(), GetActorForwardVector(), PlayerDamageType, Type, GetHitParticle(), GetAttackRange(), AttackDamage * 2,GetAttackCnt());
+	AttackFunction->SkillAttackStart(PlayerDamageType, Type, GetHitParticle(), GetAttackRange(), AttackDamage * 2,GetAttackCnt());
 	SetAttackCnt();
 }
 void AMainPlayer::AttackInputCheck() {

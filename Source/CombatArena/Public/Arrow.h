@@ -65,16 +65,9 @@ public:
 	UFUNCTION()
 	void OnOverlapBegin(UPrimitiveComponent* OverlappedComponent, AActor* OtherActor, UPrimitiveComponent* OtherComp, int32 OtherBodyIndex, bool bFromSweep, const FHitResult& SweepResult);
 	
-	UFUNCTION()
 	void InitalArrow(AActor* AOwner, AController* AController);
-
-	UFUNCTION()
 	void Fire(float Amount,int Cnt);
-
-	UFUNCTION()
 	void SetBowState();
-
-	UFUNCTION()
 	void SetArrowStatus(EArrowStatus Status);
 
 	FORCEINLINE EArrowStatus GetArrowStatus() { return ArrowStatus; }

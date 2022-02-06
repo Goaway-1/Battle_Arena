@@ -35,10 +35,6 @@ void UPlayerAttackFunction::KickStart(FVector Location, FVector Forward) {
 	bool bResult= UKismetSystemLibrary::SphereOverlapActors(GetWorld(), Owner->GetActorLocation(), 200.f, TraceObjectTypes, SeekClass, IgnoreActors, OutActors);
 
 	/** Draw Image */
-	if (bDrawAttack) {
-		FColor DrawColor = bResult ? FColor::Green : FColor::Red;
-		DrawDebugSphere(GetWorld(), Owner->GetActorLocation(), 200.f, 12, DrawColor, false, 0.5f);
-	}
 
 	/** 실질적인 알고리즘 */
 	if (bResult) {

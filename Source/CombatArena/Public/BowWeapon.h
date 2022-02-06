@@ -56,12 +56,7 @@ public:
 	UFUNCTION(BlueprintNativeEvent, BlueprintCallable)
 	void EndCharge();
 
-	UFUNCTION()
 	void Fire(int Cnt);
-	
-	UFUNCTION()
 	void Reload();
-
-	UFUNCTION()
 	void InitalBow(AActor* BOwner, AController* BController);
 };

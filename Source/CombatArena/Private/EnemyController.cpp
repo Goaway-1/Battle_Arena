@@ -84,3 +84,7 @@ void AEnemyController::SetVisibleInFog(bool bisin) {
 void AEnemyController::SetIsFaint(bool bisin) {
     Blackboard->SetValueAsBool(IsFaint, bisin);
 }
+bool AEnemyController::GetIsFaint() {
+    bool answer = Blackboard->GetValueAsBool(IsFaint);
+    return answer;
+}

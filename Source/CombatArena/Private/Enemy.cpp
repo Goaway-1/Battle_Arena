@@ -115,7 +115,7 @@ void AEnemy::AttackReady() {
 }
 void AEnemy::AttackStart_Internal() {
 	FString Type = "Enemy";
-	AttackFunction->SkillAttackStart(GetActorLocation(),GetActorForwardVector(),InternalDamageType, Type, GetHitParticle(),GetAttackRange(), AttackDamage, AttackCnt);
+	AttackFunction->SkillAttackStart(InternalDamageType, Type, GetHitParticle(),GetAttackRange(), AttackDamage, AttackCnt);
 
 	AttackCnt++;
 	if (AttackCnt > 2) AttackCnt = 0;
@@ -146,7 +146,7 @@ float AEnemy::TakeDamage(float DamageAmount, struct FDamageEvent const& DamageEv
 		return DamageAmount;
 	}
 
-	if (HitedMontage && Anim && !IsAttacking) {
+	if (HitedMontage && Anim && !IsAttacking && !EnemyController->GetIsFaint()) {
 		Anim->Montage_Play(HitedMontage);
 		Anim->Montage_JumpToSection("Hited_F", DeathMontage);
 	}

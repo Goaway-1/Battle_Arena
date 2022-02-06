@@ -32,6 +32,7 @@ private:
 
 	class AMainGameStateBase* MyGameState;
 	bool bIsHaveTarget = false;
+
 public:
 	//BlackTree Keys
 	static const FName HomePosKey;
@@ -48,4 +49,5 @@ public:
 	AActor* GetCurrentTarget();
 	void SetVisibleInFog(bool bisin);
 	void SetIsFaint(bool bisin);
+	bool GetIsFaint();
 };
