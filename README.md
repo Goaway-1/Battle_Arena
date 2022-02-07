@@ -56,7 +56,10 @@
   - 나머지는 플레이어와 비슷하게 구성
 
 TurnInPlace, 무기장착 로직, 공격 판정2가지, 콤보, 방패, SkillFunction..
-> ### **<h3>주요기능</h3>**
+> ### **<h3>주요 기능</h3>**
+1. [TurnInPlace](#1.-TurnInPlace)
+20. [데미지 로그](#20.-데미지-로그)
+
 ※ 내용에 적혀있는 코드는 일부만을 작성한 것으로 자세한 내용이나 구조는 개발일기나 소스파일을 참조
 ## __1. TurnInPlace__
   - <img src="Image/Docs/TurnInPlace.gif" height="300" title="TurnInPlace">
@@ -1106,65 +1109,185 @@ TurnInPlace, 무기장착 로직, 공격 판정2가지, 콤보, 방패, SkillFun
 
 ---
 ## __11. 방패__
-  - <img src="Image/Docs/" height="300" title="">
-  - 설명 : 
+  - <img src="Image/Docs/Shield.gif" height="300" title="Shield">
+  - 설명 : 적의 공격을 막는 방패
 ### __작업 내용__
-- __클래스명__ : 
-  - 설명 :
+- __클래스명__ : ShieldWeapon클래스
+  - 기존 : 방패에 콜리전을 추가하여 피격 처리. 이때 적의 공격은 Sweep의 Single 채널로 이루어지기에 먼저 방패에 맞게 되면 공격의 취소 되며 대미지가 들어가지 않음.
+  - 수정 : 플레이어의 상태와 적의 공격 방향을 기준으로 판단하여 일정 범위 이내라면 방어하는 방식 
+  - ShieldWeapon에서 범위를 지정하는 float값인 ShiledMax/MinAngle과 방어했을 시 발생하는 ParticleSystem타입의 HitedParticle 지정.
+  - MainPlayer클래스에서 TakeDamage()메서드를 수정하며 현재 상태가 Blocking이라면 막았는지의 대한 판정하며 막았다면 종료
+  - 판정은 IsBlockingSuccess()메서드를 통해 진행하며 FindLookAtRotation()을 사용하여 플레이어와 공격한 적의 각도를 반환하고 NormalizedDeltaRotator를 통해 각도를 정규화, InRange_FloatFloat()메서드를 사용하여 BetweenRot이 일정 범위 내에 있는 지 확인. 반환값은 bool이다.
+  - 공격한 적이 일정 범위 내에 있다면 방어하고 방패의 파티클을 생성하며, 일정 거리 뒤로 밀린다.
 
 ### __호출 방식__
-  - 
+  - 'B'키를 누르면 방패를 들게되며 이때 상태는 ECS_Blocking으로 전환
 
 ### __참조 코드__
 
   <details><summary>Cpp File</summary> 
 
   ```c++
-  
+  //ShieldWeapon.cpp
+  AShieldWeapon::AShieldWeapon() {
+    SetWeaponPosLoc(EWeaponPos::EWP_Shield);
+    ShiledMinAngle = -40.f;   
+    ShiledMaxAngle = 40.f;
+  }
+  ```
+  ```c++
+  //MainPlayer.cpp
+  float AMainPlayer::TakeDamage(float DamageAmount, struct FDamageEvent const& DamageEvent, class AController* EventInstigator, AActor* DamageCauser) {
+    ...
+    /** 방패로 막았는지 체크 (상태와 내적) */
+    if (GetCombatStatus() == ECombatStatus::ECS_Blocking) {
+      if (IsBlockingSuccess(DamageCauser)) {
+        Balance->SetCurrentBalance(10.f);
+        return 0;
+      }
+    }
+  }
+  void AMainPlayer::Blocking() {
+    if (!IsCanMove()) return;
+    if (CurrentShieldWeapon != nullptr) {
+      SetCombatStatus(ECombatStatus::ECS_Blocking);
+    }
+  }
+  void AMainPlayer::UnBlocking() {
+    if (CurrentShieldWeapon != nullptr) {
+      SetCombatStatus(ECombatStatus::ECS_Normal);
+    }
+  }
+  bool AMainPlayer::IsBlockingSuccess(AActor* DamageCauser) {
+    /** 두 액터 사이의 각도를 구하고 정규화하여 범위내에 있다면 isShieldRange에 True를 지정 */
+    FRotator BetweenRot = UKismetMathLibrary::FindLookAtRotation(GetActorLocation(), DamageCauser->GetActorLocation());
+    BetweenRot = UKismetMathLibrary::NormalizedDeltaRotator(GetActorRotation(), BetweenRot);
+    bool isShieldRange = UKismetMathLibrary::InRange_FloatFloat(BetweenRot.Yaw, CurrentShieldWeapon->GetMinAngle(), CurrentShieldWeapon->GetMaxAngle());
+
+    /** 일정 각도 이내라면 뒤로 밀리면서 True를 반환 */
+    if (isShieldRange && CurrentShieldWeapon->GetHitedParticle() && CurrentShieldWeapon->GetHitedSound()) {
+      FVector Loc = GetActorForwardVector();
+      Loc.Z = 0;
+      LaunchCharacter(DamageCauser->GetActorForwardVector() * 500.f, true, true);
+      UGameplayStatics::SpawnEmitterAtLocation(GetWorld(), CurrentShieldWeapon->GetHitedParticle(), GetActorLocation(), FRotator(0.f));
+      UGameplayStatics::PlaySound2D(this, CurrentShieldWeapon->GetHitedSound());
+      return true;
+    }
+    return false;
+  }
   ```
   </details>
   <details><summary>Header File</summary> 
 
   ```c++
+  //ShieldWeapon.h
+  private:
+    UPROPERTY(VisibleAnywhere, Category = "Weapon | Angle")
+    float ShiledMinAngle;   //막을 수 있는 범위1
+
+    UPROPERTY(VisibleAnywhere, Category = "Weapon | Angle")
+    float ShiledMaxAngle;   //막을 수 있는 범위2
+  public:
+    FORCEINLINE float& GetMinAngle() { return ShiledMinAngle; }
+    FORCEINLINE float& GetMaxAngle() { return ShiledMaxAngle; }
+  ```
+  ```c++
+  //MainPlayer.h
+  public:
+  	void Blocking();      //상태 변화를 위한 메서드
+	  void UnBlocking();    //상태 변화를 위한 메서드
+	  bool IsBlockingSuccess(AActor* DamageCauser);   //막기 성공 여부를 반환
   ```
   </details>
 
 ---
 ## __12. 타켓팅__
-  - <img src="Image/Docs/" height="300" title="">
-  - 설명 : 
+  - <img src="Image/Docs/Targeting.gif" height="300" title="Targeting">
+  - 설명 : 카메라의 회전을 지정한 적에게 고정하여 중심에 유지함으로 편리성을 제공
 ### __작업 내용__
-- __클래스명__ : 
-  - 설명 :
+- __클래스명__ : MainPlayer클래스
+  - 기존 : 직접 MainController클래스의 Rotation을 MainPlayer클래스의 Tick()메서드에서 UKismetMathLibrary::FindLookAtRotation()메서드를 사용하여 회전
+  - 변경 : 기존 방식은 한번에 위치가 변경되어 자연스럽지 못했는데 RInterpTo()메서드라는 회전 보간 메서드를 사용하여 자연스러운 회전이 가능하며, Tick()메서드에서 호출
+  - SetTargeting()메서드는 Tab키 활성화시 호출되며, On/OffTargeting()메서드를 호출하여 bool 타입인 bTargeting 변수를 수정.
+  - OnEnemyHUD_OverlapBegin()메서드를 통해서 Collision내에 적이 있다면 CombatTarget을 지정.
+  - 위 두 가지 조건이 모두 만족해야만 Targeting()메서드가 조건을 만족하고 Tick마다 호출되며 SetControlRotation(), RInterpTo()메서드를 사용하여 카메라를 회전.
+    - 또한 적은 Show/HideEnemyTarget()메서드를 호출하여 Decal을 활성화 (시각적 효과)
 
 ### __호출 방식__
-  - 
+  - 플레이어가 'Tab'키를 눌렀을때 타켓팅 활성화
 
 ### __참조 코드__
 
   <details><summary>Cpp File</summary> 
 
   ```c++
-  
+  //MainPlayer.cpp
+  void AMainPlayer::Tick(float DeltaTime){
+    ...
+	  Targeting();
+  }
+  void AMainPlayer::Targeting() {
+    /** 조건을 만족한다면 카메라는 적의 위치로 자연스럽게 이동 */
+	  if (bTargeting && CombatTarget != nullptr) {
+      FRotator TargetRot = UKismetMathLibrary::FindLookAtRotation(GetActorLocation(), CombatTarget->GetActorLocation());
+      TargetRot.Pitch -= 25.f;
+
+      Controller->SetControlRotation(FMath::RInterpTo(GetControlRotation(), TargetRot, GetWorld()->GetDeltaSeconds(), 5.0f));
+    }
+  }
+  void AMainPlayer::SetTargeting() {
+    if (bTargeting) OffTargeting();
+    else OnTargeting();
+  }
+  void AMainPlayer::OnTargeting() {
+    /** 적의 Decal을 키고 카메라 설정.. */
+    if (CombatTarget != nullptr) {
+      bTargeting = true;
+      bUseControllerRotationYaw = true;
+      CombatTarget->ShowEnemyTarget();
+    }
+  }
+  void AMainPlayer::OffTargeting() {
+    /** 적의 Decal을 끄고 카메라 설정.. */
+    if (CombatTarget != nullptr) {
+      bTargeting = false;
+      bUseControllerRotationYaw = false;
+      CombatTarget->HideEnemyTarget();
+    }
+  }
   ```
   </details>
   <details><summary>Header File</summary> 
 
   ```c++
+  //MainPlayer.h
+  private:
+    bool bTargeting;        //현재 타겟팅 중인지 체크
+
+    UPROPERTY(VisibleAnywhere, Category = "HUD")
+	  class AEnemy* CombatTarget;  
+  public:
+    void Targeting();       //매 Tick마다 호출되며 Controller의 회전 각도 수정
+    void SetTargeting();    //'Tab'키를 누르면 호출되며 On/OffTargeting()메서드 교차되며 호출
+    void OnTargeting();     //타겟이 있다면 bTargeting을 True로하고 타겟 하단에 Decal활성화
+    void OffTargeting();    //OnTargeting()메서드와 반대
+    FORCEINLINE bool GetTargeting() { return bTargeting; }
   ```
   </details>
 
 ---
 ## __13. 카메라의 이동__
-  - <img src="Image/Docs/" height="300" title="">
-  - 설명 : 
+  - <img src="Image/Docs/ZoomCam.gif" height="300" title="ZoomCam">
+  - 설명 : 카메라를 특정 위치로 이동 (영상에서 첫번째는 기존 구현하려고 했던 스킬)
 ### __작업 내용__
 - __함수명__ : ZoomInCam()
-  - 매개변수를 이동을 원하는 SpringArm과 회전값 Rotator로 입력받음. 이때 Rotator는 기본 0.f로 고정. 
-  - 카메라를 특정 SpringArm에 어태치 하고 자연스럽게 이동
+  - 특정 행동을 할 때 카메라의 위치가 이동하며 이를 통해 다양한 동적이고 자연스러운 카메라 이동 구현
+  - SetArms()를 생성하고 이는 많은 SpringArm들을 초기화해주는 작업을 진행.
+  - 기존 ZoomInCam(USpringArmComponent* Arm, FRotator Rot = FRotator(0.f))메서드에서 매개변수를 이동을 원하는 SpringArm과 회전 값 Rotator로 입력받아 카메라를 특정 SpringArm에 어태치 하고 자연스럽게 이동. 이때 Rotator는 기본 0.f로 고정.
+  - ZoomOutCam()메서드에서는 기존 SpringArm으로 카메라를 Attach한다.
 
 ### __호출 방식__
-  - 
+  - 활의 발사, 스페설 공격, 달리기, 스킬등에서 사용하며 행동을 할 때 카메라의 위치가 이동
 
 ### __참조 코드__
 
@@ -1218,7 +1341,641 @@ TurnInPlace, 무기장착 로직, 공격 판정2가지, 콤보, 방패, SkillFun
     class USpringArmComponent* SpringArm_Skilling;
   public:
   	void SetArms(USpringArmComponent* Arm);
-  	void ZoomInCam(USpringArmComponent* Arm, FRotator Rot = FRotator(0.f));
-	  void ZoomOutCam();
+  	void ZoomInCam(USpringArmComponent* Arm, FRotator Rot = FRotator(0.f));   //다른 SpringArm으로 이동
+	  void ZoomOutCam();    //기존 SpringArm으로 이동
+  ```
+  </details>
+
+---
+## __14. 배틀 사운드__
+  - 설명 : 적과 플레이어가 전투를 할 때, 배틀 사운드 재생
+  
+### __작업 내용__
+- __클래스명__ : MainGameStateBase 클래스
+  - 적의 Sense를 통해 플레이어가 탐색되었다면 MainGameStateBase클래스의 StartBattleSound()메서드를 통해 사운드를 재생
+  - 몇 명의 적이 플레이어를 공격하던 배경음악은 한번만 재생 되어야 하기 때문에 재생 시 관여하는 적의 수를 적어두고, 그 적의 수가 0명이 되면 배틀 사운드를 종료
+
+### __호출 방식__
+  - 적의 Sense를 통해 플레이어를 탐색했을 때 재생되고 멀어지거나 플레이어가 죽으면 중지
+
+### __참조 코드__
+
+  <details><summary>Cpp File</summary> 
+
+  ```c++
+  //MainPlayer.cpp
+  void AMainPlayer::Death() {
+    ...
+    /** 배틀 사운드 실행 */
+    GetWorld()->GetGameState<AMainGameStateBase>()->ForceEndBattleSound();
+  }
+  ```
+  ```c++
+  //EnemyController.cpp
+  void AEnemyController::BeginPlay() {
+    ...
+    MyGameState = GetWorld()->GetGameState<AMainGameStateBase>();
+  }
+  void AEnemyController::Sense(AActor* Actor, FAIStimulus Stimulus) {
+    if (Stimulus.WasSuccessfullySensed()) {
+      AMainPlayer* Player = Cast<AMainPlayer>(Actor);
+      if(Player == nullptr) return;
+      Blackboard->SetValueAsObject(TargetActor, Actor);
+
+      /** 플레이어가 감지되었다면 배틀 사운드 실행 */
+      if(!bIsHaveTarget && MyGameState) MyGameState->StartBattleSound();
+      bIsHaveTarget = true;
+    }
+    else {
+      Blackboard->ClearValue(TargetActor);
+
+      /** 플레이어가 감지되지 않았다면 배틀 사운드 중지 */
+      if (bIsHaveTarget && MyGameState) MyGameState->EndBattleSound();
+        bIsHaveTarget = false;
+    }
+  }
+  ```
+  ```c++
+  //MainGameStateBase.cpp
+  void AMainGameStateBase::StartBattleSound() {
+    /** 현재 사운드가 생성되지 않았다면 사운드 생성 */
+    if(!BattleAudio && BattleSound.Num() > 0) {
+      int range = FMath::RandRange(0, BattleSound.Num() - 1);
+      BattleAudio = UGameplayStatics::SpawnSound2D(this, BattleSound[range]);
+    }
+
+    /** 사운드 활성화 */
+    if(BattleEnemyCnt++ == 0) BattleAudio->SetActive(true, true);
+  }
+  void AMainGameStateBase::EndBattleSound() {
+    /** 사운드 Off */
+    if(BattleAudio && --BattleEnemyCnt == 0) BattleAudio->ToggleActive();
+  }
+  void AMainGameStateBase::ForceEndBattleSound() {
+    if (BattleAudio) BattleAudio->ToggleActive();
+  }
+  ```
+  </details>
+  <details><summary>Header File</summary> 
+
+  ```c++
+  //EnemyController.h
+  private:
+	  class AMainGameStateBase* MyGameState;
+  public:
+  	UFUNCTION()
+	  void Sense(AActor* Actor, FAIStimulus Stimulus);
+  ```
+  ```c++
+  //MainGameStateBase.h
+  private:
+    UPROPERTY(EditDefaultsOnly, Category = "Sound", Meta = (AllowPrivateAccess = true))
+    TArray<class USoundBase*> BattleSound;
+
+    class UAudioComponent* BattleAudio;
+
+    UPROPERTY(EditDefaultsOnly, Category = "Sound")
+    int BattleEnemyCnt;           //배틀 사운드에 관여하고 있는 적의 수
+  public:
+    void StartBattleSound();      //배틀 사운드 시작을 시도
+    void EndBattleSound();        //배틀 사운드 종료를 시도
+    void ForceEndBattleSound();   //강제로 배틀 사운드 종료
+  ```
+  </details>
+
+---
+## __15. 메테오 공격__
+  - <img src="Image/Docs/Meteor.gif" height="300" title="Meteor">
+  - 설명 : 하늘에서 떨어지는 메테오로 플레이어에게 데미지를 입힘
+
+### __작업 내용__
+- __클래스명__ : Meteor 클래스
+  - Meteor는 Physics 사용을 위해 BoxComponent를 SimulatePhysisc를 켜고, Collision을 PhysiscsOnly로 지정
+  - 단순히 중력을 이용하여 아래로 떨어지며, 계속 매 Tick마다 지면 충돌을 검사
+  - IsInGround()메서드에서 델리게이트를 사용하여 지면과 부딪히면 EnemySkillFunction의 ConfirmTargetAndContinue()메서드 실행
+  - OverlapBegin을 사용하지 않고 LineTraceSingleByChannel()메서드를 사용
+  - 기존 존재하는 EnemySkillFunction클래스에서는 DECLARE_DELEGATE인 FSkillEnd를 생성하여, 델리게이트 처리.
+
+### __호출 방식__
+  - 애니메이션에 의해 Attack(Skill)이 실행되고 GetAttackMontageSection()메서드로 SkillType이 지정되고, Boss_Enemy클래의 SkillAttack()메서드가 SkillFunction클래스의 GroundAttack()을 실행
+
+### __참조 코드__
+
+  <details><summary>Cpp File</summary> 
+
+  ```c++
+  //Meteor.cpp
+  void AMeteor::Tick(float DeltaTime){
+    Super::Tick(DeltaTime);
+
+    /** 액터가 바닥에 닿았을때 실행 */
+    IsInGround();
+  }
+  void AMeteor::IsInGround() {
+    if (bIsEnd) return;
+
+    FVector EndVec = GetActorLocation();
+    EndVec.Z -= 20.f;
+
+    /** 피격 상대들을 모아두는 HitResult */
+    FHitResult HitResult;
+    FCollisionQueryParams QueryParams(NAME_None, false, this);
+    QueryParams.bTraceComplex = true;
+
+    /** 트레이스 채널을 통해 bool을 반환 */
+    bool TryTrace = GetWorld()->LineTraceSingleByChannel(HitResult, GetActorLocation(), EndVec, ECC_Visibility, QueryParams);
+    if (TryTrace) {
+      bIsEnd = true;
+      SkillFunction->SkillDelegate.ExecuteIfBound();		//EnemySkillFunction Delegate인 FSkillEnd (SkillDelegate)를 호출
+    }
+
+    UGameplayStatics::SpawnEmitterAtLocation(GetWorld(), Impact_Particle, GetActorLocation() + Location_Offset_Impact_Particle, Rotate_Impact_Particle);
+    Flying_Particle->Deactivate();
+    GetWorldTimerManager().ClearTimer(handle);
+    GetWorld()->GetTimerManager().SetTimer(handle, [this]() {
+      if (this) {
+        Flying_Particle->DestroyComponent();
+        Destroy();
+      }
+    }, 1.5f, 1);
+  }
+  ```
+  ```c++
+  //EnemySkillFunction.cpp
+  void UEnemySkillFunction::ConfirmTargetAndContinue() {
+    TArray<FOverlapResult> Overlaps;
+    TArray<TWeakObjectPtr<AMainPlayer>> OverlapedEnemy;   //겹쳐진 적들의 배열
+
+    /** 콜리전 타입 */
+    FCollisionQueryParams CollisionQueryParams;
+    CollisionQueryParams.bTraceComplex = false;
+    CollisionQueryParams.bReturnPhysicalMaterial = false;
+    APawn* OwnerPawn = OwnerController->GetPawn();
+    if (OwnerPawn) CollisionQueryParams.AddIgnoredActor(OwnerPawn->GetUniqueID());
+
+    bool TryOverlap = GetWorld()->OverlapMultiByObjectType(Overlaps,
+      out, FQuat::Identity, FCollisionObjectQueryParams(ECC_GameTraceChannel1),
+      FCollisionShape::MakeSphere(200.f), CollisionQueryParams);
+
+    /** 플레이어에게 데미지를 입힘 */
+    if (TryOverlap) {
+      if (MeteorSound.Num() > 0) UGameplayStatics::SpawnSoundAtLocation(this, MeteorSound[1], Meteor->GetActorLocation());
+      for (auto i : Overlaps) {
+        AMainPlayer* PlayerOverlaped = Cast<AMainPlayer>(i.GetActor());
+
+        /** 플레이어들을 배열에 추가 */
+        if (PlayerOverlaped && !OverlapedEnemy.Contains(PlayerOverlaped)) OverlapedEnemy.Add(PlayerOverlaped);
+      }
+
+      /** 플레이어들에게 피해를 입힘 */
+      for (auto i : OverlapedEnemy) {
+        AMainPlayer* PlayerOverlaped = Cast<AMainPlayer>(i);
+        PlayerOverlaped->SetCurrentAttack(GetName() + "AttackMeteor" + FString::FromInt(HitCnt));
+        UGameplayStatics::ApplyDamage(PlayerOverlaped, Meteor->GetDamage(), OwnerController,OwnerPawn, MeteorDamageType);
+        SetHitCnt();
+      }
+    }
+    Meteor = nullptr;
+  }
+  void UEnemySkillFunction::SpawnMeteor() {
+    FActorSpawnParameters SpawnParams;
+    SpawnParams.Owner = OwnerActor;
+    SpawnParams.Instigator = OwnerInstigator;
+
+    /** Spawn Location */
+    FVector tmp = out;
+    tmp.Z += 1000.f;
+
+    Meteor = GetWorld()->SpawnActor<AMeteor>(MeteorClass, FVector(tmp), FRotator(0.f), SpawnParams);
+    Meteor->SetInitial(this);
+    if (MeteorSound.Num() > 0) UGameplayStatics::SpawnSoundAtLocation(this, MeteorSound[0], Meteor->GetActorLocation());
+  }
+  ```
+  </details>
+  <details><summary>Header File</summary> 
+
+  ```c++
+  //Meteor.h
+  public:
+	  void IsInGround();    //지면과 충돌했다면
+  ```
+  ```c++
+  //EnemySkillFunction.h
+  private:
+  	UPROPERTY(VisibleAnywhere, Category = "Skill | Meteor")
+	  class AMeteor* Meteor;
+
+	  UPROPERTY(EditDefaultsOnly, Category = "Skill | Meteor")
+	  TSubclassOf<class AMeteor> MeteorClass;
+  public:
+    FSkillEnd SkillDelegate;
+    
+  	virtual void ConfirmTargetAndContinue() override;   //SkillDelegate에 바인딩
+
+	  UFUNCTION()
+	  void SpawnMeteor();
+  ```
+  </details>
+
+---
+## __16. 마법 공 공격__
+  - <img src="Image/Docs/MagicBall.gif" height="300" title="MagicBall">
+  - 설명 : 하늘에서 떨어지는 메테오로 플레이어에게 데미지를 입힘
+
+### __작업 내용__
+- __클래스명__ : MagicBall 클래스
+  - ProjectileMovement를 사용하여 이동하며 일시적인 발사속도를 지정하여 사용. OnConstruction은 에디터에 배치될때 호출되며 Particle을 변경
+  - 충돌은 다른 것들과 마찬가지로 OverlapBegin()메서드를 사용하여 처리
+
+### __호출 방식__
+  - 이전 메테오와 유사한 방식으로 EnemySkillFunction클래스에서 MagicAttack으로 호출
+
+### __참조 코드__
+
+  <details><summary>Cpp File</summary> 
+
+  ```c++
+  //EnemySkillFunction.cpp
+  void UEnemySkillFunction::MagicAttack() {
+    FActorSpawnParameters SpawnParams;
+    SpawnParams.Owner = OwnerActor;
+    SpawnParams.Instigator = OwnerInstigator;
+
+    FVector Loc = OwnerActor->GetActorLocation();
+    FRotator Rot =  OwnerActor->GetActorRotation();
+    Loc.X += 50.f;
+    Rot.Pitch += 5.f;		
+
+    /** MagicBall 생성 (동시에 발사) */
+    Magic = GetWorld()->SpawnActor<AMagicBall>(MagicClass, Loc, Rot, SpawnParams);
+    Magic->SetCnt(HitCnt);
+    SetHitCnt();
+  }
+  ```
+  ```c++
+  //MagicBall.cpp
+  AMagicBall::AMagicBall(){
+    PrimaryActorTick.bCanEverTick = true;
+
+    /** Projectile Component */
+    Projectile = CreateDefaultSubobject<UProjectileMovementComponent>(TEXT("Projectile"));
+    Projectile->InitialSpeed = 2000;
+    Projectile->bRotationFollowsVelocity = true;
+    ...
+  }
+  void AMagicBall::OnOverlapBegin(UPrimitiveComponent* OverlappedComponent, AActor* OtherActor, UPrimitiveComponent* OtherComp, int32 OtherBodyIndex, bool bFromSweep, const FHitResult& SweepResult) {
+    UGameplayStatics::SpawnEmitterAtLocation(GetWorld(), Impact_Particle, GetActorLocation() + Location_Offset_Impact_Particle, Rotate_Impact_Particle);
+
+    if (MagicSound) UGameplayStatics::SpawnSoundAtLocation(this, MagicSound, GetActorLocation());
+
+    Flying_Particle->Deactivate();
+    GetWorld()->GetTimerManager().ClearTimer(handle);
+    GetWorld()->GetTimerManager().SetTimer(handle, [this]() {
+      Flying_Particle->DestroyComponent();
+      Destroy();
+      }, 2.0f, false);
+
+    /** 피격 처리 */
+    if (OtherActor) {
+      AMainPlayer* Player = Cast<AMainPlayer>(OtherActor);
+      if (Player) {
+        Player->SetCurrentAttack(GetName() + "AttackMagic" + FString::FromInt(HitCnt));
+        UGameplayStatics::ApplyDamage(Player, Damage, Player->GetController(), this, MagicDamageType);
+      }
+    }
+  }
+  ```
+  </details>
+  <details><summary>Header File</summary> 
+
+  ```c++
+  //EnemySkillFunction.h
+  private:
+    UPROPERTY(VisibleAnywhere, Category = "Skill | Magic")
+    class AMagicBall* Magic;
+
+    UPROPERTY(EditAnywhere, Category = "Skill | Magic", Meta = (AllowPrivateAccess = true))
+    TSubclassOf<class AActor> MagicClass;
+  public:
+  	UFUNCTION()
+	  void MagicAttack();
+  ```
+  ```c++
+  //MagicBall.h
+  private:
+    UPROPERTY(EditDefaultsOnly, Category = "MagicBall", Meta = (AllowPrivateAccess = true))
+    class UProjectileMovementComponent* Projectile;
+  public:
+    UFUNCTION()
+    void OnOverlapBegin(UPrimitiveComponent* OverlappedComponent, AActor* OtherActor, UPrimitiveComponent* OtherComp, int32 OtherBodyIndex, bool bFromSweep, const FHitResult& SweepResult);
+  ```
+  </details>
+
+---
+## __17. 레이저 공격__
+  - <img src="Image/Docs/Lazer.gif" height="300" title="Lazer">
+  - 설명 : 일정거리까지 닿는 레이저로 플레이어에게 데미지를 입힘
+
+### __작업 내용__
+- __클래스명__ : Lazer 클래스
+  - 벽이나 물체에 닿으면 길이가 조절되는 레이저로 액터의 스켈레탈의 끝위치를 조정
+    - Lazer Skeletal Animation을 생성하고, Transform (Modify) Bone을 사용하여 End위치 조정.
+    - Lazer Actor를 생성하고 SpringArm, SphereComponent를 생성하고 Sphere는 SpringArm에 어태치.
+    - 이때 SphereComponent는 물체의 충돌을 감지하며 레이저의 길이와 중첩을 관리. 
+    - 초기 Lazer의 길이는 "Bone중 End의 위치 : 액터의 위치"이고, 추후의 길이는 "구의 위치 : 액터의 위치"이다
+  - SphereComponent와 Player가 부딪히면 Overlap를 사용하여 데미지 처리하며, Player를 Tarray배열인 OverlapingEnemies에 Add하고 bContinueDealing이 True로 변환되어, Dealing()메서드를 실행
+  - SkillFunction클래스의 Lazer객체를 TArray로 생성하고 EnemySkillFunction클래스에서는 최대 수, 위치, 회전값 변수를 생성 (Player에서도 사용했었기에..)
+    - LazerAttack()메서드가 호출되었을때 만약 Lazer배열이 비어있다면 Lazer를 생성(Add)하여 월드에 배치
+    - 배치 후 RandPos()메서드를 사용하여 랜덤한 위치를 받아오고 위치, 회전을 설정, Active관련 메서드를 모두 활성화
+    - 종료 시 이는 파괴하지 않고 DeActive하여 비활성화만 진행하며, 기존 존재하는 Lazer 재사용
+
+### __호출 방식__
+  - 이전 메테오와 유사한 방식으로 EnemySkillFunction클래스에서 LazerAttack으로 호출
+
+### __참조 코드__
+
+  <details><summary>Cpp File</summary> 
+
+  ```c++
+  //Lazer.cpp
+  void ALazer::BeginPlay(){
+    /** 오버랩 판정 */
+    LazerEndDetector->OnComponentBeginOverlap.AddDynamic(this, &ALazer::OverlapBeginActor);
+    LazerEndDetector->OnComponentEndOverlap.AddDynamic(this, &ALazer::OverlapEndActor);
+    ...
+  }
+  void ALazer::OverlapBeginActor(UPrimitiveComponent* OverlappedComponent, AActor* OtherActor, UPrimitiveComponent* OtherComp, int32 OtherBodyIndex, bool bFromSweep, const FHitResult& SweepResult) {
+    if (OtherActor) {
+      bContinueDealing = true;
+      AMainPlayer* Player = Cast<AMainPlayer>(OtherActor);
+
+      /** 겹쳐진 액터가 플레이어라면 Array에 추가 */
+      if (Player) {
+        HitedController = Player->GetController();
+        OverlapingEnemies.Add(Player);
+        Dealing();
+      }
+    }
+  }
+  void ALazer::OverlapEndActor(UPrimitiveComponent* OverlappedComponent, AActor* OtherActor, UPrimitiveComponent* OtherComp, int32 OtherBodyIndex) {
+    /** 겹처진 액터가 벗어난다면 Array에서 제거 */
+    if (OtherActor) {
+      AMainPlayer* Player = Cast<AMainPlayer>(OtherActor);
+      OverlapingEnemies.Remove(Player);
+
+      bContinueDealing = false;
+    }
+  }
+  void ALazer::Dealing() {
+    if (bContinueDealing) {
+      for (auto hited : OverlapingEnemies) {
+        AMainPlayer* Player = Cast<AMainPlayer>(hited);
+        if(!Player) return;
+        Player->SetCurrentAttack(GetName() + "AttackLazer" + FString::FromInt(HitCnt));
+        UGameplayStatics::ApplyDamage(Player, Damage, HitedController,this, LazerDamageType);
+        if (++HitCnt > 2) HitCnt = 0;
+      }
+      /** 1초간 딜레이 후 다시 진행 */
+      UKismetSystemLibrary::Delay(this, 1.0f, LatentInfo);
+    }
+  }
+  ```
+  ```c++
+  //EnemySkillFunction.cpp
+  void UEnemySkillFunction::LazerAttack() {
+    /** Lazer가 없다면 생성 */
+    if (Lazer.Num() == 0) {
+      FActorSpawnParameters SpawnParams;
+      SpawnParams.Owner = OwnerActor;
+      SpawnParams.Instigator = OwnerInstigator;
+      for (int i = 0; i < LazerCnt; i++) {
+        Lazer.Add(GetWorld()->SpawnActor<AActor>(LazerClass, FVector::ZeroVector, FRotator::ZeroRotator, SpawnParams));
+      }
+    }
+
+    /** Lazer를 랜덤한 위치로 옮기고 활성화 */
+    for (int32 i = 0; i < Lazer.Num(); i++) {
+      RandPos(LazerLoc, LazerRot);
+      ALazer* laz = Cast<ALazer>(Lazer[i]);
+      laz->SetActorLocationAndRotation(LazerLoc, LazerRot);
+      
+      laz->SetCnt(HitCnt);
+      laz->SetActorHiddenInGame(false);
+      laz->SetActorEnableCollision(true);
+      laz->SetActorTickEnabled(true);
+
+      if (LazerSound) UGameplayStatics::SpawnSoundAtLocation(this, LazerSound, laz->GetActorLocation());
+    }
+    SetHitCnt();
+  }
+  void UEnemySkillFunction::LazerEnd() {
+    /** 활성화된 Lazer를 비활성화 */
+    for (int32 i = 0; i < Lazer.Num(); i++){
+      Lazer[i]->SetActorHiddenInGame(true);
+      Lazer[i]->SetActorEnableCollision(false);
+      Lazer[i]->SetActorTickEnabled(false);
+    }
+  }
+  ```
+  </details>
+  <details><summary>Header File</summary> 
+
+  ```c++
+  //Lazer.h
+  private:
+  	UPROPERTY(VisibleAnywhere, Category = "Lazer | HitInfo")
+	  Array<class AMainPlayer*> OverlapingEnemies;      //Overlap된 플레이어를 저장하는 배열
+  public:
+    UFUNCTION()
+    void OverlapBeginActor(UPrimitiveComponent* OverlappedComponent, AActor* OtherActor, UPrimitiveComponent* OtherComp, int32 OtherBodyIndex, bool bFromSweep, const FHitResult& SweepResult);
+    
+    UFUNCTION()
+    void OverlapEndActor(UPrimitiveComponent* OverlappedComponent, AActor* OtherActor, UPrimitiveComponent* OtherComp, int32 OtherBodyIndex);
+
+    void Dealing();   //지속적으로 피격 처리를 위한 메서드
+  ```
+  ```c++
+  //EnemySkillFunction.h
+  private:
+  	UPROPERTY(VisibleAnywhere, Category = "Skill | Lazer")
+    FVector LazerLoc;
+
+    UPROPERTY(VisibleAnywhere, Category = "Skill | Lazer")
+    FRotator LazerRot;
+
+    UPROPERTY(EditAnywhere, Category = "Skill | Lazer", Meta = (AllowPrivateAccess = true))
+    int LazerCnt = 12;
+  public:
+  	virtual void LazerAttack() override;
+	  virtual void LazerEnd() override;
+  ```
+  ```c++
+  //SkillFunction.h
+  private:
+  	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Skill | Lazer")
+    TArray<AActor*> Lazer;
+
+    UPROPERTY(EditDefaultsOnly, Category = "Skill | Lazer")
+    TSubclassOf<class AActor> LazerClass;
+  ```
+  </details>
+
+---
+## __18. 돌진 공격__
+  - <img src="Image/Docs/DashAttack.gif" height="300" title="DashAttack">
+  - 설명 : 하늘에서 떨어지는 메테오로 플레이어에게 데미지를 입힘
+
+### __작업 내용__
+- __클래스명__ : BossEnemy 클래스의 DashSkill()메서드
+  - 돌진하는 애니메이션과 돌진하며 공격하는 애니메이션을 혼합하여 돌진 공격을 구현
+  - 애니메이션 돌진 1회는 약 350m 거리를 이동하고 이는 약 0.8초가 소요, 공격하며 돌진하는 애니메이션 또한 동일
+  - 기존과 동일하게 SkillAtack()메서드를 호출하여, 위 정보를 활용 적과 플레이어와의 거리에 대해 일정값으로 나누어 그 값을 SetTimer와 연동하여 DashSkill()을 호출
+  - EnemyController클래스의 블랙보드에서 TragetActor의 값을 가져와 Enemy클래스의 SkillAttack()에서 계산
+  - 즉 돌진을 하다가 Settimer에 의해 DashSkill()이 호출되면서 돌진 공격
+
+### __호출 방식__
+  - EnemySkillFunction클래스에 관여하지 않고 애니메이션에 의존
+
+### __참조 코드__
+
+  <details><summary>Cpp File</summary> 
+
+  ```c++
+  //Boss_Enemy.cpp
+  void ABoss_Enemy::SkillAttack() {
+    if (bisSkill) return;
+    bisSkill = true;
+
+    /** Random */
+    if (SkillType == "Meteor") ESkillFunction->GroundAttack();
+    else if (SkillType == "Lazer") ESkillFunction->LazerAttack();
+    else if (SkillType == "Rush") {
+      /** 거리를 측정하여 애니메이션 실행 시간 결정 */
+      float dis = GetDistanceTo(EnemyController->GetCurrentTarget()) / 1600.f;
+      GetWorldTimerManager().ClearTimer(SKillCoolTimer);
+      GetWorldTimerManager().SetTimer(SKillCoolTimer, this, &ABoss_Enemy::DashSkill, dis, false);
+      return;
+    }
+    ...
+  }
+  void ABoss_Enemy::DashSkill() {
+    Anim->Montage_JumpToSection("Attack5", SkillAttackMontage);
+    GetWorldTimerManager().ClearTimer(SKillCoolTimer);
+    GetWorldTimerManager().SetTimer(SKillCoolTimer, this, &ABoss_Enemy::SkillAttackEnd, 1.0f, false);
+    return;
+  }
+  ```
+  </details>
+  <details><summary>Header File</summary> 
+
+  ```c++
+  public:
+	  void DashSkill();
+  ```
+  </details>
+
+---
+## __19. AI 로직__
+  - <img src="Image/Docs/Boss_BehaviorTree.png" height="300" title="Boss_BehaviorTree">
+  - <img src="Image/Docs/Enemy_BehaviorTree.png" height="300" title="Enemy_BehaviorTree">
+  - 설명 : AI를 기준에 따라 행동하게 하는 비헤이비어트리로 위는 보스, 아래는 일반 몬스터의 로직
+  - BehaviorTree와 BlackBoard를 사용하여 AI를 행동하도록 구현
+  - BlackBoard에는 변수들이 저장되어 있고 이 변수들의 값을 BehaviorTree에서 참조하여 행동
+
+---
+## __20. 데미지 로그__
+  - <img src="Image/Docs/DamageLog.gif" height="300" title="DamageLog">
+  - 설명 : 플레이어 또는 적이 피격 시 플레이어에게 데미지의 크기를 화면상에 시각화하여 표현
+
+### __작업 내용__
+- __클래스명__ : DamageTextWidget 클래스
+  - Text와 SizeBox를 지정하고 애니메이션를 생성하는데 이는 클래스 자체를 가상함수로 제작하여 Text와 Animation을 꼭 블루프린트에서 구현하도록 제작
+  - 호출 되어 화면에 생성이 되면 Text 내용을 지정, 최종 목표지를 랜덤 값으로 지정하고 애니메이션을 실행 
+  - 매 Tick에서는 Vector2DInterpTo()메서드와 SetPositionInViewport()메서드를 사용하여 텍스트를 목표지점으로 프레임당 이동.
+
+- __클래스명__ : AttackFuction 클래스
+  - SpawnDamageText()메서드에서는 DamageTextWidget의 초기 발생 위치를 3D 세계의 위치에서 2D로 전환하고 랜덤으로 전환한다.
+  - 그 후 CreateWidget으로 DamageWidget을 인스턴스화하고 초기값 설정 후 AddToViewport()메서드를 통해 화면에 생성.
+  - ProjectWorldToScreen()메서드는 월드의 3DVector 값을 2DVector값으로 전환해준다. 생성하기 위해 필요한 위치값, 데미지 크기, 위젯, 띄울 컨트롤러를 매개변수로 받는다
+
+### __호출 방식__
+  - MainPlayer와 Enemy에서는 TakeDamge()메서드에서 AttackFunction클래스를 통해서 호출
+
+### __참조 코드__
+
+  <details><summary>Cpp File</summary> 
+
+  ```c++
+  //DamageTextWidget.cpp
+  void UDamageTextWidget::NativeTick(const FGeometry& MyGeometry, float InDeltaTime){
+    Super::NativeTick(MyGeometry, InDeltaTime);
+
+    /** DamageText의 위치 조정 */
+    InintialScreenLocation = UKismetMathLibrary::Vector2DInterpTo(InintialScreenLocation,FinalScreenLocation,InDeltaTime,1.0f);
+    SetPositionInViewport(InintialScreenLocation);
+  }
+  void UDamageTextWidget::SetInitialSetting(FVector2D& vec, float& name) {
+    InintialScreenLocation = vec;
+    DamageToDisplay = name;
+    this->AddToViewport();
+  }
+  ```
+  ```c++
+  //AttackFunction.cpp
+  void UAttackFunction::SpawnDamageText(FVector WorldLocation, float Damage, TSubclassOf<class UDamageTextWidget> DamageTextWidget, AController* DisplayController) {
+    if(DamageTextWidget == nullptr) return;
+
+    /** 3D에서 2D로 변경 */
+    const APlayerController* DamageController = Cast<APlayerController>(DisplayController);
+    WorldLocation.X += UKismetMathLibrary::RandomFloatInRange(-50.f, 50.f);
+    WorldLocation.Y += UKismetMathLibrary::RandomFloatInRange(-50.f, 50.f);
+    UGameplayStatics::ProjectWorldToScreen(DamageController, WorldLocation, DamageTextVec);
+
+    /** 데미지 로그 생성 및 위치 지정 */
+    DamageWidget = CreateWidget<UDamageTextWidget>(GetWorld(), DamageTextWidget);
+    DamageWidget->SetInitialSetting(DamageTextVec, Damage);
+  }
+  ```
+  ```c++
+  //MainPlayer.cpp
+  float AMainPlayer::TakeDamage(float DamageAmount, struct FDamageEvent const& DamageEvent, class AController* EventInstigator, AActor* DamageCauser) {
+    ...
+	  AttackFunction->SpawnDamageText(GetActorLocation(), DamageAmount, DamageTextWidget,GetController());
+  }
+  ```
+  </details>
+  <details><summary>Header File</summary> 
+
+  ```c++
+  //DamageTextWidget.h
+  private:
+    UPROPERTY(Meta = (BindWidget), Meta = (AllowPrivateAccess = true))
+    class UTextBlock* DamageText;
+
+    UPROPERTY(Meta = (BindWidgetAnim), Meta = (AllowPrivateAccess = true), Transient)	//직렬화
+    class UWidgetAnimation* Fade;                     //실행될 애니메이션 (투명화)
+
+    UPROPERTY(EditAnywhere, Category = "DamageText")
+    FVector2D InintialScreenLocation;                 //현재 위치
+    
+    UPROPERTY(EditAnywhere, Category = "DamageText")
+    FVector2D FinalScreenLocation;                    //목표 위치
+
+    UPROPERTY(EditAnywhere, Category = "DamageText")
+    float DamageToDisplay;
+  public:
+    void SetInitialSetting (FVector2D &vec, float &name);   //위젯 초기 설정
+  ```
+  ```c++
+  //AttackFunction.h
+  private:
+  	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "HUD")
+    FVector2D DamageTextVec;                                      //DamageText 생성 위치
+
+    UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "HUD")
+    class UDamageTextWidget* DamageWidget;
+  public:
+  	UFUNCTION()
+  	void SpawnDamageText(FVector WorldLocation, float Damage, TSubclassOf<UDamageTextWidget> DamageTextWidget, AController* DisplayController);
   ```
   </details>
