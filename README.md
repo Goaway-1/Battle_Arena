@@ -1,4 +1,4 @@
-# Battle_Arena (미완)
+# Battle_Arena
 
 |목록|내용|
 |:--:|:--:|
@@ -57,11 +57,30 @@
 
 TurnInPlace, 무기장착 로직, 공격 판정2가지, 콤보, 방패, SkillFunction..
 > ### **<h3>주요 기능</h3>**
-1. [TurnInPlace](#1.-TurnInPlace)
-20. [데미지 로그](#20.-데미지-로그)
+|주요 기능|이동 링크|
+|:--:|:--:|
+|이동|[이동](#이동), [제자리 회전](#제자리-회전)|
+|무기|[활과 화살](#활과-화살), [방패](#방패), [연막탄](#연막탄)|
+|공격 판정|[공격판정 (콜리전)](#공격판정-(콜리전)), [공격판정 (내적)](#공격판정-(내적)), [콤보](#콤보), [데미지 로그](#데미지-로그)|
+|상호작용|[균형](#균형), [아이템과의 상호 작용](#아이템과의-상호-작용), [특정 공격](#특정-공격), [타켓팅](#타켓팅)|
+|적의 스킬|[AI 로직](#AI-로직), [메테오 공격](#메테오-공격), [마법 공 공격](#마법-공-공격), [레이저 공격](#레이저-공격), [돌진 공격](#돌진-공격)|
+|그 외..|[카메라의 이동](#카메라의-이동), [배틀 사운드](#배틀-사운드)|
 
-※ 내용에 적혀있는 코드는 일부만을 작성한 것으로 자세한 내용이나 구조는 개발일기나 소스파일을 참조
-## __1. TurnInPlace__
+
+- ※ 내용에 적혀있는 코드는 일부만을 작성한 것으로 자세한 내용이나 구조는 개발일기나 소스파일을 참조
+---
+
+## <h1>이동</h1>
+  - <img src="Image/Docs/MainPlayerAnim.png" height="300" title="MainPlayerAnim">
+  - <img src="Image/Docs/MainBlendSpace.png" height="300" title="MainBlendSpace">
+  - 설명 : 애니메이션을 관리하는 MainPlayerAnim클래스의 구조와 상하체를 구분하는 블랜딩
+### __작업 내용__
+  - BlendSpace를 사용하여 Axis Settings의 가로, 세로축을 각각 Dircection(방향)과 - Speed(속도)로 지정하여 Axis에 따라 애니메이션를 자연스럽게 변화
+  - 이외의 점프나 Combat/Weapon/MovementStatus에 따른 애니메이션은 블랜드(Blennd Poses by bool : bool에 따른 구분)와 스테이트머신을 사용하여 위 그림과 같이 구현.
+  - 블랜드는 상체와 하체를 구분하여 다양한 연출을 가능하도록 도와줌
+
+---
+## <h1>제자리 회전</h1>
   - <img src="Image/Docs/TurnInPlace.gif" height="300" title="TurnInPlace">
   - <img src="Image/Docs/TurnInPlaceAnim.png" height="300" title="TurnInPlaceAnim">
   - 설명 : 이동 속도와 카메라 회전 방향에 따른 플레이어의 회전으로
@@ -139,17 +158,880 @@ TurnInPlace, 무기장착 로직, 공격 판정2가지, 콤보, 방패, SkillFun
   </details>
 
 ---
-## __2. 플레이어의 이동__
-  - <img src="Image/Docs/MainPlayerAnim.png" height="300" title="MainPlayerAnim">
-  - <img src="Image/Docs/MainBlendSpace.png" height="300" title="MainBlendSpace">
-  - 설명 : 애니메이션을 관리하는 MainPlayerAnim클래스의 구조와 상하체를 구분하는 블랜딩
+## <h1>활과 화살</h1>
+  - <img src="Image/Docs/Bow_Arrow.gif" height="300" title="Bow_Arrow">
+  - <img src="Image/Docs/Bow_ChargeAmount.png" height="300" title="Bow_ChargeAmount">
+  - 설명 : 공격 무기 중 하나로 활을 사용하여 화살을 발사한다. 위의 그림은 BowWeapon클래스의 Begin/EndCharge를 연장한 블루프린트 구조이다. 
 ### __작업 내용__
-  - BlendSpace를 사용하여 Axis Settings의 가로, 세로축을 각각 Dircection(방향)과 - Speed(속도)로 지정하여 Axis에 따라 애니메이션를 자연스럽게 변화
-  - 이외의 점프나 Combat/Weapon/MovementStatus에 따른 애니메이션은 블랜드(Blennd Poses by bool : bool에 따른 구분)와 스테이트머신을 사용하여 위 그림과 같이 구현.
-  - 블랜드는 상체와 하체를 구분하여 다양한 연출을 가능하도록 도와줌
+- __클래스명__ : BowWeapon 
+  - Eqiup 방식은 기존 Weapon과 동일한 방식으로 진행되고 양손 무기이다.
+  - enum타입인 EBowStatus를 제작하여 당기는 중인지 상태를 구분
+  - Begin/EndCharge_Implementation()메서드와 TimeLine을 사용하여 ChargeAmount의 크기에 따라 활시위 애니메이션 진행 (블루프린트와 연계하기 위해 메서드를 BlueprintCallable로 설정) 
+  - Fire()메서드는 화살을 발사하는 메서드로 Arrow클래스의 Fire를 ChargeAmount를 힘으로 하여 발사
+  - Reload()메서드는 Arrow를 "arrow_attach_socket"의 소켓에 Attach하여 활시위 당길 때 같이 이동
+
+- __클래스명__ : Arrow
+  - 화살의 상태를 나타내기 위해서 enum타입인 EArrowStatus를 제작하여 상태를 구분. 
+  - Fire() 는 활의 ChargeAmount를 받아 FirePower값을 설정. 이 값을 Lerp()를 사용하여 화살을 AddImpulse하여 발사한다. 또한 DetachFromActor()를 사용하여 사용자로 부터 해제하고 KeepWorldTransform으로 전환하고, 상태 또한 InArrow로 변환. 
+  - Arrow클래스에서 Overlap을 위해 SphereComponent를 추가하고 Overlap시 피격처리 (이전 피격처리와 동일) 
+  - 발사 시 Collsion의 이름은 Arrow로 설정하여 바꾸고 발사. (기존과 동일) 
+  - Projectile로 제작할 수 있지만 학습을 위해서 AddImpulse로 진행
+
+### __호출 방식__
+  - MainPlayer클래스의 Begin/EndCharge()메서드를 마우스 오른쪽 클릭을 통해 호출되며 이때 Bow클래스의 Reload(), BeginCharge()가 호출되고 상태 변경 및 카메라를 스위칭한다.
+  - 또한 LMBDown()메서드에서 현재 WeaponPos가 Bow라면 Bow클래스의 Fire()메서드 호출되면 화살을 발사
+
+### __참조 코드__
+
+  <details><summary>Cpp File</summary> 
+
+  ```c++
+  //BowWeapon.cpp
+  void ABowWeapon::BeginCharge_Implementation() {
+    if(!Arrow) return;
+    if(DrowSound != nullptr) UGameplayStatics::PlaySound2D(this, DrowSound);
+  }
+  void ABowWeapon::EndCharge_Implementation() {
+    if (Arrow) {
+      Arrow->Destroy();
+      Arrow = nullptr;
+    }
+  }
+  void ABowWeapon::Fire(int Cnt) {
+    if(!Arrow) return;
+
+    /** 화살의 발사 */
+    Arrow->Fire(ChargeAmount, Cnt);
+    Arrow = nullptr;
+    EndCharge();
+  }
+  void ABowWeapon::Reload() {
+    FActorSpawnParameters SpawnParams;
+    SpawnParams.Owner = this;
+    SpawnParams.Instigator = GetInstigator();
+
+    /** 화살이 현재 없다면 재생성하고 활에 Attach */
+    if (!Arrow) {
+      Arrow = GetWorld()->SpawnActor<AArrow>(ArrowClass, FVector(0.f), FRotator(0.f), SpawnParams);
+      Arrow->AttachToComponent(GetSkeletalMesh(), FAttachmentTransformRules::SnapToTargetNotIncludingScale, FName("arrow_attach_socket"));
+      Arrow->InitalArrow(BowOwner,BowController);
+    }
+  }
+  ```
+  ```c++
+  //Arrow.cpp
+  void AArrow::SetBowState() {
+    switch (ArrowStatus)
+    {
+    case EArrowStatus::EAS_InBow:
+      ArrowCollision->SetCollisionProfileName(FName("NoCollision"));
+      ArrowCollision->SetSimulatePhysics(false);
+      break;
+    case EArrowStatus::EAS_InArrow:
+      ArrowCollision->SetCollisionProfileName(FName("Arrow"));
+      ArrowCollision->SetSimulatePhysics(true);
+      /** 화살의 발사 */
+      if(!bisFire){
+        ArrowCollision->AddImpulse(GetActorForwardVector() * UKismetMathLibrary::Lerp(600, 15000, FirePower));
+        bisFire = true;
+      }
+      break;
+    default:
+      break;
+    }
+  }
+  void AArrow::Fire(float Amount,int Cnt) {
+    /** 활로 부터 Detach하고 상태 변경 */
+    DetachFromActor(FDetachmentTransformRules::KeepWorldTransform);
+    SetArrowStatus(EArrowStatus::EAS_InArrow);
+    FirePower = Amount;
+    this->AttackCnt = Cnt;
+
+    if(ShotSound != nullptr) UGameplayStatics::PlaySound2D(this, ShotSound);
+  }
+  ```
+  </details>
+  <details><summary>Header File</summary> 
+
+  ```c++
+  //BowWeapon.h
+  UENUM(BlueprintType)
+  enum class EBowStatus : uint8 {
+    EBS_Normal		UMETA(DisplayName = "Normal"),
+    EBS_Drawing		UMETA(DisplayName = "Drawing"),
+    EBS_Default		UMETA(DisplayName = "Default")
+  };
+  private:
+    UPROPERTY(EditDefaultsOnly, Category = "Weapon | Bow", Meta = (AllowPrivateAccess = true))
+    class AArrow* Arrow;
+
+    UPROPERTY(EditDefaultsOnly, Category = "Weapon | Bow", Meta = (AllowPrivateAccess = true))
+    TSubclassOf<class AArrow> ArrowClass;
+
+    AActor* BowOwner;
+    AController* BowController;
+  public:
+    UPROPERTY(EditAnyWhere, BlueprintReadWrite, Category = "Arrow")
+    float ChargeAmount;   //활을 당기고 있는 정도 
+
+    UFUNCTION(BlueprintCallable)
+    void SetChargeAmount(float value);
+
+    UFUNCTION(BlueprintNativeEvent, BlueprintCallable)
+    void BeginCharge();
+
+    UFUNCTION(BlueprintNativeEvent, BlueprintCallable)
+    void EndCharge();
+
+    void Fire(int Cnt);   //화살을 발사
+    void Reload();        //화살을 리로드
+  ```
+  ```c++
+  //Arrow.h
+  UENUM(BlueprintType)
+  enum class EArrowStatus : uint8 {
+    EAS_InBow		UMETA(DisplayName = "InBow"),
+    EAS_InArrow		UMETA(DisplayName = "InArrow"),
+    EAS_Destroy		UMETA(DisplayName = "Destroy")
+  };
+  private:
+    UPROPERTY(VisibleAnywhere, BlueprintReadWrite, Category = "Arrow | Physic", Meta = (AllowPrivateAccess = true))
+    class URadialForceComponent* RadiaForce;    //Destructible Mesh에 사용했던 힘컴포넌트, 현재 사용 X
+    
+    UPROPERTY(EditDefaultsOnly, Category = "Arrow | Damage", Meta = (AllowPrivateAccess = true))
+    float Damage = 5.f;
+
+    UPROPERTY(VisibleAnywhere, Category = "Arrow")
+    bool bisFire = false;
+
+    UPROPERTY(VisibleAnywhere, Category = "Arrow")
+    float FirePower;
+
+    UPROPERTY(VisibleAnywhere, Category = "Arrow")
+    EArrowStatus ArrowStatus;
+  public:
+    UFUNCTION()
+    void OnOverlapBegin(UPrimitiveComponent* OverlappedComponent, AActor* OtherActor, UPrimitiveComponent* OtherComp, int32 OtherBodyIndex, bool bFromSweep, const FHitResult& SweepResult);
+    
+    void Fire(float Amount,int Cnt);            //화살의 발사로 상태만 변경
+    void SetArrowStatus(EArrowStatus Status);   //매 틱마다 호출되며 상태에 따른 행동
+  ```
+  </details>
 
 ---
-## __3. 아이템 (무기, 포션)과의 상호 작용__
+## <h1>방패</h1>
+  - <img src="Image/Docs/Shield.gif" height="300" title="Shield">
+  - 설명 : 적의 공격을 막는 방패
+### __작업 내용__
+- __클래스명__ : ShieldWeapon클래스
+  - 기존 : 방패에 콜리전을 추가하여 피격 처리. 이때 적의 공격은 Sweep의 Single 채널로 이루어지기에 먼저 방패에 맞게 되면 공격의 취소 되며 대미지가 들어가지 않음.
+  - 수정 : 플레이어의 상태와 적의 공격 방향을 기준으로 판단하여 일정 범위 이내라면 방어하는 방식 
+  - ShieldWeapon에서 범위를 지정하는 float값인 ShiledMax/MinAngle과 방어했을 시 발생하는 ParticleSystem타입의 HitedParticle 지정.
+  - MainPlayer클래스에서 TakeDamage()메서드를 수정하며 현재 상태가 Blocking이라면 막았는지의 대한 판정하며 막았다면 종료
+  - 판정은 IsBlockingSuccess()메서드를 통해 진행하며 FindLookAtRotation()을 사용하여 플레이어와 공격한 적의 각도를 반환하고 NormalizedDeltaRotator를 통해 각도를 정규화, InRange_FloatFloat()메서드를 사용하여 BetweenRot이 일정 범위 내에 있는 지 확인. 반환값은 bool이다.
+  - 공격한 적이 일정 범위 내에 있다면 방어하고 방패의 파티클을 생성하며, 일정 거리 뒤로 밀린다.
+
+### __호출 방식__
+  - 'B'키를 누르면 방패를 들게되며 이때 상태는 ECS_Blocking으로 전환
+
+### __참조 코드__
+
+  <details><summary>Cpp File</summary> 
+
+  ```c++
+  //ShieldWeapon.cpp
+  AShieldWeapon::AShieldWeapon() {
+    SetWeaponPosLoc(EWeaponPos::EWP_Shield);
+    ShiledMinAngle = -40.f;   
+    ShiledMaxAngle = 40.f;
+  }
+  ```
+  ```c++
+  //MainPlayer.cpp
+  float AMainPlayer::TakeDamage(float DamageAmount, struct FDamageEvent const& DamageEvent, class AController* EventInstigator, AActor* DamageCauser) {
+    ...
+    /** 방패로 막았는지 체크 (상태와 내적) */
+    if (GetCombatStatus() == ECombatStatus::ECS_Blocking) {
+      if (IsBlockingSuccess(DamageCauser)) {
+        Balance->SetCurrentBalance(10.f);
+        return 0;
+      }
+    }
+  }
+  void AMainPlayer::Blocking() {
+    if (!IsCanMove()) return;
+    if (CurrentShieldWeapon != nullptr) {
+      SetCombatStatus(ECombatStatus::ECS_Blocking);
+    }
+  }
+  void AMainPlayer::UnBlocking() {
+    if (CurrentShieldWeapon != nullptr) {
+      SetCombatStatus(ECombatStatus::ECS_Normal);
+    }
+  }
+  bool AMainPlayer::IsBlockingSuccess(AActor* DamageCauser) {
+    /** 두 액터 사이의 각도를 구하고 정규화하여 범위내에 있다면 isShieldRange에 True를 지정 */
+    FRotator BetweenRot = UKismetMathLibrary::FindLookAtRotation(GetActorLocation(), DamageCauser->GetActorLocation());
+    BetweenRot = UKismetMathLibrary::NormalizedDeltaRotator(GetActorRotation(), BetweenRot);
+    bool isShieldRange = UKismetMathLibrary::InRange_FloatFloat(BetweenRot.Yaw, CurrentShieldWeapon->GetMinAngle(), CurrentShieldWeapon->GetMaxAngle());
+
+    /** 일정 각도 이내라면 뒤로 밀리면서 True를 반환 */
+    if (isShieldRange && CurrentShieldWeapon->GetHitedParticle() && CurrentShieldWeapon->GetHitedSound()) {
+      FVector Loc = GetActorForwardVector();
+      Loc.Z = 0;
+      LaunchCharacter(DamageCauser->GetActorForwardVector() * 500.f, true, true);
+      UGameplayStatics::SpawnEmitterAtLocation(GetWorld(), CurrentShieldWeapon->GetHitedParticle(), GetActorLocation(), FRotator(0.f));
+      UGameplayStatics::PlaySound2D(this, CurrentShieldWeapon->GetHitedSound());
+      return true;
+    }
+    return false;
+  }
+  ```
+  </details>
+  <details><summary>Header File</summary> 
+
+  ```c++
+  //ShieldWeapon.h
+  private:
+    UPROPERTY(VisibleAnywhere, Category = "Weapon | Angle")
+    float ShiledMinAngle;   //막을 수 있는 범위1
+
+    UPROPERTY(VisibleAnywhere, Category = "Weapon | Angle")
+    float ShiledMaxAngle;   //막을 수 있는 범위2
+  public:
+    FORCEINLINE float& GetMinAngle() { return ShiledMinAngle; }
+    FORCEINLINE float& GetMaxAngle() { return ShiledMaxAngle; }
+  ```
+  ```c++
+  //MainPlayer.h
+  public:
+  	void Blocking();      //상태 변화를 위한 메서드
+	  void UnBlocking();    //상태 변화를 위한 메서드
+	  bool IsBlockingSuccess(AActor* DamageCauser);   //막기 성공 여부를 반환
+  ```
+  </details>
+
+---
+## <h1>연막탄</h1>
+  - <img src="Image/Docs/IsInFog_Enemy.gif" height="300" title="IsInFog_Enemy">
+  - <img src="Image/Docs/IsInFog_Player.gif" height="300" title="IsInFog_Player">
+  - 설명 : 연막안에 들어가면 플레이어의 시점은 흐려지고, 적은 방황하는 로직
+### __작업 내용__
+- __클래스명__ : Grenade클래스
+  - Grenade클래스의 SetFire()는 Player가 클릭하여 던질때 활성화되며 이때 SimulationEnabled가 활성화되어 Projectile을 사용한다. (Projectile : 발사체를 사용할때 추가하는 컴포넌트로 일시적인 힘을 제공)
+  - 던지고 일정 시간 후에 SpawnSmoke()메서드가 활성화되어 연기가 생성되고, 일정 시간 후에 IsGrowing이 True가 되어 Tick마다 연막의 범위가 넓어지다가 소멸된다.
+  - 3번 키를 누르면 EMovementStatus를 Throwing로 변경하고 오른쪽 손에 Grenade를 인스턴스화 하고 다시 누르면 삭제하며, 이때 마우스 왼쪽 클릭 시 던진다.
+  - 적 중첩 시 : 
+    - TaskNode클래스인 UBTTask_IsInFog클래스는 Enemy가 Grenade에 영향을 받는다면 실행하는 로직 생성.
+    - Enemy클래스의 De/ActiveFogEvent()메서드를 통해 애니메이션의 실행
+  - 플레이어 중첩 시 :
+    - MainController클래스와 연관되어 SetFogSplatter()메서드를 통해 위젯의 Visibility를 On/Off 하는 형식
+
+### __호출 방식__
+  - MainPlayer클래스의 Throw/StartThrow/Throwing/EndThrow()메서드에서 진행. (코드 생략)
+
+### __참조 코드__
+
+  <details><summary>Cpp File</summary> 
+
+  ```c++
+  //Grenade.cpp
+  void AGrenade::Tick(float DeltaTime){
+    Super::Tick(DeltaTime);
+
+    /** 조건 만족 시 연막의 범위 증가 */
+    if (isGrowing && Smoke) {
+      float Csize = Collision->GetUnscaledSphereRadius();
+      Csize += (DeltaTime * 100.0f);
+      Collision->SetSphereRadius(Csize);
+
+      FVector temp = Smoke->GetRelativeScale3D();
+      temp += FVector(DeltaTime * 0.3f);
+      Smoke->SetRelativeScale3D(temp);
+      SmokeTime -= DeltaTime;
+
+      /** 일정 범위 초과 및 시간 소요 시 파괴*/
+      if(Csize > 700.f && SmokeTime <= 0) {
+        isGrowing = false;
+        GetWorldTimerManager().ClearTimer(SpawnSmokeHandle);
+        GetWorldTimerManager().SetTimer(SpawnSmokeHandle, this, &AGrenade::DestorySmoke, SpawnSmokeTime, false);
+      }
+    }
+  }
+  void AGrenade::SetFire(FRotator Rot) {
+    /** 플레이어로부터 Detach하고 방향 나아갈 방향 지정 */
+    DetachFromActor(FDetachmentTransformRules::KeepWorldTransform);
+    SetActorLocation(GetActorLocation());
+    
+    /** 회전과 Projectile을 사용한 발사 */
+    Mesh->SetRelativeRotation(Rot);
+    Projectile->SetVelocityInLocalSpace(FVector::ForwardVector * 8000);
+    Projectile->Activate();
+
+    /** SpawnSmokeTime 이후 연기 생성 */
+    GetWorldTimerManager().SetTimer(SpawnSmokeHandle, this, &AGrenade::SpawnSmoke, SpawnSmokeTime, false);
+  }
+  void AGrenade::SpawnSmoke() {
+    /** 연기 생성 */
+    if(Smoke) {
+      Collision->SetCollisionEnabled(ECollisionEnabled::QueryOnly);
+      Smoke->SetVisibility(true);
+      GetWorldTimerManager().ClearTimer(SpawnSmokeHandle);
+      GetWorldTimerManager().SetTimer(SpawnSmokeHandle, this, &AGrenade::GrowingSmoke, SpawnSmokeTime, false);
+    }
+  }
+  void AGrenade::OnOverlapBegin(UPrimitiveComponent* OverlappedComponent, AActor* OtherActor, UPrimitiveComponent* OtherComp, int32 OtherBodyIndex, bool bFromSweep, const FHitResult& SweepResult) {
+    if (OtherActor) {
+      AMainPlayer* Player = Cast<AMainPlayer>(OtherActor);
+      AEnemy* Enemy = Cast<AEnemy>(OtherActor);
+      if (Player) Player->SetFogSplatter();                 //플레이어의 시야 방해
+      if (Enemy) Enemy->SetVisibleInFog(true, SmokeTime);   //적의 방황 애니메이션 실행 (SmokeTime동안)
+    }
+  }
+  ```
+  ```c++
+  //MainPlayer.cpp
+  void AMainPlayer::SetFogSplatter() {
+    (PlayerController->GetFogSplatterVisible()) ? PlayerController->RemoveFogSplatter() : PlayerController->DisplayFogSplatter();
+  }
+  ```
+  </details>
+  <details><summary>Header File</summary> 
+
+  ```c++
+  //Grenade.h
+  private:
+    UPROPERTY(EditAnywhere, Category = "Grenade | Mesh", Meta = (AllowPrivateAccess = true))
+    class UProjectileMovementComponent* Projectile;
+
+    UPROPERTY(EditAnywhere, Category = "Grenade | Smoke", Meta = (AllowPrivateAccess = true))
+    class UParticleSystemComponent* Smoke;
+
+    bool isGrowing = false;
+  public:
+    void SpawnSmoke();
+    void DestorySmoke();
+    void SetFire(FRotator Rot);
+  ```
+  ```c++
+  //MainPlayer.h
+    void SetFogSplatter();	
+  ```
+  </details>
+
+---
+## <h1>공격판정 (콜리전)</h1>
+  - <img src="Image/Docs/Attack_1.gif" height="300" title="Attack_1">
+  - <img src="Image/Docs/Attack_1_Notify.png" height="300" title="Attack_1_Notify">
+  - 설명 : 플레이어가 무기를 장착하고 하는 무기의 콜리전을 활용한 공격 판정 방법
+### __작업 내용__
+- __클래스명__ : AttackWeapon클래스
+  - 설명 : AttackWeapon의 CapsuleComponent 콜리전을 On/Off하는 방식으로 Overlap되면 피격 판정
+  - On/OffWeaponCollision()메서드를 애니메이션 노티파이에서 호출하여 Weapon의 콜리전을 비/활성화 
+  - 필요한 정보를 무기를 착용할때 ItemEquip()메서드에서 SetAttackInit()메서드에서 넘겨 사용
+  - 무기를 한번 휘두를 때 중첩되어 2번 이상 피해를 받는 오류가 발생할 수 있기에 공격 시 “공격자의 이름 + 무기의 이름 + 카운트 번호”로 CurrentAttack을 설정. 
+  - AttakCnt를 매 차례 증가하여 위 로직에 도움이 되도록 설정 (MainPlayer의 Get/SetAttackCnt()메서드)
+    ```c++
+    void AMainPlayer::SetAttackCnt() {
+      AttackCnt++;
+      if(AttackCnt > 10) AttackCnt = 0;
+    }
+    ```
+  - Enemy클래스의 CurrentAttack이름과 LastAttack이름을 비교하여 다를 시 TakeDamage()메서드 실행
+
+### __호출 방식__
+  - 사용자가 무기를 장착하고 마우스 왼쪽 버튼 클릭 시 호출 시 LMBDown()메서드 호출
+
+### __참조 코드__
+
+  <details><summary>Cpp File</summary> 
+
+  ```c++
+  //AttackWeapon.cpp
+  /** AttackCollision의 Active여부 */
+  void AAttackWeapon::SetAttackCollision(bool value) {	
+    if(!value) AttackCollision->SetCollisionEnabled(ECollisionEnabled::NoCollision);
+    else AttackCollision->SetCollisionEnabled(ECollisionEnabled::QueryOnly);
+  }
+  void AAttackWeapon::OnAttackOverlap(UPrimitiveComponent* OverlappedComponent, AActor* OtherActor, UPrimitiveComponent* OtherComp, int32 OtherBodyIndex, bool bFromSweep, const FHitResult& SweepResult) {
+    if (OtherActor) {
+      AEnemy* Enemy = Cast<AEnemy>(OtherActor);
+      AMainPlayer* Player = Cast<AMainPlayer>(AtOwner);
+      ABoss_Enemy* BEnemy = Cast<ABoss_Enemy>(Enemy);
+      if (BEnemy) Player->GetPlayerController()->SetBalanceTarget(BEnemy);  //보스인 경우 Balance를 띄움
+      if (Enemy) {  /** 적의 CurrentAttack정보를 갱신하고 ApplyDamage()메서드로 피격 처리 */
+        Enemy->SetCurrentAttack(AtOwner->GetName() + this->GetName() + FString::FromInt(Player->GetAttackCnt()));
+        UGameplayStatics::ApplyDamage(Enemy, Damage, AtController, AtOwner, AtDamageType);
+      }
+    }
+  }
+  ```
+  ```c++
+  //Enemy.cpp
+  float AEnemy::TakeDamage(float DamageAmount, struct FDamageEvent const& DamageEvent, class AController* EventInstigator, AActor* DamageCauser) {
+    if(CurrentHealth <= 0) return 0;
+    else if (LastAttack != CurrentAttack ) LastAttack = CurrentAttack;      /** 마지막 피격과 최근 피격정보가 다른 경우 LastAttack을 갱신하고 피격처리 */
+    else if (DamageEvent.DamageTypeClass != InternalDamageType) return 0;
+    else return 0;
+    ....
+  }
+  ```
+  </details>
+  <details><summary>Header File</summary> 
+
+  ```c++
+  //AttackWeapon.h
+  private:
+  	UPROPERTY(EditAnywhere, Category = "Weapon", Meta = (AllowPrivateAccess = true))
+	  UCapsuleComponent* AttackCollision;
+  public:
+  	UFUNCTION()
+    void OnAttackOverlap(UPrimitiveComponent* OverlappedComponent, AActor* OtherActor, UPrimitiveComponent* OtherComp, int32 OtherBodyIndex, bool bFromSweep, const FHitResult& SweepResult);
+    
+    void SetAttackCollision(bool value);
+  ```
+  ```c++
+  //Enemy.h
+  private:
+    UPROPERTY(VisibleAnywhere, Category = "Attack", Meta = (AllowPrivateAccess = true))
+    FString LastAttack = "";    /** 마지막 피격 정보 */
+
+    UPROPERTY(VisibleAnywhere, Category = "Attack", Meta = (AllowPrivateAccess = true))
+    FString CurrentAttack = "";  /** 지금 피격 정보 */
+  public:
+	  FORCEINLINE void SetCurrentAttack(FString Value) { CurrentAttack = Value; }
+  ```
+  </details>
+
+---
+## <h1>공격판정 (내적)</h1>
+  - <img src="Image/Docs/Attack_2.gif" height="300" title="Attack_2">
+  - <img src="Image/Docs/Attack_2_Notify.png" height="300" title="Attack_2_Notify">
+  - <img src="Image/Docs/TraceChannel.png" height="300" title="TraceChannel">
+  - 설명 : 기존 무기의 콜리전 방식이 아닌 트레이스 채널과 내적을 사용한 공격 방식
+### __작업 내용__
+- __클래스명__ : AttackFunction클래스
+  - 설명 : SkillAttackStart()메서드에서 공격 판정을 진행
+  - AttackFunction클래스에 공격메서드를 추상화하여 구상
+  - SetOwner()메서드를 통해서 계산에 필요한 정보를 미리 넘긴다. 이는 클래스를 사용할 모든 객체에서 PossessedBy()에서 반드시 호출해야만함.
+  - 트레이스채널, ECollisionChannel의 타입 Player일때는 2번(Enemy), Enemy일때는 1번(Player) 채널로 선언하고 __UKismetSystemLibrary::SphereOverlapActors()메서드를__ 사용하여 소유자 주변을 채널과 일치하는 타입의 액터를 찾아 두 액터 간 내적의 크기가 일정 범위내라면 피격처리
+  - 이때 찾아낼 액터를 저장할 배열(OutActors), 트레이스 채널번호(TraceObjectTypes), 클래스(SeekClass)이 필요하고 무시할 액터를 저장한 배열(IgnoreActors)이 필요하며, 배열은 모두 Array를 사용
+  - 위의 그림처럼 내적의 크기를 기준으로 피격을 판단하며 __장점은 공격타입에 따라 범위를 지정할 수 있다는 점이다.__
+
+### __호출 방식__
+  - BTTask_Attack()메서드에 의해 Attack()이 호출되며 이는 애니메이션 노티파이를 실행하고, 특정 타이밍에 AttackStart_Internal()메서드가 실행.
+  - 적과 플레이어 모두 사용가능 하지만 적의 공격 방식은 이 내적 방식으로만 구현
+
+### __참조 코드__
+
+  <details><summary>Cpp File</summary> 
+
+  ```c++
+  //AttackFunction.cpp
+  void UAttackFunction::SetOwner(USkeletalMeshComponent* TakeMesh,AController* TakeController) {
+    Owner = GetOwner();
+    Mesh = TakeMesh;
+    Controller = TakeController;
+  }
+  void UAttackFunction::SkillAttackStart(TSubclassOf<UDamageType> DamageType,FString OwnerType, UParticleSystem* HitParticle,float AttackRange,float Damage, int AttackCnt){
+    TArray<TEnumAsByte<EObjectTypeQuery>> TraceObjectTypes;
+    UClass* SeekClass = nullptr;		//찾아낼 클래스
+    TArray<AActor*> OutActors;			//찾아낼 액터들
+    TArray<AActor*> IgnoreActors;		//무시할 액터들
+    IgnoreActors.Init(Owner, 1);
+
+    /** 찾아낼 클래스와 트레이스 채널 지정 */
+    if (Type == "Player") {
+      TraceObjectTypes.Add(UEngineTypes::ConvertToObjectType(ECollisionChannel::ECC_GameTraceChannel2));
+      SeekClass = AEnemy::StaticClass();
+    }
+    else if (Type == "Enemy") {
+      TraceObjectTypes.Add(UEngineTypes::ConvertToObjectType(ECollisionChannel::ECC_GameTraceChannel1));
+      SeekClass = AMainPlayer::StaticClass();
+    }
+
+    /** 원하는 액터가 감지되었다면 True를 반환 */
+    bool bResult = UKismetSystemLibrary::SphereOverlapActors(GetWorld(), Owner->GetActorLocation(), AttackRange, TraceObjectTypes, SeekClass, IgnoreActors, OutActors);
+
+    FColor DrawColor = FColor::Red;
+    if (bResult) {
+      for (auto& HitActor : OutActors) {
+        
+        /** 내적 판단 */
+        float Inner = Owner->GetDotProductTo(HitActor);	
+        if (Inner > 0.3f) {
+          if (Type == "Player") {
+            auto EHited = Cast<AEnemy>(HitActor);
+            EHited->SetCurrentAttack(Owner->GetName() + EHited->GetName() + FString::FromInt(AttackCnt));
+            if (EHited) UGameplayStatics::ApplyDamage(EHited, Damage, Controller, Owner, DamageType);
+          }
+          else if (Type == "Enemy") {
+            auto MHited = Cast<AMainPlayer>(HitActor);
+            MHited->SetCurrentAttack(Owner->GetName() + MHited->GetName() + FString::FromInt(AttackCnt));
+            if (MHited) UGameplayStatics::ApplyDamage(MHited, Damage, Controller, Owner, DamageType);
+          }
+          DrawColor = FColor::Green;
+        }
+      }
+    }
+
+    /** 피격 판정 시각화 용도 */
+    DrawDebugSphere(GetWorld(), Owner->GetActorLocation(), AttackRange, 12, DrawColor, false, 0.5f);
+  }
+  ```
+  ```c++
+  //Enemy.cpp
+  void AEnemy::AttackStart_Internal() {
+    FString Type = "Enemy";
+    /** 트레이스채널을 사용한 공격 호출 */
+    AttackFunction->SkillAttackStart(InternalDamageType, Type, GetHitParticle(),GetAttackRange(), AttackDamage, AttackCnt);
+
+    AttackCnt++;
+    if (AttackCnt > 2) AttackCnt = 0;
+  }
+  ```
+  </details>
+  <details><summary>Header File</summary> 
+
+  ```c++
+  //AttackFunction.h
+  UCLASS(ClassGroup = (Custom), meta = (BlueprintSpawnableComponent))
+  class COMBATARENA_API UAttackFunction : public UActorComponent{
+  protected:
+    UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "AttackFunction | Owner")
+    class AActor* Owner;
+    
+    UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "AttackFunction | Owner")
+    class AController* Controller;
+
+    UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "AttackFunction | Owner")
+    class USkeletalMeshComponent* Mesh;
+
+  public:
+    UFUNCTION()
+    void SetOwner(USkeletalMeshComponent* TakeMesh, AController* TakeController);
+
+    UFUNCTION(BlueprintCallable)
+    virtual void SkillAttackStart(TSubclassOf<UDamageType> DamageType, FString OwnerType, UParticleSystem* HitParticle, float AttackRange, float Damage, int AttackCnt);
+  }
+  ```
+  ```c++
+  //Enemy.h
+  private:
+    class UEnemyAttackFunction* AttackFunction;
+  ```
+  </details>
+
+---
+## <h1>콤보</h1>
+  - <img src="Image/Docs/Combo.gif" height="300" title="Combo">
+  - <img src="Image/Docs/Combo_Anim.png" height="300" title="Combo_Anim">
+  - 설명 : 연속공격을 구현한 로직
+### __작업 내용__
+- __함수명__ : AttackInputCheck()메서드
+  - 연속 공격을 체크(AttackCheck)하는 노티파이를 MainPlayer클래스의 AttackInputCheck()와 연결
+  - 그 시점에 AttackInputCheck()메서드가 실행되는데 이때 만약 bIsAttackCheck, 즉 공격이 가능하다면 콤보카운트를 증가 시키고 Attack()메서드 실행
+  - Attack()메서드에서 기존 몽타주가 실행되고 있기다면 끊고 다음 몽타주를 실행 
+  - GetAttackMontageSection(int32 Section)에서는 입력번호에 따라 FName이 반환되는데 이를 사용하여 콤보 몽타주를 1씩 증가하여 사용
+  - 초기 설정시 콤보의 개수를 정하는 ComboMaxCount를 설정해줘야 하고, 반드시 공격 노티파이의 이름은 Attack으로 시작하며 시작번호는 0이다.
+
+### __호출 방식__
+  - 애니메이션 진행 중 노티파이에 의한 AttackInputCheck() 호출
+
+### __참조 코드__
+
+  <details><summary>Cpp File</summary> 
+
+  ```c++
+  //MainPlayer.cpp
+  void AMainPlayer::Attack(bool bIsSpecial) {
+    ...
+    else if (AnimInstance && PlayMontage)	
+    { 
+      /** 기존 PlayMontage 애니메이션이 실행되지 않고 있을때 */
+      if (!AnimInstance->Montage_IsPlaying(PlayMontage)) {
+        AnimInstance->Montage_Play(PlayMontage);
+        ComboCnt = 0;
+      }
+      /** 기존 PlayMontage 애니메이션이 실행 중일때 */
+      else {													
+        AnimInstance->Montage_Play(PlayMontage);
+        AnimInstance->Montage_JumpToSection(GetAttackMontageSection("Attack", ComboCnt), PlayMontage);
+      }
+    }
+  }
+  void AMainPlayer::AttackInputCheck() {
+    if (bIsAttackCheck) {
+      ComboCnt++;
+      if (ComboCnt >= ComboMaxCnt) ComboCnt = 0;
+      bIsAttackCheck = false;
+      Attack();
+    }
+  }
+  /** 타입에 따른 다음 공격 모션을 반환 */
+  FName AMainPlayer::GetAttackMontageSection(FString Type, int32 Section) {
+    if (Type == "Attack") return FName(*FString::Printf(TEXT("Attack%d"), Section));
+    else if (Type == "Dodge") return FName(*FString::Printf(TEXT("Dodge%d"), Section));
+    else return "Error";
+  }
+  ```
+  </details>
+  <details><summary>Header File</summary> 
+
+  ```c++
+  //MainPlayer.h
+  private:
+	  bool bIsAttackCheck;  //콤보 체크 관련 변수
+  public:
+  	UFUNCTION(BlueprintCallable)
+	  void AttackInputCheck();
+
+  	void Attack(bool bIsSpecial = false);
+	  FName GetAttackMontageSection(FString Type, int32 Section);
+  ```
+  </details>
+
+---
+## <h1>데미지 로그</h1>
+  - <img src="Image/Docs/DamageLog.gif" height="300" title="DamageLog">
+  - 설명 : 플레이어 또는 적이 피격 시 플레이어에게 데미지의 크기를 화면상에 시각화하여 표현
+
+### __작업 내용__
+- __클래스명__ : DamageTextWidget 클래스
+  - Text와 SizeBox를 지정하고 애니메이션를 생성하는데 이는 클래스 자체를 가상함수로 제작하여 Text와 Animation을 꼭 블루프린트에서 구현하도록 제작
+  - 호출 되어 화면에 생성이 되면 Text 내용을 지정, 최종 목표지를 랜덤 값으로 지정하고 애니메이션을 실행 
+  - 매 Tick에서는 Vector2DInterpTo()메서드와 SetPositionInViewport()메서드를 사용하여 텍스트를 목표지점으로 프레임당 이동.
+
+- __클래스명__ : AttackFuction 클래스
+  - SpawnDamageText()메서드에서는 DamageTextWidget의 초기 발생 위치를 3D 세계의 위치에서 2D로 전환하고 랜덤으로 전환한다.
+  - 그 후 CreateWidget으로 DamageWidget을 인스턴스화하고 초기값 설정 후 AddToViewport()메서드를 통해 화면에 생성.
+  - ProjectWorldToScreen()메서드는 월드의 3DVector 값을 2DVector값으로 전환해준다. 생성하기 위해 필요한 위치값, 데미지 크기, 위젯, 띄울 컨트롤러를 매개변수로 받는다
+
+### __호출 방식__
+  - MainPlayer와 Enemy에서는 TakeDamge()메서드에서 AttackFunction클래스를 통해서 호출
+
+### __참조 코드__
+
+  <details><summary>Cpp File</summary> 
+
+  ```c++
+  //DamageTextWidget.cpp
+  void UDamageTextWidget::NativeTick(const FGeometry& MyGeometry, float InDeltaTime){
+    Super::NativeTick(MyGeometry, InDeltaTime);
+
+    /** DamageText의 위치 조정 */
+    InintialScreenLocation = UKismetMathLibrary::Vector2DInterpTo(InintialScreenLocation,FinalScreenLocation,InDeltaTime,1.0f);
+    SetPositionInViewport(InintialScreenLocation);
+  }
+  void UDamageTextWidget::SetInitialSetting(FVector2D& vec, float& name) {
+    InintialScreenLocation = vec;
+    DamageToDisplay = name;
+    this->AddToViewport();
+  }
+  ```
+  ```c++
+  //AttackFunction.cpp
+  void UAttackFunction::SpawnDamageText(FVector WorldLocation, float Damage, TSubclassOf<class UDamageTextWidget> DamageTextWidget, AController* DisplayController) {
+    if(DamageTextWidget == nullptr) return;
+
+    /** 3D에서 2D로 변경 */
+    const APlayerController* DamageController = Cast<APlayerController>(DisplayController);
+    WorldLocation.X += UKismetMathLibrary::RandomFloatInRange(-50.f, 50.f);
+    WorldLocation.Y += UKismetMathLibrary::RandomFloatInRange(-50.f, 50.f);
+    UGameplayStatics::ProjectWorldToScreen(DamageController, WorldLocation, DamageTextVec);
+
+    /** 데미지 로그 생성 및 위치 지정 */
+    DamageWidget = CreateWidget<UDamageTextWidget>(GetWorld(), DamageTextWidget);
+    DamageWidget->SetInitialSetting(DamageTextVec, Damage);
+  }
+  ```
+  ```c++
+  //MainPlayer.cpp
+  float AMainPlayer::TakeDamage(float DamageAmount, struct FDamageEvent const& DamageEvent, class AController* EventInstigator, AActor* DamageCauser) {
+    ...
+	  AttackFunction->SpawnDamageText(GetActorLocation(), DamageAmount, DamageTextWidget,GetController());
+  }
+  ```
+  </details>
+  <details><summary>Header File</summary> 
+
+  ```c++
+  //DamageTextWidget.h
+  private:
+    UPROPERTY(Meta = (BindWidget), Meta = (AllowPrivateAccess = true))
+    class UTextBlock* DamageText;
+
+    UPROPERTY(Meta = (BindWidgetAnim), Meta = (AllowPrivateAccess = true), Transient)	//직렬화
+    class UWidgetAnimation* Fade;                     //실행될 애니메이션 (투명화)
+
+    UPROPERTY(EditAnywhere, Category = "DamageText")
+    FVector2D InintialScreenLocation;                 //현재 위치
+    
+    UPROPERTY(EditAnywhere, Category = "DamageText")
+    FVector2D FinalScreenLocation;                    //목표 위치
+
+    UPROPERTY(EditAnywhere, Category = "DamageText")
+    float DamageToDisplay;
+  public:
+    void SetInitialSetting (FVector2D &vec, float &name);   //위젯 초기 설정
+  ```
+  ```c++
+  //AttackFunction.h
+  private:
+  	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "HUD")
+    FVector2D DamageTextVec;                                      //DamageText 생성 위치
+
+    UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "HUD")
+    class UDamageTextWidget* DamageWidget;
+  public:
+  	UFUNCTION()
+  	void SpawnDamageText(FVector WorldLocation, float Damage, TSubclassOf<UDamageTextWidget> DamageTextWidget, AController* DisplayController);
+  ```
+  </details>
+
+---
+## <h1>균형</h1>
+  - <img src="Image/Docs/Balance.gif" height="300" title="Balance">
+  - 설명 : 하단에 뜨는 보라색 바가 플레이어의 균형(Balance)이고, 상단에 뜨는 파란색 바가 적의 균형.
+  - '세키로'에 존재하는 균형시스템을 구현한 것으로 피격이 중첩되어 균형이 무너지면 액터는 일정 시간 동안 기절
+### __작업 내용__
+- __클래스명__ : MainPlayer클래스
+  - 설명 : 공격을 막거나 피해를 받을 시 균형(Balance)가 흐트러지며 일정량 도달하면 기절
+  - Player는 enum 클래스의 EMovementStatus에 EMS_Faint라는 기절 상태가 있는데 Lookup(),Turn()메서드에서 회전을 금지하였고, IsCanMove()메서드에도 조건을 추가하여 움직임을 금지.
+  - 피격 시 균형이 흐트러지고, 일정량에 도달하면 BrokenBalance()메서드를 통해 기절 상태로 변경하고, 타이머를 활용하여 1.5초뒤에 RecoverBalance()메서드를 사용하여 기절 상태를 복구
+  - 만약 일정량에 도달하지 않았다면 위와 비슷하세 타이머와 람다식을 사용하여 SetDecreaseBalance(true)로 균형을 되찾으며 계속해서 데미지를 받는다면 균형이 회복되지 않는다.
+  - Enemy클래스에는 bool 타입인 bIsFainted을 추가하여 BTTask_Faint노드 실행
+
+- __클래스명__ : Balance클래스
+  - 균형을 담당하는 클래스로 BalancePercent()메서드는 TickComponent내에서 호출되며 외부에 의해 bIsDecreaseBalance가 True로 전환된다면 균형을 점차 회복
+
+### __호출 방식__
+  - 플레이어나 적이 피격 시 TakeDamage()메서드 내에서 호출
+
+    <details><summary>Cpp File</summary> 
+
+    ```c++
+    //MainPlayer.cpp
+    float AMainPlayer::TakeDamage(float DamageAmount, struct FDamageEvent const& DamageEvent, class AController* EventInstigator, AActor* DamageCauser) {
+      ...
+      /** Active Shield */
+      if (GetCombatStatus() == ECombatStatus::ECS_Blocking) {
+        if (IsBlockingSuccess(DamageCauser)) {
+          Balance->SetCurrentBalance(10.f);
+          return 0;
+        }
+      }
+      ...
+      /** Balance */
+      Balance->SetCurrentBalance(20.f);
+      Balance->SetDecreaseBalance(false);
+      if (Balance->GetCurrentBalance() >= 100.f) {
+        /** 균형이 무너지며 상태 변경 */
+        BrokenBalance();
+        return DamageAmount;
+      }
+      else {
+        /** DecreaseBalanceTime동안 다시 피격되지 않는다면 Balance를 회복 */
+        GetWorldTimerManager().ClearTimer(BalanceHandle);
+        GetWorldTimerManager().SetTimer(BalanceHandle, FTimerDelegate::CreateLambda([&] { Balance->SetDecreaseBalance(true);}), DecreaseBalanceTime, false);
+      }
+      SetBalanceRatio();
+      ...
+    }
+    ```
+    </details>
+
+### __참조 코드__
+
+  <details><summary>Cpp File</summary> 
+
+  ```c++
+  //Balance.cpp
+  void UBalance::TickComponent(float DeltaTime, ELevelTick TickType, FActorComponentTickFunction* ThisTickFunction){
+    Super::TickComponent(DeltaTime, TickType, ThisTickFunction);
+    BalancePercent(); //Balance를 점차 회복
+  }
+
+  void UBalance::BalancePercent() {
+    if (bIsDecreaseBalance && Currentbalance > 0.f) {
+      Currentbalance -= 0.1f;
+      if (Currentbalance < 0.f) Currentbalance = 0.f;
+    }
+    BalanceRatio = Currentbalance / Maxbalance;
+  }
+  ```
+  ```c++
+  //MainPlayer.cpp
+  void AMainPlayer::SetBalanceRatio() {
+    if (Balance->GetCurrentBalance() > 0.f) {
+      PlayerController->SetPlayerBalance();
+    }
+  }
+  void AMainPlayer::BrokenBalance() {
+    /** 상태 변경 및 RecoverBalance()메서드 타이머로 호출 */
+    Balance->SetCurrentBalance(-100.f);
+    SetMovementStatus(EMovementStatus::EMS_Faint); 
+    GetWorldTimerManager().ClearTimer(BalanceHandle);
+    GetWorldTimerManager().SetTimer(BalanceHandle, this, &AMainPlayer::RecoverBalance , 1.5f, false);
+    
+    /** Play Animation */
+    if(!FaintMontage) return;
+    AnimInstance->Montage_Play(FaintMontage);
+    AnimInstance->Montage_JumpToSection("Faint", FaintMontage);
+  }
+  void AMainPlayer::RecoverBalance() {
+    /** 상태 복구 */
+    if(GetMovementStatus() != EMovementStatus::EMS_Faint) return;
+    AnimInstance->Montage_Stop(0.1f);
+    SetMovementStatus(EMovementStatus::EMS_Normal);
+  }
+  ```
+  </details>
+  <details><summary>Header File</summary> 
+
+  ```c++
+  //Balance.h
+  private:
+    UPROPERTY(VisibleAnywhere, Category = "BALANCE")
+    float Currentbalance;
+
+    UPROPERTY(VisibleAnywhere, Category = "BALANCE")
+    float Maxbalance;
+
+    UPROPERTY(VisibleAnywhere, Category = "BALANCE")
+    float BalanceRatio;
+
+    UPROPERTY(VisibleAnywhere, Category = "BALANCE")
+    bool bIsDecreaseBalance;
+
+  public:
+    UFUNCTION()
+    void BalancePercent();
+
+    FORCEINLINE float GetMaxBalance() { return Maxbalance; }
+    FORCEINLINE float GetCurrentBalance() { return Currentbalance; }
+    FORCEINLINE float GetBalanceRatio() { return BalanceRatio; }
+    FORCEINLINE void SetBalanceRatio(float value) { BalanceRatio = value; }
+    FORCEINLINE void SetCurrentBalance(float value) { Currentbalance += value; }
+    FORCEINLINE void SetDecreaseBalance(bool value) { bIsDecreaseBalance = value; }
+  ```
+  ```c++
+  //MainPlayer.h
+  private:
+    class UBalance* Balance;
+    FTimerHandle BalanceHandle;
+    float DecreaseBalanceTime;
+  public:
+    void SetBalanceRatio();       //현재 Balance값을 계산
+    void BrokenBalance();         //균형이 무너진 후 기절을 표현
+    void RecoverBalance();        //기절 후 1.5초 뒤 실행되는 메서드
+
+    FORCEINLINE UBalance* GetBalance() { return Balance; }
+  ```
+  </details>
+
+---
+## <h1>아이템과의 상호 작용</h1>
   - <img src="Image/Docs/Interactive.gif" height="300" title="Interactive">
   - 설명 : 플레이어가 아이템과 상호작용하는 로직으로 Item클래스에 Overlap로직 구현
 ### __작업 내용__
@@ -362,420 +1244,7 @@ TurnInPlace, 무기장착 로직, 공격 판정2가지, 콤보, 방패, SkillFun
   </details>
 
 ---
-## __4. 공격판정 (무기)__
-  - <img src="Image/Docs/Attack_1.gif" height="300" title="Attack_1">
-  - <img src="Image/Docs/Attack_1_Notify.png" height="300" title="Attack_1_Notify">
-  - 설명 : 플레이어가 무기를 장착하고 하는 무기의 콜리전을 활용한 공격 판정 방법
-### __작업 내용__
-- __클래스명__ : AttackWeapon클래스
-  - 설명 : AttackWeapon의 CapsuleComponent 콜리전을 On/Off하는 방식으로 Overlap되면 피격 판정
-  - On/OffWeaponCollision()메서드를 애니메이션 노티파이에서 호출하여 Weapon의 콜리전을 비/활성화 
-  - 필요한 정보를 무기를 착용할때 ItemEquip()메서드에서 SetAttackInit()메서드에서 넘겨 사용
-  - 무기를 한번 휘두를 때 중첩되어 2번 이상 피해를 받는 오류가 발생할 수 있기에 공격 시 “공격자의 이름 + 무기의 이름 + 카운트 번호”로 CurrentAttack을 설정. 
-  - AttakCnt를 매 차례 증가하여 위 로직에 도움이 되도록 설정 (MainPlayer의 Get/SetAttackCnt()메서드)
-    ```c++
-    void AMainPlayer::SetAttackCnt() {
-      AttackCnt++;
-      if(AttackCnt > 10) AttackCnt = 0;
-    }
-    ```
-  - Enemy클래스의 CurrentAttack이름과 LastAttack이름을 비교하여 다를 시 TakeDamage()메서드 실행
-
-### __호출 방식__
-  - 사용자가 무기를 장착하고 마우스 왼쪽 버튼 클릭 시 호출 시 LMBDown()메서드 호출
-
-### __참조 코드__
-
-  <details><summary>Cpp File</summary> 
-
-  ```c++
-  //AttackWeapon.cpp
-  /** AttackCollision의 Active여부 */
-  void AAttackWeapon::SetAttackCollision(bool value) {	
-    if(!value) AttackCollision->SetCollisionEnabled(ECollisionEnabled::NoCollision);
-    else AttackCollision->SetCollisionEnabled(ECollisionEnabled::QueryOnly);
-  }
-  void AAttackWeapon::OnAttackOverlap(UPrimitiveComponent* OverlappedComponent, AActor* OtherActor, UPrimitiveComponent* OtherComp, int32 OtherBodyIndex, bool bFromSweep, const FHitResult& SweepResult) {
-    if (OtherActor) {
-      AEnemy* Enemy = Cast<AEnemy>(OtherActor);
-      AMainPlayer* Player = Cast<AMainPlayer>(AtOwner);
-      ABoss_Enemy* BEnemy = Cast<ABoss_Enemy>(Enemy);
-      if (BEnemy) Player->GetPlayerController()->SetBalanceTarget(BEnemy);  //보스인 경우 Balance를 띄움
-      if (Enemy) {  /** 적의 CurrentAttack정보를 갱신하고 ApplyDamage()메서드로 피격 처리 */
-        Enemy->SetCurrentAttack(AtOwner->GetName() + this->GetName() + FString::FromInt(Player->GetAttackCnt()));
-        UGameplayStatics::ApplyDamage(Enemy, Damage, AtController, AtOwner, AtDamageType);
-      }
-    }
-  }
-  ```
-  ```c++
-  //Enemy.cpp
-  float AEnemy::TakeDamage(float DamageAmount, struct FDamageEvent const& DamageEvent, class AController* EventInstigator, AActor* DamageCauser) {
-    if(CurrentHealth <= 0) return 0;
-    else if (LastAttack != CurrentAttack ) LastAttack = CurrentAttack;      /** 마지막 피격과 최근 피격정보가 다른 경우 LastAttack을 갱신하고 피격처리 */
-    else if (DamageEvent.DamageTypeClass != InternalDamageType) return 0;
-    else return 0;
-    ....
-  }
-  ```
-  </details>
-  <details><summary>Header File</summary> 
-
-  ```c++
-  //AttackWeapon.h
-  private:
-  	UPROPERTY(EditAnywhere, Category = "Weapon", Meta = (AllowPrivateAccess = true))
-	  UCapsuleComponent* AttackCollision;
-  public:
-  	UFUNCTION()
-    void OnAttackOverlap(UPrimitiveComponent* OverlappedComponent, AActor* OtherActor, UPrimitiveComponent* OtherComp, int32 OtherBodyIndex, bool bFromSweep, const FHitResult& SweepResult);
-    
-    void SetAttackCollision(bool value);
-  ```
-  ```c++
-  //Enemy.h
-  private:
-    UPROPERTY(VisibleAnywhere, Category = "Attack", Meta = (AllowPrivateAccess = true))
-    FString LastAttack = "";    /** 마지막 피격 정보 */
-
-    UPROPERTY(VisibleAnywhere, Category = "Attack", Meta = (AllowPrivateAccess = true))
-    FString CurrentAttack = "";  /** 지금 피격 정보 */
-  public:
-	  FORCEINLINE void SetCurrentAttack(FString Value) { CurrentAttack = Value; }
-  ```
-  </details>
-
----
-## __5. 공격판정 (내적)__
-  - <img src="Image/Docs/Attack_2.gif" height="300" title="Attack_2">
-  - <img src="Image/Docs/Attack_2_Notify.png" height="300" title="Attack_2_Notify">
-  - <img src="Image/Docs/TraceChannel.png" height="300" title="TraceChannel">
-  - 설명 : 기존 무기의 콜리전 방식이 아닌 트레이스 채널과 내적을 사용한 공격 방식
-### __작업 내용__
-- __클래스명__ : AttackFunction클래스
-  - 설명 : SkillAttackStart()메서드에서 공격 판정을 진행
-  - AttackFunction클래스에 공격메서드를 추상화하여 구상
-  - SetOwner()메서드를 통해서 계산에 필요한 정보를 미리 넘긴다. 이는 클래스를 사용할 모든 객체에서 PossessedBy()에서 반드시 호출해야만함.
-  - 트레이스채널, ECollisionChannel의 타입 Player일때는 2번(Enemy), Enemy일때는 1번(Player) 채널로 선언하고 __UKismetSystemLibrary::SphereOverlapActors()메서드를__ 사용하여 소유자 주변을 채널과 일치하는 타입의 액터를 찾아 두 액터 간 내적의 크기가 일정 범위내라면 피격처리
-  - 이때 찾아낼 액터를 저장할 배열(OutActors), 트레이스 채널번호(TraceObjectTypes), 클래스(SeekClass)이 필요하고 무시할 액터를 저장한 배열(IgnoreActors)이 필요하며, 배열은 모두 Array를 사용
-  - 위의 그림처럼 내적의 크기를 기준으로 피격을 판단하며 __장점은 공격타입에 따라 범위를 지정할 수 있다는 점이다.__
-
-### __호출 방식__
-  - BTTask_Attack()메서드에 의해 Attack()이 호출되며 이는 애니메이션 노티파이를 실행하고, 특정 타이밍에 AttackStart_Internal()메서드가 실행.
-  - 적과 플레이어 모두 사용가능 하지만 적의 공격 방식은 이 내적 방식으로만 구현
-
-### __참조 코드__
-
-  <details><summary>Cpp File</summary> 
-
-  ```c++
-  //AttackFunction.cpp
-  void UAttackFunction::SetOwner(USkeletalMeshComponent* TakeMesh,AController* TakeController) {
-    Owner = GetOwner();
-    Mesh = TakeMesh;
-    Controller = TakeController;
-  }
-  void UAttackFunction::SkillAttackStart(TSubclassOf<UDamageType> DamageType,FString OwnerType, UParticleSystem* HitParticle,float AttackRange,float Damage, int AttackCnt){
-    TArray<TEnumAsByte<EObjectTypeQuery>> TraceObjectTypes;
-    UClass* SeekClass = nullptr;		//찾아낼 클래스
-    TArray<AActor*> OutActors;			//찾아낼 액터들
-    TArray<AActor*> IgnoreActors;		//무시할 액터들
-    IgnoreActors.Init(Owner, 1);
-
-    /** 찾아낼 클래스와 트레이스 채널 지정 */
-    if (Type == "Player") {
-      TraceObjectTypes.Add(UEngineTypes::ConvertToObjectType(ECollisionChannel::ECC_GameTraceChannel2));
-      SeekClass = AEnemy::StaticClass();
-    }
-    else if (Type == "Enemy") {
-      TraceObjectTypes.Add(UEngineTypes::ConvertToObjectType(ECollisionChannel::ECC_GameTraceChannel1));
-      SeekClass = AMainPlayer::StaticClass();
-    }
-
-    /** 원하는 액터가 감지되었다면 True를 반환 */
-    bool bResult = UKismetSystemLibrary::SphereOverlapActors(GetWorld(), Owner->GetActorLocation(), AttackRange, TraceObjectTypes, SeekClass, IgnoreActors, OutActors);
-
-    FColor DrawColor = FColor::Red;
-    if (bResult) {
-      for (auto& HitActor : OutActors) {
-        
-        /** 내적 판단 */
-        float Inner = Owner->GetDotProductTo(HitActor);	
-        if (Inner > 0.3f) {
-          if (Type == "Player") {
-            auto EHited = Cast<AEnemy>(HitActor);
-            EHited->SetCurrentAttack(Owner->GetName() + EHited->GetName() + FString::FromInt(AttackCnt));
-            if (EHited) UGameplayStatics::ApplyDamage(EHited, Damage, Controller, Owner, DamageType);
-          }
-          else if (Type == "Enemy") {
-            auto MHited = Cast<AMainPlayer>(HitActor);
-            MHited->SetCurrentAttack(Owner->GetName() + MHited->GetName() + FString::FromInt(AttackCnt));
-            if (MHited) UGameplayStatics::ApplyDamage(MHited, Damage, Controller, Owner, DamageType);
-          }
-          DrawColor = FColor::Green;
-        }
-      }
-    }
-
-    /** 피격 판정 시각화 용도 */
-    DrawDebugSphere(GetWorld(), Owner->GetActorLocation(), AttackRange, 12, DrawColor, false, 0.5f);
-  }
-  ```
-  ```c++
-  //Enemy.cpp
-  void AEnemy::AttackStart_Internal() {
-    FString Type = "Enemy";
-    /** 트레이스채널을 사용한 공격 호출 */
-    AttackFunction->SkillAttackStart(InternalDamageType, Type, GetHitParticle(),GetAttackRange(), AttackDamage, AttackCnt);
-
-    AttackCnt++;
-    if (AttackCnt > 2) AttackCnt = 0;
-  }
-  ```
-  </details>
-  <details><summary>Header File</summary> 
-
-  ```c++
-  //AttackFunction.h
-  UCLASS(ClassGroup = (Custom), meta = (BlueprintSpawnableComponent))
-  class COMBATARENA_API UAttackFunction : public UActorComponent{
-  protected:
-    UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "AttackFunction | Owner")
-    class AActor* Owner;
-    
-    UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "AttackFunction | Owner")
-    class AController* Controller;
-
-    UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "AttackFunction | Owner")
-    class USkeletalMeshComponent* Mesh;
-
-  public:
-    UFUNCTION()
-    void SetOwner(USkeletalMeshComponent* TakeMesh, AController* TakeController);
-
-    UFUNCTION(BlueprintCallable)
-    virtual void SkillAttackStart(TSubclassOf<UDamageType> DamageType, FString OwnerType, UParticleSystem* HitParticle, float AttackRange, float Damage, int AttackCnt);
-  }
-  ```
-  ```c++
-  //Enemy.h
-  private:
-    class UEnemyAttackFunction* AttackFunction;
-  ```
-  </details>
-
----
-## __6. 콤보 구현__
-  - <img src="Image/Docs/Combo.gif" height="300" title="Combo">
-  - <img src="Image/Docs/Combo_Anim.png" height="300" title="Combo_Anim">
-  - 설명 : 연속공격을 구현한 로직
-### __작업 내용__
-- __함수명__ : AttackInputCheck()메서드
-  - 연속 공격을 체크(AttackCheck)하는 노티파이를 MainPlayer클래스의 AttackInputCheck()와 연결
-  - 그 시점에 AttackInputCheck()메서드가 실행되는데 이때 만약 bIsAttackCheck, 즉 공격이 가능하다면 콤보카운트를 증가 시키고 Attack()메서드 실행
-  - Attack()메서드에서 기존 몽타주가 실행되고 있기다면 끊고 다음 몽타주를 실행 
-  - GetAttackMontageSection(int32 Section)에서는 입력번호에 따라 FName이 반환되는데 이를 사용하여 콤보 몽타주를 1씩 증가하여 사용
-  - 초기 설정시 콤보의 개수를 정하는 ComboMaxCount를 설정해줘야 하고, 반드시 공격 노티파이의 이름은 Attack으로 시작하며 시작번호는 0이다.
-
-### __호출 방식__
-  - 애니메이션 진행 중 노티파이에 의한 AttackInputCheck() 호출
-
-### __참조 코드__
-
-  <details><summary>Cpp File</summary> 
-
-  ```c++
-  //MainPlayer.cpp
-  void AMainPlayer::Attack(bool bIsSpecial) {
-    ...
-    else if (AnimInstance && PlayMontage)	
-    { 
-      /** 기존 PlayMontage 애니메이션이 실행되지 않고 있을때 */
-      if (!AnimInstance->Montage_IsPlaying(PlayMontage)) {
-        AnimInstance->Montage_Play(PlayMontage);
-        ComboCnt = 0;
-      }
-      /** 기존 PlayMontage 애니메이션이 실행 중일때 */
-      else {													
-        AnimInstance->Montage_Play(PlayMontage);
-        AnimInstance->Montage_JumpToSection(GetAttackMontageSection("Attack", ComboCnt), PlayMontage);
-      }
-    }
-  }
-  void AMainPlayer::AttackInputCheck() {
-    if (bIsAttackCheck) {
-      ComboCnt++;
-      if (ComboCnt >= ComboMaxCnt) ComboCnt = 0;
-      bIsAttackCheck = false;
-      Attack();
-    }
-  }
-  /** 타입에 따른 다음 공격 모션을 반환 */
-  FName AMainPlayer::GetAttackMontageSection(FString Type, int32 Section) {
-    if (Type == "Attack") return FName(*FString::Printf(TEXT("Attack%d"), Section));
-    else if (Type == "Dodge") return FName(*FString::Printf(TEXT("Dodge%d"), Section));
-    else return "Error";
-  }
-  ```
-  </details>
-  <details><summary>Header File</summary> 
-
-  ```c++
-  //MainPlayer.h
-  private:
-	  bool bIsAttackCheck;  //콤보 체크 관련 변수
-  public:
-  	UFUNCTION(BlueprintCallable)
-	  void AttackInputCheck();
-
-  	void Attack(bool bIsSpecial = false);
-	  FName GetAttackMontageSection(FString Type, int32 Section);
-  ```
-  </details>
-
----
-## __7. 균형__
-  - <img src="Image/Docs/Balance.gif" height="300" title="Balance">
-  - 설명 : 하단에 뜨는 보라색 바가 플레이어의 균형(Balance)이고, 상단에 뜨는 파란색 바가 적의 균형.
-  - '세키로'에 존재하는 균형시스템을 구현한 것으로 피격이 중첩되어 균형이 무너지면 액터는 일정 시간 동안 기절
-### __작업 내용__
-- __클래스명__ : MainPlayer클래스
-  - 설명 : 공격을 막거나 피해를 받을 시 균형(Balance)가 흐트러지며 일정량 도달하면 기절
-  - Player는 enum 클래스의 EMovementStatus에 EMS_Faint라는 기절 상태가 있는데 Lookup(),Turn()메서드에서 회전을 금지하였고, IsCanMove()메서드에도 조건을 추가하여 움직임을 금지.
-  - 피격 시 균형이 흐트러지고, 일정량에 도달하면 BrokenBalance()메서드를 통해 기절 상태로 변경하고, 타이머를 활용하여 1.5초뒤에 RecoverBalance()메서드를 사용하여 기절 상태를 복구
-  - 만약 일정량에 도달하지 않았다면 위와 비슷하세 타이머와 람다식을 사용하여 SetDecreaseBalance(true)로 균형을 되찾으며 계속해서 데미지를 받는다면 균형이 회복되지 않는다.
-  - Enemy클래스에는 bool 타입인 bIsFainted을 추가하여 BTTask_Faint노드 실행
-
-- __클래스명__ : Balance클래스
-  - 균형을 담당하는 클래스로 BalancePercent()메서드는 TickComponent내에서 호출되며 외부에 의해 bIsDecreaseBalance가 True로 전환된다면 균형을 점차 회복
-
-### __호출 방식__
-  - 플레이어나 적이 피격 시 TakeDamage()메서드 내에서 호출
-
-    <details><summary>Cpp File</summary> 
-
-    ```c++
-    //MainPlayer.cpp
-    float AMainPlayer::TakeDamage(float DamageAmount, struct FDamageEvent const& DamageEvent, class AController* EventInstigator, AActor* DamageCauser) {
-      ...
-      /** Active Shield */
-      if (GetCombatStatus() == ECombatStatus::ECS_Blocking) {
-        if (IsBlockingSuccess(DamageCauser)) {
-          Balance->SetCurrentBalance(10.f);
-          return 0;
-        }
-      }
-      ...
-      /** Balance */
-      Balance->SetCurrentBalance(20.f);
-      Balance->SetDecreaseBalance(false);
-      if (Balance->GetCurrentBalance() >= 100.f) {
-        /** 균형이 무너지며 상태 변경 */
-        BrokenBalance();
-        return DamageAmount;
-      }
-      else {
-        /** DecreaseBalanceTime동안 다시 피격되지 않는다면 Balance를 회복 */
-        GetWorldTimerManager().ClearTimer(BalanceHandle);
-        GetWorldTimerManager().SetTimer(BalanceHandle, FTimerDelegate::CreateLambda([&] { Balance->SetDecreaseBalance(true);}), DecreaseBalanceTime, false);
-      }
-      SetBalanceRatio();
-      ...
-    }
-    ```
-    </details>
-
-### __참조 코드__
-
-  <details><summary>Cpp File</summary> 
-
-  ```c++
-  //Balance.cpp
-  void UBalance::TickComponent(float DeltaTime, ELevelTick TickType, FActorComponentTickFunction* ThisTickFunction){
-    Super::TickComponent(DeltaTime, TickType, ThisTickFunction);
-    BalancePercent(); //Balance를 점차 회복
-  }
-
-  void UBalance::BalancePercent() {
-    if (bIsDecreaseBalance && Currentbalance > 0.f) {
-      Currentbalance -= 0.1f;
-      if (Currentbalance < 0.f) Currentbalance = 0.f;
-    }
-    BalanceRatio = Currentbalance / Maxbalance;
-  }
-  ```
-  ```c++
-  //MainPlayer.cpp
-  void AMainPlayer::SetBalanceRatio() {
-    if (Balance->GetCurrentBalance() > 0.f) {
-      PlayerController->SetPlayerBalance();
-    }
-  }
-  void AMainPlayer::BrokenBalance() {
-    /** 상태 변경 및 RecoverBalance()메서드 타이머로 호출 */
-    Balance->SetCurrentBalance(-100.f);
-    SetMovementStatus(EMovementStatus::EMS_Faint); 
-    GetWorldTimerManager().ClearTimer(BalanceHandle);
-    GetWorldTimerManager().SetTimer(BalanceHandle, this, &AMainPlayer::RecoverBalance , 1.5f, false);
-    
-    /** Play Animation */
-    if(!FaintMontage) return;
-    AnimInstance->Montage_Play(FaintMontage);
-    AnimInstance->Montage_JumpToSection("Faint", FaintMontage);
-  }
-  void AMainPlayer::RecoverBalance() {
-    /** 상태 복구 */
-    if(GetMovementStatus() != EMovementStatus::EMS_Faint) return;
-    AnimInstance->Montage_Stop(0.1f);
-    SetMovementStatus(EMovementStatus::EMS_Normal);
-  }
-  ```
-  </details>
-  <details><summary>Header File</summary> 
-
-  ```c++
-  //Balance.h
-  private:
-    UPROPERTY(VisibleAnywhere, Category = "BALANCE")
-    float Currentbalance;
-
-    UPROPERTY(VisibleAnywhere, Category = "BALANCE")
-    float Maxbalance;
-
-    UPROPERTY(VisibleAnywhere, Category = "BALANCE")
-    float BalanceRatio;
-
-    UPROPERTY(VisibleAnywhere, Category = "BALANCE")
-    bool bIsDecreaseBalance;
-
-  public:
-    UFUNCTION()
-    void BalancePercent();
-
-    FORCEINLINE float GetMaxBalance() { return Maxbalance; }
-    FORCEINLINE float GetCurrentBalance() { return Currentbalance; }
-    FORCEINLINE float GetBalanceRatio() { return BalanceRatio; }
-    FORCEINLINE void SetBalanceRatio(float value) { BalanceRatio = value; }
-    FORCEINLINE void SetCurrentBalance(float value) { Currentbalance += value; }
-    FORCEINLINE void SetDecreaseBalance(bool value) { bIsDecreaseBalance = value; }
-  ```
-  ```c++
-  //MainPlayer.h
-  private:
-    class UBalance* Balance;
-    FTimerHandle BalanceHandle;
-    float DecreaseBalanceTime;
-  public:
-    void SetBalanceRatio();       //현재 Balance값을 계산
-    void BrokenBalance();         //균형이 무너진 후 기절을 표현
-    void RecoverBalance();        //기절 후 1.5초 뒤 실행되는 메서드
-
-    FORCEINLINE UBalance* GetBalance() { return Balance; }
-  ```
-  </details>
-
----
-## __8. 특정 공격__
+## <h1>특정 공격</h1>
   - <img src="Image/Docs/EnemyFainted.gif" height="300" title="EnemyFainted">
   - 설명 : 적의 균형이 무너졌을때 E를 사용하여 특별한 공격을 진행
 ### __작업 내용__
@@ -839,369 +1308,7 @@ TurnInPlace, 무기장착 로직, 공격 판정2가지, 콤보, 방패, SkillFun
   </details>
 
 ---
-## __9. 연막탄__
-  - <img src="Image/Docs/IsInFog_Enemy.gif" height="300" title="IsInFog_Enemy">
-  - <img src="Image/Docs/IsInFog_Player.gif" height="300" title="IsInFog_Player">
-  - 설명 : 연막안에 들어가면 플레이어의 시점은 흐려지고, 적은 방황하는 로직
-### __작업 내용__
-- __클래스명__ : Grenade클래스
-  - Grenade클래스의 SetFire()는 Player가 클릭하여 던질때 활성화되며 이때 SimulationEnabled가 활성화되어 Projectile을 사용한다. (Projectile : 발사체를 사용할때 추가하는 컴포넌트로 일시적인 힘을 제공)
-  - 던지고 일정 시간 후에 SpawnSmoke()메서드가 활성화되어 연기가 생성되고, 일정 시간 후에 IsGrowing이 True가 되어 Tick마다 연막의 범위가 넓어지다가 소멸된다.
-  - 3번 키를 누르면 EMovementStatus를 Throwing로 변경하고 오른쪽 손에 Grenade를 인스턴스화 하고 다시 누르면 삭제하며, 이때 마우스 왼쪽 클릭 시 던진다.
-  - 적 중첩 시 : 
-    - TaskNode클래스인 UBTTask_IsInFog클래스는 Enemy가 Grenade에 영향을 받는다면 실행하는 로직 생성.
-    - Enemy클래스의 De/ActiveFogEvent()메서드를 통해 애니메이션의 실행
-  - 플레이어 중첩 시 :
-    - MainController클래스와 연관되어 SetFogSplatter()메서드를 통해 위젯의 Visibility를 On/Off 하는 형식
-
-### __호출 방식__
-  - MainPlayer클래스의 Throw/StartThrow/Throwing/EndThrow()메서드에서 진행. (코드 생략)
-
-### __참조 코드__
-
-  <details><summary>Cpp File</summary> 
-
-  ```c++
-  //Grenade.cpp
-  void AGrenade::Tick(float DeltaTime){
-    Super::Tick(DeltaTime);
-
-    /** 조건 만족 시 연막의 범위 증가 */
-    if (isGrowing && Smoke) {
-      float Csize = Collision->GetUnscaledSphereRadius();
-      Csize += (DeltaTime * 100.0f);
-      Collision->SetSphereRadius(Csize);
-
-      FVector temp = Smoke->GetRelativeScale3D();
-      temp += FVector(DeltaTime * 0.3f);
-      Smoke->SetRelativeScale3D(temp);
-      SmokeTime -= DeltaTime;
-
-      /** 일정 범위 초과 및 시간 소요 시 파괴*/
-      if(Csize > 700.f && SmokeTime <= 0) {
-        isGrowing = false;
-        GetWorldTimerManager().ClearTimer(SpawnSmokeHandle);
-        GetWorldTimerManager().SetTimer(SpawnSmokeHandle, this, &AGrenade::DestorySmoke, SpawnSmokeTime, false);
-      }
-    }
-  }
-  void AGrenade::SetFire(FRotator Rot) {
-    /** 플레이어로부터 Detach하고 방향 나아갈 방향 지정 */
-    DetachFromActor(FDetachmentTransformRules::KeepWorldTransform);
-    SetActorLocation(GetActorLocation());
-    
-    /** 회전과 Projectile을 사용한 발사 */
-    Mesh->SetRelativeRotation(Rot);
-    Projectile->SetVelocityInLocalSpace(FVector::ForwardVector * 8000);
-    Projectile->Activate();
-
-    /** SpawnSmokeTime 이후 연기 생성 */
-    GetWorldTimerManager().SetTimer(SpawnSmokeHandle, this, &AGrenade::SpawnSmoke, SpawnSmokeTime, false);
-  }
-  void AGrenade::SpawnSmoke() {
-    /** 연기 생성 */
-    if(Smoke) {
-      Collision->SetCollisionEnabled(ECollisionEnabled::QueryOnly);
-      Smoke->SetVisibility(true);
-      GetWorldTimerManager().ClearTimer(SpawnSmokeHandle);
-      GetWorldTimerManager().SetTimer(SpawnSmokeHandle, this, &AGrenade::GrowingSmoke, SpawnSmokeTime, false);
-    }
-  }
-  void AGrenade::OnOverlapBegin(UPrimitiveComponent* OverlappedComponent, AActor* OtherActor, UPrimitiveComponent* OtherComp, int32 OtherBodyIndex, bool bFromSweep, const FHitResult& SweepResult) {
-    if (OtherActor) {
-      AMainPlayer* Player = Cast<AMainPlayer>(OtherActor);
-      AEnemy* Enemy = Cast<AEnemy>(OtherActor);
-      if (Player) Player->SetFogSplatter();                 //플레이어의 시야 방해
-      if (Enemy) Enemy->SetVisibleInFog(true, SmokeTime);   //적의 방황 애니메이션 실행 (SmokeTime동안)
-    }
-  }
-  ```
-  ```c++
-  //MainPlayer.cpp
-  void AMainPlayer::SetFogSplatter() {
-    (PlayerController->GetFogSplatterVisible()) ? PlayerController->RemoveFogSplatter() : PlayerController->DisplayFogSplatter();
-  }
-  ```
-  </details>
-  <details><summary>Header File</summary> 
-
-  ```c++
-  //Grenade.h
-  private:
-    UPROPERTY(EditAnywhere, Category = "Grenade | Mesh", Meta = (AllowPrivateAccess = true))
-    class UProjectileMovementComponent* Projectile;
-
-    UPROPERTY(EditAnywhere, Category = "Grenade | Smoke", Meta = (AllowPrivateAccess = true))
-    class UParticleSystemComponent* Smoke;
-
-    bool isGrowing = false;
-  public:
-    void SpawnSmoke();
-    void DestorySmoke();
-    void SetFire(FRotator Rot);
-  ```
-  ```c++
-  //MainPlayer.h
-    void SetFogSplatter();	
-  ```
-  </details>
-
----
-## __10. 활과 화살__
-  - <img src="Image/Docs/Bow_Arrow.gif" height="300" title="Bow_Arrow">
-  - <img src="Image/Docs/Bow_ChargeAmount.png" height="300" title="Bow_ChargeAmount">
-  - 설명 : 공격 무기 중 하나로 활을 사용하여 화살을 발사한다. 위의 그림은 BowWeapon클래스의 Begin/EndCharge를 연장한 블루프린트 구조이다. 
-### __작업 내용__
-- __클래스명__ : BowWeapon 
-  - Eqiup 방식은 기존 Weapon과 동일한 방식으로 진행되고 양손 무기이다.
-  - enum타입인 EBowStatus를 제작하여 당기는 중인지 상태를 구분
-  - Begin/EndCharge_Implementation()메서드와 TimeLine을 사용하여 ChargeAmount의 크기에 따라 활시위 애니메이션 진행 (블루프린트와 연계하기 위해 메서드를 BlueprintCallable로 설정) 
-  - Fire()메서드는 화살을 발사하는 메서드로 Arrow클래스의 Fire를 ChargeAmount를 힘으로 하여 발사
-  - Reload()메서드는 Arrow를 "arrow_attach_socket"의 소켓에 Attach하여 활시위 당길 때 같이 이동
-
-- __클래스명__ : Arrow
-  - 화살의 상태를 나타내기 위해서 enum타입인 EArrowStatus를 제작하여 상태를 구분. 
-  - Fire() 는 활의 ChargeAmount를 받아 FirePower값을 설정. 이 값을 Lerp()를 사용하여 화살을 AddImpulse하여 발사한다. 또한 DetachFromActor()를 사용하여 사용자로 부터 해제하고 KeepWorldTransform으로 전환하고, 상태 또한 InArrow로 변환. 
-  - Arrow클래스에서 Overlap을 위해 SphereComponent를 추가하고 Overlap시 피격처리 (이전 피격처리와 동일) 
-  - 발사 시 Collsion의 이름은 Arrow로 설정하여 바꾸고 발사. (기존과 동일) 
-  - Projectile로 제작할 수 있지만 학습을 위해서 AddImpulse로 진행
-
-### __호출 방식__
-  - MainPlayer클래스의 Begin/EndCharge()메서드를 마우스 오른쪽 클릭을 통해 호출되며 이때 Bow클래스의 Reload(), BeginCharge()가 호출되고 상태 변경 및 카메라를 스위칭한다.
-  - 또한 LMBDown()메서드에서 현재 WeaponPos가 Bow라면 Bow클래스의 Fire()메서드 호출되면 화살을 발사
-
-### __참조 코드__
-
-  <details><summary>Cpp File</summary> 
-
-  ```c++
-  //BowWeapon.cpp
-  void ABowWeapon::BeginCharge_Implementation() {
-    if(!Arrow) return;
-    if(DrowSound != nullptr) UGameplayStatics::PlaySound2D(this, DrowSound);
-  }
-  void ABowWeapon::EndCharge_Implementation() {
-    if (Arrow) {
-      Arrow->Destroy();
-      Arrow = nullptr;
-    }
-  }
-  void ABowWeapon::Fire(int Cnt) {
-    if(!Arrow) return;
-
-    /** 화살의 발사 */
-    Arrow->Fire(ChargeAmount, Cnt);
-    Arrow = nullptr;
-    EndCharge();
-  }
-  void ABowWeapon::Reload() {
-    FActorSpawnParameters SpawnParams;
-    SpawnParams.Owner = this;
-    SpawnParams.Instigator = GetInstigator();
-
-    /** 화살이 현재 없다면 재생성하고 활에 Attach */
-    if (!Arrow) {
-      Arrow = GetWorld()->SpawnActor<AArrow>(ArrowClass, FVector(0.f), FRotator(0.f), SpawnParams);
-      Arrow->AttachToComponent(GetSkeletalMesh(), FAttachmentTransformRules::SnapToTargetNotIncludingScale, FName("arrow_attach_socket"));
-      Arrow->InitalArrow(BowOwner,BowController);
-    }
-  }
-  ```
-  ```c++
-  //Arrow.cpp
-  void AArrow::SetBowState() {
-    switch (ArrowStatus)
-    {
-    case EArrowStatus::EAS_InBow:
-      ArrowCollision->SetCollisionProfileName(FName("NoCollision"));
-      ArrowCollision->SetSimulatePhysics(false);
-      break;
-    case EArrowStatus::EAS_InArrow:
-      ArrowCollision->SetCollisionProfileName(FName("Arrow"));
-      ArrowCollision->SetSimulatePhysics(true);
-      /** 화살의 발사 */
-      if(!bisFire){
-        ArrowCollision->AddImpulse(GetActorForwardVector() * UKismetMathLibrary::Lerp(600, 15000, FirePower));
-        bisFire = true;
-      }
-      break;
-    default:
-      break;
-    }
-  }
-  void AArrow::Fire(float Amount,int Cnt) {
-    /** 활로 부터 Detach하고 상태 변경 */
-    DetachFromActor(FDetachmentTransformRules::KeepWorldTransform);
-    SetArrowStatus(EArrowStatus::EAS_InArrow);
-    FirePower = Amount;
-    this->AttackCnt = Cnt;
-
-    if(ShotSound != nullptr) UGameplayStatics::PlaySound2D(this, ShotSound);
-  }
-  ```
-  </details>
-  <details><summary>Header File</summary> 
-
-  ```c++
-  //BowWeapon.h
-  UENUM(BlueprintType)
-  enum class EBowStatus : uint8 {
-    EBS_Normal		UMETA(DisplayName = "Normal"),
-    EBS_Drawing		UMETA(DisplayName = "Drawing"),
-    EBS_Default		UMETA(DisplayName = "Default")
-  };
-  private:
-    UPROPERTY(EditDefaultsOnly, Category = "Weapon | Bow", Meta = (AllowPrivateAccess = true))
-    class AArrow* Arrow;
-
-    UPROPERTY(EditDefaultsOnly, Category = "Weapon | Bow", Meta = (AllowPrivateAccess = true))
-    TSubclassOf<class AArrow> ArrowClass;
-
-    AActor* BowOwner;
-    AController* BowController;
-  public:
-    UPROPERTY(EditAnyWhere, BlueprintReadWrite, Category = "Arrow")
-    float ChargeAmount;   //활을 당기고 있는 정도 
-
-    UFUNCTION(BlueprintCallable)
-    void SetChargeAmount(float value);
-
-    UFUNCTION(BlueprintNativeEvent, BlueprintCallable)
-    void BeginCharge();
-
-    UFUNCTION(BlueprintNativeEvent, BlueprintCallable)
-    void EndCharge();
-
-    void Fire(int Cnt);   //화살을 발사
-    void Reload();        //화살을 리로드
-  ```
-  ```c++
-  //Arrow.h
-  UENUM(BlueprintType)
-  enum class EArrowStatus : uint8 {
-    EAS_InBow		UMETA(DisplayName = "InBow"),
-    EAS_InArrow		UMETA(DisplayName = "InArrow"),
-    EAS_Destroy		UMETA(DisplayName = "Destroy")
-  };
-  private:
-    UPROPERTY(VisibleAnywhere, BlueprintReadWrite, Category = "Arrow | Physic", Meta = (AllowPrivateAccess = true))
-    class URadialForceComponent* RadiaForce;    //Destructible Mesh에 사용했던 힘컴포넌트, 현재 사용 X
-    
-    UPROPERTY(EditDefaultsOnly, Category = "Arrow | Damage", Meta = (AllowPrivateAccess = true))
-    float Damage = 5.f;
-
-    UPROPERTY(VisibleAnywhere, Category = "Arrow")
-    bool bisFire = false;
-
-    UPROPERTY(VisibleAnywhere, Category = "Arrow")
-    float FirePower;
-
-    UPROPERTY(VisibleAnywhere, Category = "Arrow")
-    EArrowStatus ArrowStatus;
-  public:
-    UFUNCTION()
-    void OnOverlapBegin(UPrimitiveComponent* OverlappedComponent, AActor* OtherActor, UPrimitiveComponent* OtherComp, int32 OtherBodyIndex, bool bFromSweep, const FHitResult& SweepResult);
-    
-    void Fire(float Amount,int Cnt);            //화살의 발사로 상태만 변경
-    void SetArrowStatus(EArrowStatus Status);   //매 틱마다 호출되며 상태에 따른 행동
-  ```
-  </details>
-
----
-## __11. 방패__
-  - <img src="Image/Docs/Shield.gif" height="300" title="Shield">
-  - 설명 : 적의 공격을 막는 방패
-### __작업 내용__
-- __클래스명__ : ShieldWeapon클래스
-  - 기존 : 방패에 콜리전을 추가하여 피격 처리. 이때 적의 공격은 Sweep의 Single 채널로 이루어지기에 먼저 방패에 맞게 되면 공격의 취소 되며 대미지가 들어가지 않음.
-  - 수정 : 플레이어의 상태와 적의 공격 방향을 기준으로 판단하여 일정 범위 이내라면 방어하는 방식 
-  - ShieldWeapon에서 범위를 지정하는 float값인 ShiledMax/MinAngle과 방어했을 시 발생하는 ParticleSystem타입의 HitedParticle 지정.
-  - MainPlayer클래스에서 TakeDamage()메서드를 수정하며 현재 상태가 Blocking이라면 막았는지의 대한 판정하며 막았다면 종료
-  - 판정은 IsBlockingSuccess()메서드를 통해 진행하며 FindLookAtRotation()을 사용하여 플레이어와 공격한 적의 각도를 반환하고 NormalizedDeltaRotator를 통해 각도를 정규화, InRange_FloatFloat()메서드를 사용하여 BetweenRot이 일정 범위 내에 있는 지 확인. 반환값은 bool이다.
-  - 공격한 적이 일정 범위 내에 있다면 방어하고 방패의 파티클을 생성하며, 일정 거리 뒤로 밀린다.
-
-### __호출 방식__
-  - 'B'키를 누르면 방패를 들게되며 이때 상태는 ECS_Blocking으로 전환
-
-### __참조 코드__
-
-  <details><summary>Cpp File</summary> 
-
-  ```c++
-  //ShieldWeapon.cpp
-  AShieldWeapon::AShieldWeapon() {
-    SetWeaponPosLoc(EWeaponPos::EWP_Shield);
-    ShiledMinAngle = -40.f;   
-    ShiledMaxAngle = 40.f;
-  }
-  ```
-  ```c++
-  //MainPlayer.cpp
-  float AMainPlayer::TakeDamage(float DamageAmount, struct FDamageEvent const& DamageEvent, class AController* EventInstigator, AActor* DamageCauser) {
-    ...
-    /** 방패로 막았는지 체크 (상태와 내적) */
-    if (GetCombatStatus() == ECombatStatus::ECS_Blocking) {
-      if (IsBlockingSuccess(DamageCauser)) {
-        Balance->SetCurrentBalance(10.f);
-        return 0;
-      }
-    }
-  }
-  void AMainPlayer::Blocking() {
-    if (!IsCanMove()) return;
-    if (CurrentShieldWeapon != nullptr) {
-      SetCombatStatus(ECombatStatus::ECS_Blocking);
-    }
-  }
-  void AMainPlayer::UnBlocking() {
-    if (CurrentShieldWeapon != nullptr) {
-      SetCombatStatus(ECombatStatus::ECS_Normal);
-    }
-  }
-  bool AMainPlayer::IsBlockingSuccess(AActor* DamageCauser) {
-    /** 두 액터 사이의 각도를 구하고 정규화하여 범위내에 있다면 isShieldRange에 True를 지정 */
-    FRotator BetweenRot = UKismetMathLibrary::FindLookAtRotation(GetActorLocation(), DamageCauser->GetActorLocation());
-    BetweenRot = UKismetMathLibrary::NormalizedDeltaRotator(GetActorRotation(), BetweenRot);
-    bool isShieldRange = UKismetMathLibrary::InRange_FloatFloat(BetweenRot.Yaw, CurrentShieldWeapon->GetMinAngle(), CurrentShieldWeapon->GetMaxAngle());
-
-    /** 일정 각도 이내라면 뒤로 밀리면서 True를 반환 */
-    if (isShieldRange && CurrentShieldWeapon->GetHitedParticle() && CurrentShieldWeapon->GetHitedSound()) {
-      FVector Loc = GetActorForwardVector();
-      Loc.Z = 0;
-      LaunchCharacter(DamageCauser->GetActorForwardVector() * 500.f, true, true);
-      UGameplayStatics::SpawnEmitterAtLocation(GetWorld(), CurrentShieldWeapon->GetHitedParticle(), GetActorLocation(), FRotator(0.f));
-      UGameplayStatics::PlaySound2D(this, CurrentShieldWeapon->GetHitedSound());
-      return true;
-    }
-    return false;
-  }
-  ```
-  </details>
-  <details><summary>Header File</summary> 
-
-  ```c++
-  //ShieldWeapon.h
-  private:
-    UPROPERTY(VisibleAnywhere, Category = "Weapon | Angle")
-    float ShiledMinAngle;   //막을 수 있는 범위1
-
-    UPROPERTY(VisibleAnywhere, Category = "Weapon | Angle")
-    float ShiledMaxAngle;   //막을 수 있는 범위2
-  public:
-    FORCEINLINE float& GetMinAngle() { return ShiledMinAngle; }
-    FORCEINLINE float& GetMaxAngle() { return ShiledMaxAngle; }
-  ```
-  ```c++
-  //MainPlayer.h
-  public:
-  	void Blocking();      //상태 변화를 위한 메서드
-	  void UnBlocking();    //상태 변화를 위한 메서드
-	  bool IsBlockingSuccess(AActor* DamageCauser);   //막기 성공 여부를 반환
-  ```
-  </details>
-
----
-## __12. 타켓팅__
+## <h1>타켓팅</h1>
   - <img src="Image/Docs/Targeting.gif" height="300" title="Targeting">
   - 설명 : 카메라의 회전을 지정한 적에게 고정하여 중심에 유지함으로 편리성을 제공
 ### __작업 내용__
@@ -1276,175 +1383,15 @@ TurnInPlace, 무기장착 로직, 공격 판정2가지, 콤보, 방패, SkillFun
   </details>
 
 ---
-## __13. 카메라의 이동__
-  - <img src="Image/Docs/ZoomCam.gif" height="300" title="ZoomCam">
-  - 설명 : 카메라를 특정 위치로 이동 (영상에서 첫번째는 기존 구현하려고 했던 스킬)
-### __작업 내용__
-- __함수명__ : ZoomInCam()
-  - 특정 행동을 할 때 카메라의 위치가 이동하며 이를 통해 다양한 동적이고 자연스러운 카메라 이동 구현
-  - SetArms()를 생성하고 이는 많은 SpringArm들을 초기화해주는 작업을 진행.
-  - 기존 ZoomInCam(USpringArmComponent* Arm, FRotator Rot = FRotator(0.f))메서드에서 매개변수를 이동을 원하는 SpringArm과 회전 값 Rotator로 입력받아 카메라를 특정 SpringArm에 어태치 하고 자연스럽게 이동. 이때 Rotator는 기본 0.f로 고정.
-  - ZoomOutCam()메서드에서는 기존 SpringArm으로 카메라를 Attach한다.
-
-### __호출 방식__
-  - 활의 발사, 스페설 공격, 달리기, 스킬등에서 사용하며 행동을 할 때 카메라의 위치가 이동
-
-### __참조 코드__
-
-  <details><summary>Cpp File</summary> 
-
-  ```c++
-  //MainPlayer.cpp
-  void AMainPlayer::SetArms(USpringArmComponent* Arm) {
-    Arm->SetupAttachment(SpringArmSence);
-    Arm->bUsePawnControlRotation = true;
-    Arm->bInheritPitch = true;
-    Arm->bInheritRoll = true;
-    Arm->bInheritYaw = true;
-  }
-  void AMainPlayer::ZoomInCam(USpringArmComponent* Arm,FRotator Rot) {
-    /** 특정 SpringArm으로 어태치 */
-    Camera->AttachToComponent(Arm, FAttachmentTransformRules(EAttachmentRule::KeepWorld, false));
-
-    FLatentActionInfo LatentInfo;
-    LatentInfo.CallbackTarget = this;
-    UKismetSystemLibrary::MoveComponentTo(Camera, FVector(0.f), Rot,false,false,0.3f, true,EMoveComponentAction::Type::Move,LatentInfo);
-  }
-  void AMainPlayer::ZoomOutCam() {
-    /** 기존 SpringArm으로 어태치 */
-    Camera->AttachToComponent(SpringArm, FAttachmentTransformRules(EAttachmentRule::KeepWorld, false));
-
-    FLatentActionInfo LatentInfo;
-    LatentInfo.CallbackTarget = this;
-    UKismetSystemLibrary::MoveComponentTo(Camera, FVector(0.f), FRotator(0.f), false, false, 0.4f, true, EMoveComponentAction::Type::Move, LatentInfo);
-  }
-  ```
-  </details>
-  <details><summary>Header File</summary> 
-
-  ```c++
-  //MainPlayer.h
-  private:
-  	UPROPERTY(VisibleAnywhere, Category = "Camera", Meta = (AllowPrivateAccess = true))
-    class USpringArmComponent* SpringArm;
-
-    UPROPERTY(VisibleAnywhere, Category = "Camera", Meta = (AllowPrivateAccess = true))
-    class USpringArmComponent* SpringArm_Sprinting;
-    
-    UPROPERTY(VisibleAnywhere, Category = "Camera", Meta = (AllowPrivateAccess = true))
-    class USpringArmComponent* SpringArm_Attacking;
-    
-    UPROPERTY(VisibleAnywhere, Category = "Camera", Meta = (AllowPrivateAccess = true))
-    class USpringArmComponent* SpringArm_Drawing;
-    
-    UPROPERTY(VisibleAnywhere, Category = "Camera", Meta = (AllowPrivateAccess = true))
-    class USpringArmComponent* SpringArm_Skilling;
-  public:
-  	void SetArms(USpringArmComponent* Arm);
-  	void ZoomInCam(USpringArmComponent* Arm, FRotator Rot = FRotator(0.f));   //다른 SpringArm으로 이동
-	  void ZoomOutCam();    //기존 SpringArm으로 이동
-  ```
-  </details>
+## <h1>AI 로직</h1>
+  - <img src="Image/Docs/Boss_BehaviorTree.png" height="300" title="Boss_BehaviorTree">
+  - <img src="Image/Docs/Enemy_BehaviorTree.png" height="300" title="Enemy_BehaviorTree">
+  - 설명 : AI를 기준에 따라 행동하게 하는 비헤이비어트리로 위는 보스, 아래는 일반 몬스터의 로직
+  - BehaviorTree와 BlackBoard를 사용하여 AI를 행동하도록 구현
+  - BlackBoard에는 변수들이 저장되어 있고 이 변수들의 값을 BehaviorTree에서 참조하여 행동
 
 ---
-## __14. 배틀 사운드__
-  - 설명 : 적과 플레이어가 전투를 할 때, 배틀 사운드 재생
-  
-### __작업 내용__
-- __클래스명__ : MainGameStateBase 클래스
-  - 적의 Sense를 통해 플레이어가 탐색되었다면 MainGameStateBase클래스의 StartBattleSound()메서드를 통해 사운드를 재생
-  - 몇 명의 적이 플레이어를 공격하던 배경음악은 한번만 재생 되어야 하기 때문에 재생 시 관여하는 적의 수를 적어두고, 그 적의 수가 0명이 되면 배틀 사운드를 종료
-
-### __호출 방식__
-  - 적의 Sense를 통해 플레이어를 탐색했을 때 재생되고 멀어지거나 플레이어가 죽으면 중지
-
-### __참조 코드__
-
-  <details><summary>Cpp File</summary> 
-
-  ```c++
-  //MainPlayer.cpp
-  void AMainPlayer::Death() {
-    ...
-    /** 배틀 사운드 실행 */
-    GetWorld()->GetGameState<AMainGameStateBase>()->ForceEndBattleSound();
-  }
-  ```
-  ```c++
-  //EnemyController.cpp
-  void AEnemyController::BeginPlay() {
-    ...
-    MyGameState = GetWorld()->GetGameState<AMainGameStateBase>();
-  }
-  void AEnemyController::Sense(AActor* Actor, FAIStimulus Stimulus) {
-    if (Stimulus.WasSuccessfullySensed()) {
-      AMainPlayer* Player = Cast<AMainPlayer>(Actor);
-      if(Player == nullptr) return;
-      Blackboard->SetValueAsObject(TargetActor, Actor);
-
-      /** 플레이어가 감지되었다면 배틀 사운드 실행 */
-      if(!bIsHaveTarget && MyGameState) MyGameState->StartBattleSound();
-      bIsHaveTarget = true;
-    }
-    else {
-      Blackboard->ClearValue(TargetActor);
-
-      /** 플레이어가 감지되지 않았다면 배틀 사운드 중지 */
-      if (bIsHaveTarget && MyGameState) MyGameState->EndBattleSound();
-        bIsHaveTarget = false;
-    }
-  }
-  ```
-  ```c++
-  //MainGameStateBase.cpp
-  void AMainGameStateBase::StartBattleSound() {
-    /** 현재 사운드가 생성되지 않았다면 사운드 생성 */
-    if(!BattleAudio && BattleSound.Num() > 0) {
-      int range = FMath::RandRange(0, BattleSound.Num() - 1);
-      BattleAudio = UGameplayStatics::SpawnSound2D(this, BattleSound[range]);
-    }
-
-    /** 사운드 활성화 */
-    if(BattleEnemyCnt++ == 0) BattleAudio->SetActive(true, true);
-  }
-  void AMainGameStateBase::EndBattleSound() {
-    /** 사운드 Off */
-    if(BattleAudio && --BattleEnemyCnt == 0) BattleAudio->ToggleActive();
-  }
-  void AMainGameStateBase::ForceEndBattleSound() {
-    if (BattleAudio) BattleAudio->ToggleActive();
-  }
-  ```
-  </details>
-  <details><summary>Header File</summary> 
-
-  ```c++
-  //EnemyController.h
-  private:
-	  class AMainGameStateBase* MyGameState;
-  public:
-  	UFUNCTION()
-	  void Sense(AActor* Actor, FAIStimulus Stimulus);
-  ```
-  ```c++
-  //MainGameStateBase.h
-  private:
-    UPROPERTY(EditDefaultsOnly, Category = "Sound", Meta = (AllowPrivateAccess = true))
-    TArray<class USoundBase*> BattleSound;
-
-    class UAudioComponent* BattleAudio;
-
-    UPROPERTY(EditDefaultsOnly, Category = "Sound")
-    int BattleEnemyCnt;           //배틀 사운드에 관여하고 있는 적의 수
-  public:
-    void StartBattleSound();      //배틀 사운드 시작을 시도
-    void EndBattleSound();        //배틀 사운드 종료를 시도
-    void ForceEndBattleSound();   //강제로 배틀 사운드 종료
-  ```
-  </details>
-
----
-## __15. 메테오 공격__
+## <h1>메테오 공격</h1>
   - <img src="Image/Docs/Meteor.gif" height="300" title="Meteor">
   - 설명 : 하늘에서 떨어지는 메테오로 플레이어에게 데미지를 입힘
 
@@ -1578,7 +1525,7 @@ TurnInPlace, 무기장착 로직, 공격 판정2가지, 콤보, 방패, SkillFun
   </details>
 
 ---
-## __16. 마법 공 공격__
+## <h1>마법 공 공격</h1>
   - <img src="Image/Docs/MagicBall.gif" height="300" title="MagicBall">
   - 설명 : 하늘에서 떨어지는 메테오로 플레이어에게 데미지를 입힘
 
@@ -1672,7 +1619,7 @@ TurnInPlace, 무기장착 로직, 공격 판정2가지, 콤보, 방패, SkillFun
   </details>
 
 ---
-## __17. 레이저 공격__
+## <h1>레이저 공격</h1>
   - <img src="Image/Docs/Lazer.gif" height="300" title="Lazer">
   - 설명 : 일정거리까지 닿는 레이저로 플레이어에게 데미지를 입힘
 
@@ -1821,7 +1768,7 @@ TurnInPlace, 무기장착 로직, 공격 판정2가지, 콤보, 방패, SkillFun
   </details>
 
 ---
-## __18. 돌진 공격__
+## <h1>돌진 공격</h1>
   - <img src="Image/Docs/DashAttack.gif" height="300" title="DashAttack">
   - 설명 : 하늘에서 떨어지는 메테오로 플레이어에게 데미지를 입힘
 
@@ -1875,107 +1822,169 @@ TurnInPlace, 무기장착 로직, 공격 판정2가지, 콤보, 방패, SkillFun
   </details>
 
 ---
-## __19. AI 로직__
-  - <img src="Image/Docs/Boss_BehaviorTree.png" height="300" title="Boss_BehaviorTree">
-  - <img src="Image/Docs/Enemy_BehaviorTree.png" height="300" title="Enemy_BehaviorTree">
-  - 설명 : AI를 기준에 따라 행동하게 하는 비헤이비어트리로 위는 보스, 아래는 일반 몬스터의 로직
-  - BehaviorTree와 BlackBoard를 사용하여 AI를 행동하도록 구현
-  - BlackBoard에는 변수들이 저장되어 있고 이 변수들의 값을 BehaviorTree에서 참조하여 행동
-
----
-## __20. 데미지 로그__
-  - <img src="Image/Docs/DamageLog.gif" height="300" title="DamageLog">
-  - 설명 : 플레이어 또는 적이 피격 시 플레이어에게 데미지의 크기를 화면상에 시각화하여 표현
-
+## <h1>카메라의 이동</h1>
+  - <img src="Image/Docs/ZoomCam.gif" height="300" title="ZoomCam">
+  - 설명 : 카메라를 특정 위치로 이동 (영상에서 첫번째는 기존 구현하려고 했던 스킬)
 ### __작업 내용__
-- __클래스명__ : DamageTextWidget 클래스
-  - Text와 SizeBox를 지정하고 애니메이션를 생성하는데 이는 클래스 자체를 가상함수로 제작하여 Text와 Animation을 꼭 블루프린트에서 구현하도록 제작
-  - 호출 되어 화면에 생성이 되면 Text 내용을 지정, 최종 목표지를 랜덤 값으로 지정하고 애니메이션을 실행 
-  - 매 Tick에서는 Vector2DInterpTo()메서드와 SetPositionInViewport()메서드를 사용하여 텍스트를 목표지점으로 프레임당 이동.
-
-- __클래스명__ : AttackFuction 클래스
-  - SpawnDamageText()메서드에서는 DamageTextWidget의 초기 발생 위치를 3D 세계의 위치에서 2D로 전환하고 랜덤으로 전환한다.
-  - 그 후 CreateWidget으로 DamageWidget을 인스턴스화하고 초기값 설정 후 AddToViewport()메서드를 통해 화면에 생성.
-  - ProjectWorldToScreen()메서드는 월드의 3DVector 값을 2DVector값으로 전환해준다. 생성하기 위해 필요한 위치값, 데미지 크기, 위젯, 띄울 컨트롤러를 매개변수로 받는다
+- __함수명__ : ZoomInCam()
+  - 특정 행동을 할 때 카메라의 위치가 이동하며 이를 통해 다양한 동적이고 자연스러운 카메라 이동 구현
+  - SetArms()를 생성하고 이는 많은 SpringArm들을 초기화해주는 작업을 진행.
+  - 기존 ZoomInCam(USpringArmComponent* Arm, FRotator Rot = FRotator(0.f))메서드에서 매개변수를 이동을 원하는 SpringArm과 회전 값 Rotator로 입력받아 카메라를 특정 SpringArm에 어태치 하고 자연스럽게 이동. 이때 Rotator는 기본 0.f로 고정.
+  - ZoomOutCam()메서드에서는 기존 SpringArm으로 카메라를 Attach한다.
 
 ### __호출 방식__
-  - MainPlayer와 Enemy에서는 TakeDamge()메서드에서 AttackFunction클래스를 통해서 호출
+  - 활의 발사, 스페설 공격, 달리기, 스킬등에서 사용하며 행동을 할 때 카메라의 위치가 이동
 
 ### __참조 코드__
 
   <details><summary>Cpp File</summary> 
 
   ```c++
-  //DamageTextWidget.cpp
-  void UDamageTextWidget::NativeTick(const FGeometry& MyGeometry, float InDeltaTime){
-    Super::NativeTick(MyGeometry, InDeltaTime);
-
-    /** DamageText의 위치 조정 */
-    InintialScreenLocation = UKismetMathLibrary::Vector2DInterpTo(InintialScreenLocation,FinalScreenLocation,InDeltaTime,1.0f);
-    SetPositionInViewport(InintialScreenLocation);
-  }
-  void UDamageTextWidget::SetInitialSetting(FVector2D& vec, float& name) {
-    InintialScreenLocation = vec;
-    DamageToDisplay = name;
-    this->AddToViewport();
-  }
-  ```
-  ```c++
-  //AttackFunction.cpp
-  void UAttackFunction::SpawnDamageText(FVector WorldLocation, float Damage, TSubclassOf<class UDamageTextWidget> DamageTextWidget, AController* DisplayController) {
-    if(DamageTextWidget == nullptr) return;
-
-    /** 3D에서 2D로 변경 */
-    const APlayerController* DamageController = Cast<APlayerController>(DisplayController);
-    WorldLocation.X += UKismetMathLibrary::RandomFloatInRange(-50.f, 50.f);
-    WorldLocation.Y += UKismetMathLibrary::RandomFloatInRange(-50.f, 50.f);
-    UGameplayStatics::ProjectWorldToScreen(DamageController, WorldLocation, DamageTextVec);
-
-    /** 데미지 로그 생성 및 위치 지정 */
-    DamageWidget = CreateWidget<UDamageTextWidget>(GetWorld(), DamageTextWidget);
-    DamageWidget->SetInitialSetting(DamageTextVec, Damage);
-  }
-  ```
-  ```c++
   //MainPlayer.cpp
-  float AMainPlayer::TakeDamage(float DamageAmount, struct FDamageEvent const& DamageEvent, class AController* EventInstigator, AActor* DamageCauser) {
-    ...
-	  AttackFunction->SpawnDamageText(GetActorLocation(), DamageAmount, DamageTextWidget,GetController());
+  void AMainPlayer::SetArms(USpringArmComponent* Arm) {
+    Arm->SetupAttachment(SpringArmSence);
+    Arm->bUsePawnControlRotation = true;
+    Arm->bInheritPitch = true;
+    Arm->bInheritRoll = true;
+    Arm->bInheritYaw = true;
+  }
+  void AMainPlayer::ZoomInCam(USpringArmComponent* Arm,FRotator Rot) {
+    /** 특정 SpringArm으로 어태치 */
+    Camera->AttachToComponent(Arm, FAttachmentTransformRules(EAttachmentRule::KeepWorld, false));
+
+    FLatentActionInfo LatentInfo;
+    LatentInfo.CallbackTarget = this;
+    UKismetSystemLibrary::MoveComponentTo(Camera, FVector(0.f), Rot,false,false,0.3f, true,EMoveComponentAction::Type::Move,LatentInfo);
+  }
+  void AMainPlayer::ZoomOutCam() {
+    /** 기존 SpringArm으로 어태치 */
+    Camera->AttachToComponent(SpringArm, FAttachmentTransformRules(EAttachmentRule::KeepWorld, false));
+
+    FLatentActionInfo LatentInfo;
+    LatentInfo.CallbackTarget = this;
+    UKismetSystemLibrary::MoveComponentTo(Camera, FVector(0.f), FRotator(0.f), false, false, 0.4f, true, EMoveComponentAction::Type::Move, LatentInfo);
   }
   ```
   </details>
   <details><summary>Header File</summary> 
 
   ```c++
-  //DamageTextWidget.h
+  //MainPlayer.h
   private:
-    UPROPERTY(Meta = (BindWidget), Meta = (AllowPrivateAccess = true))
-    class UTextBlock* DamageText;
+  	UPROPERTY(VisibleAnywhere, Category = "Camera", Meta = (AllowPrivateAccess = true))
+    class USpringArmComponent* SpringArm;
 
-    UPROPERTY(Meta = (BindWidgetAnim), Meta = (AllowPrivateAccess = true), Transient)	//직렬화
-    class UWidgetAnimation* Fade;                     //실행될 애니메이션 (투명화)
-
-    UPROPERTY(EditAnywhere, Category = "DamageText")
-    FVector2D InintialScreenLocation;                 //현재 위치
+    UPROPERTY(VisibleAnywhere, Category = "Camera", Meta = (AllowPrivateAccess = true))
+    class USpringArmComponent* SpringArm_Sprinting;
     
-    UPROPERTY(EditAnywhere, Category = "DamageText")
-    FVector2D FinalScreenLocation;                    //목표 위치
-
-    UPROPERTY(EditAnywhere, Category = "DamageText")
-    float DamageToDisplay;
+    UPROPERTY(VisibleAnywhere, Category = "Camera", Meta = (AllowPrivateAccess = true))
+    class USpringArmComponent* SpringArm_Attacking;
+    
+    UPROPERTY(VisibleAnywhere, Category = "Camera", Meta = (AllowPrivateAccess = true))
+    class USpringArmComponent* SpringArm_Drawing;
+    
+    UPROPERTY(VisibleAnywhere, Category = "Camera", Meta = (AllowPrivateAccess = true))
+    class USpringArmComponent* SpringArm_Skilling;
   public:
-    void SetInitialSetting (FVector2D &vec, float &name);   //위젯 초기 설정
+  	void SetArms(USpringArmComponent* Arm);
+  	void ZoomInCam(USpringArmComponent* Arm, FRotator Rot = FRotator(0.f));   //다른 SpringArm으로 이동
+	  void ZoomOutCam();    //기존 SpringArm으로 이동
+  ```
+  </details>
+
+---
+## <h1>배틀 사운드</h1>
+  - 설명 : 적과 플레이어가 전투를 할 때, 배틀 사운드 재생
+  
+### __작업 내용__
+- __클래스명__ : MainGameStateBase 클래스
+  - 적의 Sense를 통해 플레이어가 탐색되었다면 MainGameStateBase클래스의 StartBattleSound()메서드를 통해 사운드를 재생
+  - 몇 명의 적이 플레이어를 공격하던 배경음악은 한번만 재생 되어야 하기 때문에 재생 시 관여하는 적의 수를 적어두고, 그 적의 수가 0명이 되면 배틀 사운드를 종료
+
+### __호출 방식__
+  - 적의 Sense를 통해 플레이어를 탐색했을 때 재생되고 멀어지거나 플레이어가 죽으면 중지
+
+### __참조 코드__
+
+  <details><summary>Cpp File</summary> 
+
+  ```c++
+  //MainPlayer.cpp
+  void AMainPlayer::Death() {
+    ...
+    /** 배틀 사운드 실행 */
+    GetWorld()->GetGameState<AMainGameStateBase>()->ForceEndBattleSound();
+  }
   ```
   ```c++
-  //AttackFunction.h
-  private:
-  	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "HUD")
-    FVector2D DamageTextVec;                                      //DamageText 생성 위치
+  //EnemyController.cpp
+  void AEnemyController::BeginPlay() {
+    ...
+    MyGameState = GetWorld()->GetGameState<AMainGameStateBase>();
+  }
+  void AEnemyController::Sense(AActor* Actor, FAIStimulus Stimulus) {
+    if (Stimulus.WasSuccessfullySensed()) {
+      AMainPlayer* Player = Cast<AMainPlayer>(Actor);
+      if(Player == nullptr) return;
+      Blackboard->SetValueAsObject(TargetActor, Actor);
 
-    UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "HUD")
-    class UDamageTextWidget* DamageWidget;
+      /** 플레이어가 감지되었다면 배틀 사운드 실행 */
+      if(!bIsHaveTarget && MyGameState) MyGameState->StartBattleSound();
+      bIsHaveTarget = true;
+    }
+    else {
+      Blackboard->ClearValue(TargetActor);
+
+      /** 플레이어가 감지되지 않았다면 배틀 사운드 중지 */
+      if (bIsHaveTarget && MyGameState) MyGameState->EndBattleSound();
+        bIsHaveTarget = false;
+    }
+  }
+  ```
+  ```c++
+  //MainGameStateBase.cpp
+  void AMainGameStateBase::StartBattleSound() {
+    /** 현재 사운드가 생성되지 않았다면 사운드 생성 */
+    if(!BattleAudio && BattleSound.Num() > 0) {
+      int range = FMath::RandRange(0, BattleSound.Num() - 1);
+      BattleAudio = UGameplayStatics::SpawnSound2D(this, BattleSound[range]);
+    }
+
+    /** 사운드 활성화 */
+    if(BattleEnemyCnt++ == 0) BattleAudio->SetActive(true, true);
+  }
+  void AMainGameStateBase::EndBattleSound() {
+    /** 사운드 Off */
+    if(BattleAudio && --BattleEnemyCnt == 0) BattleAudio->ToggleActive();
+  }
+  void AMainGameStateBase::ForceEndBattleSound() {
+    if (BattleAudio) BattleAudio->ToggleActive();
+  }
+  ```
+  </details>
+  <details><summary>Header File</summary> 
+
+  ```c++
+  //EnemyController.h
+  private:
+	  class AMainGameStateBase* MyGameState;
   public:
   	UFUNCTION()
-  	void SpawnDamageText(FVector WorldLocation, float Damage, TSubclassOf<UDamageTextWidget> DamageTextWidget, AController* DisplayController);
+	  void Sense(AActor* Actor, FAIStimulus Stimulus);
+  ```
+  ```c++
+  //MainGameStateBase.h
+  private:
+    UPROPERTY(EditDefaultsOnly, Category = "Sound", Meta = (AllowPrivateAccess = true))
+    TArray<class USoundBase*> BattleSound;
+
+    class UAudioComponent* BattleAudio;
+
+    UPROPERTY(EditDefaultsOnly, Category = "Sound")
+    int BattleEnemyCnt;           //배틀 사운드에 관여하고 있는 적의 수
+  public:
+    void StartBattleSound();      //배틀 사운드 시작을 시도
+    void EndBattleSound();        //배틀 사운드 종료를 시도
+    void ForceEndBattleSound();   //강제로 배틀 사운드 종료
   ```
   </details>

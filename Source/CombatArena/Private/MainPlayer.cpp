@@ -374,7 +374,7 @@ bool AMainPlayer::IsCanMove() {
 void AMainPlayer::Targeting() {
 	if (bTargeting && CombatTarget != nullptr) {
 		FRotator TargetRot = UKismetMathLibrary::FindLookAtRotation(GetActorLocation(), CombatTarget->GetActorLocation());
-		TargetRot.Pitch -= 30.f;
+		TargetRot.Pitch -= 25.f;
 
 		Controller->SetControlRotation(FMath::RInterpTo(GetControlRotation(), TargetRot, GetWorld()->GetDeltaSeconds(), 5.0f));
 	}
