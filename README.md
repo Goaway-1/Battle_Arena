@@ -61,8 +61,8 @@ TurnInPlace, 무기장착 로직, 공격 판정2가지, 콤보, 방패, SkillFun
 |:--:|:--:|
 |이동|[이동](#이동), [제자리 회전](#제자리-회전)|
 |무기|[활과 화살](#활과-화살), [방패](#방패), [연막탄](#연막탄)|
-|공격 판정|[공격판정 (콜리전)](#공격판정-(콜리전)), [공격판정 (내적)](#공격판정-(내적)), [콤보](#콤보), [데미지 로그](#데미지-로그)|
-|상호작용|[균형](#균형), [아이템과의 상호 작용](#아이템과의-상호-작용), [특정 공격](#특정-공격), [타켓팅](#타켓팅)|
+|공격 판정|[콜리전 공격판정](#콜리전-공격판정), [내적 공격판정](#내적-공격판정), [콤보](#콤보), [데미지 로그](#데미지-로그)|
+|상호작용|[균형](#균형), [특정 공격](#특정-공격), [아이템과의 상호 작용](#아이템과의-상호-작용), [타켓팅](#타켓팅)|
 |적의 스킬|[AI 로직](#AI-로직), [메테오 공격](#메테오-공격), [마법 공 공격](#마법-공-공격), [레이저 공격](#레이저-공격), [돌진 공격](#돌진-공격)|
 |그 외..|[카메라의 이동](#카메라의-이동), [배틀 사운드](#배틀-사운드)|
 
@@ -520,7 +520,7 @@ TurnInPlace, 무기장착 로직, 공격 판정2가지, 콤보, 방패, SkillFun
   </details>
 
 ---
-## <h1>공격판정 (콜리전)</h1>
+## <h1>콜리전공격판정</h1>
   - <img src="Image/Docs/Attack_1.gif" height="300" title="Attack_1">
   - <img src="Image/Docs/Attack_1_Notify.png" height="300" title="Attack_1_Notify">
   - 설명 : 플레이어가 무기를 장착하고 하는 무기의 콜리전을 활용한 공격 판정 방법
@@ -604,7 +604,7 @@ TurnInPlace, 무기장착 로직, 공격 판정2가지, 콤보, 방패, SkillFun
   </details>
 
 ---
-## <h1>공격판정 (내적)</h1>
+## <h1>내적 공격판정</h1>
   - <img src="Image/Docs/Attack_2.gif" height="300" title="Attack_2">
   - <img src="Image/Docs/Attack_2_Notify.png" height="300" title="Attack_2_Notify">
   - <img src="Image/Docs/TraceChannel.png" height="300" title="TraceChannel">
@@ -1031,6 +1031,70 @@ TurnInPlace, 무기장착 로직, 공격 판정2가지, 콤보, 방패, SkillFun
   </details>
 
 ---
+## <h1>특정 공격</h1>
+  - <img src="Image/Docs/EnemyFainted.gif" height="300" title="EnemyFainted">
+  - 설명 : 적의 균형이 무너졌을때 E를 사용하여 특별한 공격을 진행
+### __작업 내용__
+- __클래스명__ : MainPlayer클래스
+  - MainPlayer에 새로운 SphereComponent(EnemyBalanceOverlap)를 추가하여 범위 이내의 적을 파악하고, 해당 적을 BalanceTarget으로 설정
+  - 매 틱마다 BalanceTarget이 없거나, 있지만 기절 상태가 아닌 경우는 bCanSpecialAttack은 false, 있고 기절 상태인 경우에는 true로 설정
+  - 적이 스턴상태일때 특정 키(E)를 사용하여 처리하며, Enemy클래스에는 SpecialHit()메서드를 제작하여 특별한 경우의 피격을 처리 (우선순위 : SpecialAttack -> EquipItem)
+  - Attack()메서드에 매개변수에 따라 true인 경우 특정 공격을 처리 
+  - ActiveSpecialAttack()메서드에서는 Attack()메서드의 매개변수가 true로 넘겨 특별한 공격을 하며 이때 ZoomInCam()메서드를 사용하여 카메라는 특정위치로 이동하고, 적의 애니메이션 실행
+
+### __호출 방식__
+  - E를 사용하여 조건에 적합하다면 특별한 공격을 진행
+
+### __참조 코드__
+
+  <details><summary>Cpp File</summary> 
+
+  ```c++
+  //MainPlayer.cpp
+  void AMainPlayer::Attack(bool bIsSpecial) {
+    ...
+    if (bIsSpecial) {
+      AnimInstance->Montage_Play(PlayMontage);
+      AnimInstance->Montage_JumpToSection("SpecialAttack", PlayMontage);
+      ZoomInCam(SpringArm_Attacking, FRotator(0.f, -60.f, 0.f));
+    }
+  }
+  void AMainPlayer::ActiveInteraction() {
+    if(!IsCanMove()) return;
+    float Inner = this->GetDotProductTo(BalanceTarget);
+
+    /** 조건을 만족한다면 특정 공격 실행 */
+    if (Inner > 0.3f && bCanSpecialAttack && !bAttacking) ActiveSpecialAttack();
+    else if (ActiveOverlappingItem != nullptr) ItemEquip();
+  }
+  void AMainPlayer::ActiveSpecialAttack() {
+    BalanceTarget->SpecialHitMontage();
+    Attack(true);   //매개변수 true를 넘겨 SpecailAttack 몽타주 실행
+  }
+  void AMainPlayer::CanSpeicalAttackToEnemy() {
+    if(BalanceTarget == nullptr) bCanSpecialAttack = false;
+    if (BalanceTarget) {
+      if (BalanceTarget->GetIsFainted() && !bCanSpecialAttack) bCanSpecialAttack = true;
+      else if(!BalanceTarget->GetIsFainted()) bCanSpecialAttack = false;
+    }
+  }
+  ```
+  </details>
+  <details><summary>Header File</summary> 
+
+  ```c++
+  //MainPlayer.h
+  private:
+  	class ABoss_Enemy* BalanceTarget; 
+	  USphereComponent* EnemyBalanceOverlap;
+  public:
+	  void CanSpeicalAttackToEnemy();	  //현재 적에게 특정 공격이 가능한지 체크
+    void ZoomInCam(USpringArmComponent* Arm, FRotator Rot = FRotator(0.f));
+	  void ZoomOutCam();
+  ```
+  </details>
+
+---
 ## <h1>아이템과의 상호 작용</h1>
   - <img src="Image/Docs/Interactive.gif" height="300" title="Interactive">
   - 설명 : 플레이어가 아이템과 상호작용하는 로직으로 Item클래스에 Overlap로직 구현
@@ -1240,70 +1304,6 @@ TurnInPlace, 무기장착 로직, 공격 판정2가지, 콤보, 방패, SkillFun
   //Potion.h
   public:
 	  void UseItem(float &Health);
-  ```
-  </details>
-
----
-## <h1>특정 공격</h1>
-  - <img src="Image/Docs/EnemyFainted.gif" height="300" title="EnemyFainted">
-  - 설명 : 적의 균형이 무너졌을때 E를 사용하여 특별한 공격을 진행
-### __작업 내용__
-- __클래스명__ : MainPlayer클래스
-  - MainPlayer에 새로운 SphereComponent(EnemyBalanceOverlap)를 추가하여 범위 이내의 적을 파악하고, 해당 적을 BalanceTarget으로 설정
-  - 매 틱마다 BalanceTarget이 없거나, 있지만 기절 상태가 아닌 경우는 bCanSpecialAttack은 false, 있고 기절 상태인 경우에는 true로 설정
-  - 적이 스턴상태일때 특정 키(E)를 사용하여 처리하며, Enemy클래스에는 SpecialHit()메서드를 제작하여 특별한 경우의 피격을 처리 (우선순위 : SpecialAttack -> EquipItem)
-  - Attack()메서드에 매개변수에 따라 true인 경우 특정 공격을 처리 
-  - ActiveSpecialAttack()메서드에서는 Attack()메서드의 매개변수가 true로 넘겨 특별한 공격을 하며 이때 ZoomInCam()메서드를 사용하여 카메라는 특정위치로 이동하고, 적의 애니메이션 실행
-
-### __호출 방식__
-  - E를 사용하여 조건에 적합하다면 특별한 공격을 진행
-
-### __참조 코드__
-
-  <details><summary>Cpp File</summary> 
-
-  ```c++
-  //MainPlayer.cpp
-  void AMainPlayer::Attack(bool bIsSpecial) {
-    ...
-    if (bIsSpecial) {
-      AnimInstance->Montage_Play(PlayMontage);
-      AnimInstance->Montage_JumpToSection("SpecialAttack", PlayMontage);
-      ZoomInCam(SpringArm_Attacking, FRotator(0.f, -60.f, 0.f));
-    }
-  }
-  void AMainPlayer::ActiveInteraction() {
-    if(!IsCanMove()) return;
-    float Inner = this->GetDotProductTo(BalanceTarget);
-
-    /** 조건을 만족한다면 특정 공격 실행 */
-    if (Inner > 0.3f && bCanSpecialAttack && !bAttacking) ActiveSpecialAttack();
-    else if (ActiveOverlappingItem != nullptr) ItemEquip();
-  }
-  void AMainPlayer::ActiveSpecialAttack() {
-    BalanceTarget->SpecialHitMontage();
-    Attack(true);   //매개변수 true를 넘겨 SpecailAttack 몽타주 실행
-  }
-  void AMainPlayer::CanSpeicalAttackToEnemy() {
-    if(BalanceTarget == nullptr) bCanSpecialAttack = false;
-    if (BalanceTarget) {
-      if (BalanceTarget->GetIsFainted() && !bCanSpecialAttack) bCanSpecialAttack = true;
-      else if(!BalanceTarget->GetIsFainted()) bCanSpecialAttack = false;
-    }
-  }
-  ```
-  </details>
-  <details><summary>Header File</summary> 
-
-  ```c++
-  //MainPlayer.h
-  private:
-  	class ABoss_Enemy* BalanceTarget; 
-	  USphereComponent* EnemyBalanceOverlap;
-  public:
-	  void CanSpeicalAttackToEnemy();	  //현재 적에게 특정 공격이 가능한지 체크
-    void ZoomInCam(USpringArmComponent* Arm, FRotator Rot = FRotator(0.f));
-	  void ZoomOutCam();
   ```
   </details>
 
@@ -1988,3 +1988,7 @@ TurnInPlace, 무기장착 로직, 공격 판정2가지, 콤보, 방패, SkillFun
     void ForceEndBattleSound();   //강제로 배틀 사운드 종료
   ```
   </details>
+
+---
+
+> ### **<h3>개선점</h3>**
