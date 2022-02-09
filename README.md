@@ -1527,7 +1527,7 @@ TurnInPlace, 무기장착 로직, 공격 판정2가지, 콤보, 방패, SkillFun
 ---
 ## <h1>마법 공 공격</h1>
   - <img src="Image/Docs/MagicBall.gif" height="300" title="MagicBall">
-  - 설명 : 하늘에서 떨어지는 메테오로 플레이어에게 데미지를 입힘
+  - 설명 : 플레이어 방향으로 마법 공을 발사하여 피해를 입힘
 
 ### __작업 내용__
 - __클래스명__ : MagicBall 클래스
@@ -1770,7 +1770,7 @@ TurnInPlace, 무기장착 로직, 공격 판정2가지, 콤보, 방패, SkillFun
 ---
 ## <h1>돌진 공격</h1>
   - <img src="Image/Docs/DashAttack.gif" height="300" title="DashAttack">
-  - 설명 : 하늘에서 떨어지는 메테오로 플레이어에게 데미지를 입힘
+  - 설명 : 플레이어를 향하여 일정거리를 돌진한 후 공격
 
 ### __작업 내용__
 - __클래스명__ : BossEnemy 클래스의 DashSkill()메서드
@@ -1992,3 +1992,4 @@ TurnInPlace, 무기장착 로직, 공격 판정2가지, 콤보, 방패, SkillFun
 ---
 
 > ### **<h3>개선점</h3>**
+- 어려가지를 구현하다보니 정체성을 잃었고 학습차원에서 다양한 방식으로 구현하다 보니 단일화가 부족.
