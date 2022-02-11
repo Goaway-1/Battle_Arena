@@ -21,7 +21,7 @@
 5. [개선점](#개선점)
 
 > ### **<h3>동영상 및 개발 일지</h3>**
-- [<img src="Image/Docs/MainImage.png" height="300" title="클릭 시 이동">](https://youtube.com)
+- [<img src="Image/Docs/MainImage.png" height="300" title="클릭 시 이동">](https://youtu.be/eJCbn4nPUEY)
 
 - ## [개발일기](https://github.com/Goaway-1/Battle_Arena/blob/master/DevLog.md)
 
@@ -520,7 +520,7 @@ TurnInPlace, 무기장착 로직, 공격 판정2가지, 콤보, 방패, SkillFun
   </details>
 
 ---
-## <h1>콜리전공격판정</h1>
+## <h1>콜리전 공격판정</h1>
   - <img src="Image/Docs/Attack_1.gif" height="300" title="Attack_1">
   - <img src="Image/Docs/Attack_1_Notify.png" height="300" title="Attack_1_Notify">
   - 설명 : 플레이어가 무기를 장착하고 하는 무기의 콜리전을 활용한 공격 판정 방법
@@ -1992,4 +1992,10 @@ TurnInPlace, 무기장착 로직, 공격 판정2가지, 콤보, 방패, SkillFun
 ---
 
 > ### **<h3>개선점</h3>**
-- 어려가지를 구현하다보니 정체성을 잃었고 학습차원에서 다양한 방식으로 구현하다 보니 단일화가 부족.
+- 어려가지를 구현하다보니 정체성을 잃었고 학습차원에서 다양한 방식으로 구현하다 보니 통일성이 부족
+- 사전 기획하지 않고 기능을 계속 추가하다보니 개발 시간만 길어지고 이도저도 아닌 게임이 되어버림
+- MainPlayer클래스나 Enemy클래스에 공통된 기능 (체력, 피격...)을 따로 클래스로 지정하여 진행하지 못했기에 객체지향의 장점을 완전히 사용하지 못함
+  - 물론 다른 균형이나 공격함수 클래스들은 유용하게 사용 및 개발
+- AI에 아직 오류(TimeManager)가 발생하나 해결하지 못함
+- 적의 스킬 중 돌진 공격은 단지 둘 사이의 거리를 시간으로 계산하여 구현했기에 다른 방식으로의 개선이 필요
+- 콜리전 공격 판정에서 공격자의 정보를 넘기는데 이 또한 따로 클래스로 지정했다면 어땠을까를 생각

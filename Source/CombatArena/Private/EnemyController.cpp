@@ -38,13 +38,13 @@ void AEnemyController::Sense(AActor* Actor, FAIStimulus Stimulus) {
         AMainPlayer* Player = Cast<AMainPlayer>(Actor);
         if(Player == nullptr) return;
         Blackboard->SetValueAsObject(TargetActor, Actor);
-        if(!bIsHaveTarget && MyGameState) MyGameState->StartBattleSound();
-        bIsHaveTarget = true;
+        //if(!bIsHaveTarget && MyGameState) MyGameState->StartBattleSound();
+       //bIsHaveTarget = true;
     }
 	else {
         Blackboard->ClearValue(TargetActor);
-        if (bIsHaveTarget && MyGameState) MyGameState->EndBattleSound();
-        bIsHaveTarget = false;
+       // if (bIsHaveTarget && MyGameState) MyGameState->EndBattleSound();
+        //bIsHaveTarget = false;
     }
 }
 
