@@ -21,7 +21,7 @@
 5. [개선점](#개선점)
 
 > ### **<h3>동영상 및 개발 일지</h3>**
-- [<img src="Image/Docs/MainImage.png" height="300" title="클릭 시 이동">](https://youtu.be/eJCbn4nPUEY)
+- [<img src="Image/Docs/MainImage.png" height="300" title="클릭 시 이동">](https://youtu.be/Hd_fOEuh47s)
 
 - ## [개발일기](https://github.com/Goaway-1/Battle_Arena/blob/master/DevLog.md)
 
